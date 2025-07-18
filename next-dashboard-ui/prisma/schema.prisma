@@ -1,0 +1,326 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id       String @id
+  username String @unique
+}
+
+model User {
+  id         String   @id @default(cuid())
+  username   String
+  class_name String
+  schoolname String
+  birthday   DateTime
+  address    String
+
+  email     String?  @unique
+  phone     String?  @unique
+  role      UserRole @default(student)
+  createdAt DateTime @default(now())
+  password  String
+
+  student Student?
+  teacher Teacher?
+}
+
+model Student {
+  id         String   @id
+  username   String
+  class_name String
+  schoolname String
+  birthday   DateTime
+  address    String
+
+  email     String?  @unique
+  phone     String?  @unique
+  createdAt DateTime @default(now())
+  password  String
+
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id])
+
+  classes     Class[]
+  attendances Attendance[]
+  results     Result[]
+
+  homeworkSubmissions HomeworkSubmission[] // Thêm dòng này
+}
+
+model Teacher {
+  id         String   @id
+  username   String
+  class_name String
+  schoolname String
+  birthday   DateTime
+  address    String
+
+  email     String?  @unique
+  phone     String?  @unique
+  createdAt DateTime @default(now())
+  password  String
+
+  userId String? @unique
+  user   User?   @relation(fields: [userId], references: [id])
+
+  subjects Subject[]
+  lessons  Lesson[]
+  classes  Class[]
+
+  homeworks Homework[] // Thêm dòng này
+}
+
+model Grade {
+  id    Int    @id @default(autoincrement())
+  level String @unique
+
+  classess Class[]
+}
+
+model Class {
+  id         Int     @id @default(autoincrement())
+  name       String
+  capacity   Int
+  class_code String? @unique
+  img       String?
+
+  // Các trường boolean cho cài đặt lớp học
+  isProtected      Boolean @default(false)
+  isLocked         Boolean @default(false)
+  requiresApproval Boolean @default(false)
+  blockLeave       Boolean @default(false)
+  allowGradesView  Boolean @default(false)
+
+  supervisorId  String?
+  supervisor    Teacher?       @relation(fields: [supervisorId], references: [id])
+  lessons       Lesson[]
+  students      Student[]
+  gradeId       Int
+  grade         Grade          @relation(fields: [gradeId], references: [id])
+  events        Event[]
+  announcements Announcement[]
+
+  homeworks Homework[] // Thêm dòng này
+}
+
+model Subject {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  teachers Teacher[]
+  lessons  Lesson[]
+
+  homeworks Homework[] // Thêm dòng này
+}
+
+model Lesson {
+  id        Int      @id @default(autoincrement())
+  name      String
+  day       Day
+  startTime DateTime
+  endTime   DateTime
+
+  subjectId   Int
+  subject     Subject      @relation(fields: [subjectId], references: [id])
+  classId     Int
+  class       Class        @relation(fields: [classId], references: [id])
+  teacherId   String
+  teacher     Teacher      @relation(fields: [teacherId], references: [id])
+  exams       Exam[]
+  assignments Assignment[]
+  attendances Attendance[]
+}
+
+model Exam {
+  id        Int      @id @default(autoincrement())
+  title     String
+  startTime DateTime
+  endTime   DateTime
+
+  lessonId Int
+  lesson   Lesson   @relation(fields: [lessonId], references: [id])
+  results  Result[]
+}
+
+model Assignment {
+  id        Int      @id @default(autoincrement())
+  title     String
+  startDate DateTime
+  dueDate   DateTime
+
+  lessonId Int
+  lesson   Lesson   @relation(fields: [lessonId], references: [id])
+  results  Result[]
+}
+
+model Result {
+  id    Int @id @default(autoincrement())
+  score Int
+
+  examId       Int?
+  exam         Exam?       @relation(fields: [examId], references: [id])
+  assignmentId Int?
+  assignment   Assignment? @relation(fields: [assignmentId], references: [id])
+  studentId    String
+  student      Student     @relation(fields: [studentId], references: [id])
+}
+
+model Attendance {
+  id      Int      @id @default(autoincrement())
+  date    DateTime
+  present Boolean
+
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id])
+  lessonId  Int
+  lesson    Lesson  @relation(fields: [lessonId], references: [id])
+}
+
+model Event {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  startTime   DateTime
+  endTime     DateTime
+
+  classId Int?
+  class   Class? @relation(fields: [classId], references: [id])
+}
+
+model Announcement {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  date        DateTime
+
+  classId Int?
+  class   Class? @relation(fields: [classId], references: [id])
+}
+
+enum Day {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+}
+
+enum UserRole {
+  teacher
+  student
+}
+
+
+
+
+model Homework {
+  id            Int      @id @default(autoincrement())
+  title         String
+  description   String?
+  content       String?
+  type          String?  // "original" hoặc "extracted"
+  originalFileUrl String? // URL file gốc
+  originalFileName String? // Tên file gốc
+  originalFileType String? // Loại file gốc
+  startTime     DateTime?
+  endTime       DateTime?
+  duration      Int?
+  maxAttempts   Int?
+  points        Float?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  classCode String? @map("class_code")
+  class     Class?  @relation(fields: [classCode], references: [class_code])
+
+  teacherId String
+  teacher   Teacher @relation(fields: [teacherId], references: [id])
+
+  subjectId Int?
+  subject   Subject? @relation(fields: [subjectId], references: [id])
+
+  submissions HomeworkSubmission[] 
+  attachments HomeworkAttachment[] 
+  questions   Question[]           
+}
+
+model HomeworkSubmission {
+  id            Int      @id @default(autoincrement())
+  content       String
+  attemptNumber Int
+  submittedAt   DateTime @default(now())
+  grade         Float?
+  timeSpent     Int?
+  feedback      String?
+
+  homeworkId Int
+  homework   Homework @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+  studentId  String
+  student    Student  @relation(fields: [studentId], references: [id])
+
+  attachments     HomeworkSubmissionAttachment[] 
+  questions       Question[]                     
+  questionAnswers QuestionAnswer[]               
+}
+
+model HomeworkAttachment {
+  id   Int     @id @default(autoincrement())
+  name String
+  url  String?
+  type String
+  size Int
+
+  homeworkId Int
+  homework   Homework @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+}
+
+model HomeworkSubmissionAttachment {
+  id   Int    @id @default(autoincrement())
+  name String
+  url  String
+  type String
+  size Int
+
+  submissionId Int
+  submission   HomeworkSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+}
+
+model Question {
+  id                   Int                 @id @default(autoincrement())
+  questionNumber       Int?                // Số thứ tự câu hỏi (1, 2, 3...)
+  content              String              // Nội dung câu hỏi
+  questionType         String?             // "multiple_choice", "fill_blank", etc.
+  options              Json?               // Lưu các lựa chọn A, B, C, D dạng JSON
+  answer               String              // Đáp án đúng
+  point                Float?              // Điểm cho câu hỏi này
+  
+  homeworkId           Int
+  homework             Homework            @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
+  
+  HomeworkSubmission   HomeworkSubmission? @relation(fields: [homeworkSubmissionId], references: [id], onDelete: Cascade)
+  homeworkSubmissionId Int?
+
+  questionAnswers QuestionAnswer[] 
+}
+
+model QuestionAnswer {
+  id        Int      @id @default(autoincrement())
+  answer    String
+  isCorrect Boolean?
+
+  questionId   Int
+  question     Question           @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  submissionId Int
+  submission   HomeworkSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+}
