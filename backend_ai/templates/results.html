@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kết quả trích xuất đề thi</title>
+    <!-- Tải Bootstrap từ file cục bộ -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    
+    <style>
+        body { background-color: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .container { max-width: 900px; }
+        .quiz-container { margin: 2rem auto; padding: 2rem; }
+        .question-item { background-color: white; padding: 1.5rem 2rem; border-radius: 12px; margin-bottom: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.08); border: 1px solid #e0e0e0; }
+        .question-text { font-size: 1.1rem; font-weight: 500; margin-bottom: 1.25rem; line-height: 1.6; }
+        
+        .options-grid { display: grid; gap: 12px; }
+        .option-input { width: 100%; padding: 12px 15px; border: 1px solid #ced4da; border-radius: 8px; background-color: #f8f9fa; font-size: 1rem; color: #495057; pointer-events: none; transition: all 0.2s ease-in-out; }
+        
+        /* CSS cho đáp án đúng được highlight */
+        .correct-answer {
+            background-color: #fff3cd !important; /* Màu vàng nhạt của Bootstrap */
+            border-color: #ffeeba !important;
+            font-weight: bold;
+            color: #856404 !important;
+        }
+
+        .summary-table { margin-top: 3rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="quiz-container">
+            <h1 class="text-center mb-4">Đề thi trích xuất từ file: <code>{{ filename }}</code></h1>
+            <hr class="mb-4">
+
+            {% if quiz_data %}
+                <!-- Vòng lặp hiển thị các câu hỏi -->
+                {% for item in quiz_data %}
+                    <div class="question-item">
+                        <div class="question-text">{{ item.question_text }}</div>
+                        
+                        <div class="options-grid">
+                            {% for option in item.options %}
+                                {# Thêm class 'correct-answer' nếu đây là đáp án đúng #}
+                                <input type="text" 
+                                       class="form-control option-input " 
+                                       value="{{ option }}" 
+                                       readonly>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+
+                <!-- Bảng tóm tắt đáp án -->
+                <div class="summary-table">
+                    <h2 class="text-center mb-4">Bảng đáp án</h2>
+                    <table class="table table-bordered table-striped text-center">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Câu</th>
+                                <th>Đáp án</th>
+                                <th>Câu</th>
+                                <th>Đáp án</th>
+                                <th>Câu</th>
+                                <th>Đáp án</th>
+                                <th>Câu</th>
+                                <th>Đáp án</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {# Chia bảng thành các hàng, mỗi hàng 4 câu để tiết kiệm không gian #}
+                            {% for row in quiz_data | batch(4) %}
+                            <tr>
+                                {% for item in row %}
+                                    <td><strong>{{ item.question_number }}</strong></td>
+                                    <td>{{ item.correct_answer_char or '?' }}</td>
+                                {% endfor %}
+                                {# Điền các ô trống nếu hàng cuối không đủ 4 câu #}
+                                {% for _ in range(4 - row|length) %}
+                                    <td></td>
+                                    <td></td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+            {% else %}
+                <div class="alert alert-warning">
+                    Không thể trích xuất bất kỳ câu hỏi nào từ file. Vui lòng kiểm tra lại định dạng file hoặc đảm bảo file có nội dung.
+                </div>
+            {% endif %}
+
+            <div class="text-center mt-4">
+                <button type="button" class="btn btn-success btn-lg me-3" data-bs-toggle="modal" data-bs-target="#downloadModal">
+                    <i class="fas fa-download"></i> Tải về
+                </button>
+                <a href="{{ url_for('upload_file') }}" class="btn btn-primary btn-lg">Tải lên file khác</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal chọn định dạng tải về -->
+    <div class="modal fade" id="downloadModal" tabindex="-1" aria-labelledby="downloadModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="downloadModalLabel">Chọn định dạng tải về</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <p class="mb-4">Vui lòng chọn định dạng file bạn muốn tải về:</p>
+                    <div class="d-grid gap-3">
+                        <form action="{{ url_for('download_quiz', format='pdf') }}" method="post" style="display: inline;">
+                            <button type="submit" class="btn btn-danger btn-lg w-100">
+                                <i class="fas fa-file-pdf"></i> Tải về PDF
+                            </button>
+                        </form>
+                        <form action="{{ url_for('download_quiz', format='docx') }}" method="post" style="display: inline;">
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-file-word"></i> Tải về Word
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</body>
+</html>

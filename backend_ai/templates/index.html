@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload và Đọc File</title>
+    <!-- Tải Bootstrap từ file cục bộ -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .upload-container {
+            max-width: 600px;
+            margin: 5rem auto;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="upload-container">
+            <h1 class="text-center mb-4">Trích xuất nội dung từ PDF/DOCX</h1>
+            <p class="text-center text-muted">Vui lòng chọn một file .pdf hoặc .docx để tải lên.</p>
+            <hr>
+            <form method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="file" class="form-label">Chọn file:</label>
+                    <input class="form-control" type="file" id="file" name="file" accept=".pdf,.docx" required>
+                </div>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg">Trích xuất nội dung</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
