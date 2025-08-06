@@ -2,7 +2,7 @@
 // import type { NextRequest } from "next/server";
 // import jwt from "jsonwebtoken";
 
-// const JWT_SECRET = process.env.JWT_SECRET_KEY || "71ae05550c898138fc632e4e6c0fba3f14cc10104e5697f19eb6fde9467b8d0cd19ab1faaa659f982a4c479d7f3d8827f815043d5064bec6b0c1d6e45842b77a";
+// const JWT_SECRET = process.env.JWT_SECRET_KEY || "";
 
 // // Các route cần bảo vệ và role được phép truy cập
 // const protectedRoutes: Record<string, string[]> = {
@@ -58,7 +58,7 @@ import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET_KEY || "71ae05550c898138fc632e4e6c0fba3f14cc10104e5697f19eb6fde9467b8d0cd19ab1faaa659f982a4c479d7f3d8827f815043d5064bec6b0c1d6e45842b77a"
+  process.env.JWT_SECRET_KEY || ""
 );
 
 const protectedRoutes: Record<string, string[]> = {
