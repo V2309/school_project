@@ -21,8 +21,8 @@ export default async function StudentResultsPage() {
             include: {
               submissions: {
                 where: { studentId: user.id as string },
-                orderBy: { submittedAt: 'desc' },
-                take: 1, // Lấy submission mới nhất
+                orderBy: { grade: 'desc' }, // Sắp xếp theo điểm cao nhất
+                take: 1, // Lấy submission có điểm cao nhất
               },
             },
             orderBy: { createdAt: 'asc' },
@@ -36,17 +36,17 @@ export default async function StudentResultsPage() {
     return <div className="p-8 text-center text-red-500">Không tìm thấy thông tin học sinh</div>;
   }
 
-  // Chuẩn bị dữ liệu: mỗi lớp, chỉ lấy các bài tập đã nộp
+  // Chuẩn bị dữ liệu: mỗi lớp, chỉ lấy các bài tập đã nộp (điểm cao nhất)
   const classResults = student.classes.map((classInfo: any) => {
-    // Lấy các bài tập đã nộp
+    // Lấy các bài tập đã nộp với điểm cao nhất
     const submittedHomeworks = classInfo.homeworks
       .filter((hw: any) => hw.submissions.length > 0)
       .map((hw: any) => ({
         title: hw.title,
-        grade: hw.submissions[0]?.grade,
+        grade: hw.submissions[0]?.grade, // Điểm cao nhất vì đã sort desc
         submittedAt: hw.submissions[0]?.submittedAt,
       }));
-    // Tính điểm trung bình
+    // Tính điểm trung bình từ các điểm cao nhất
     const graded = submittedHomeworks.filter((hw: any) => hw.grade !== null);
     const averageGrade = graded.length > 0
       ? (graded.reduce((sum: number, hw: any) => sum + (hw.grade || 0), 0) / graded.length).toFixed(2)
@@ -66,7 +66,7 @@ export default async function StudentResultsPage() {
         <div key={idx} className="bg-white rounded-lg p-6 shadow-md">
           <h2 className="text-xl font-semibold mb-2 text-blue-600">Lớp: {cls.className}</h2>
           <div className="mb-6">
-            <span className="font-medium">Điểm trung bình: </span>
+            <span className="font-medium">Điểm trung bình (điểm cao nhất): </span>
             <span className="text-lg font-bold text-green-600">{cls.averageGrade}</span>
           </div>
           {/* Biểu đồ điểm các bài tập */}
@@ -81,7 +81,7 @@ export default async function StudentResultsPage() {
           <Table
             columns={[
               { header: 'Tên bài tập', accessor: 'title' },
-              { header: 'Điểm', accessor: 'grade' },
+              { header: 'Điểm cao nhất', accessor: 'grade' },
               { header: 'Ngày nộp', accessor: 'submittedAt' },
             ]}
             data={cls.homeworks}

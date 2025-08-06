@@ -1,20 +1,32 @@
 
+
+"use client";
 import FileUpload from "@/components/FileUpload";
+import FileList from "@/components/FileList";
+import { useState } from "react";
 
 
-export default async function Document() {
+export default function Document() {
+
+
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleFileUploaded = () => {
+    // Tăng trigger để refresh danh sách file
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   return (
     <div className="px-4 py-4 bg-white rounded-lg shadow-md flex flex-col h-full">
-      {/* <h1 className="text-2xl font-bold mb-6">Danh sách tài liệu</h1> */}
-      <FileUpload />
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold mb-4">Tài liệu lớp học</h1>
+        <FileUpload onFileUploaded={handleFileUploaded} />
+      </div>
 
-      <h2 className="text-xl font-bold mt-6">Danh sách tài liệu</h2>
-      <ul className="list-disc list-inside">
-        <li>Tài liệu 1</li>
-        <li>Tài liệu 2</li>
-        <li>Tài liệu 3</li>
-      </ul>
+      <div className="flex-1">
+        <h2 className="text-xl font-bold mb-4">Danh sách tài liệu</h2>
+        <FileList refreshTrigger={refreshTrigger} />
+      </div>
     </div>
   );
 }

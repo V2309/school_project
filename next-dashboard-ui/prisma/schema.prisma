@@ -80,6 +80,7 @@ model Teacher {
   classes  Class[] // Mối quan hệ nhiều nhiều với Class
 
   homeworks Homework[] // Mối quan hệ nhiều nhiều với Homework
+  files     File[]     // Mối quan hệ với tài liệu đã upload
 }
 
 model Grade {
@@ -113,6 +114,7 @@ model Class {
   announcements Announcement[]
 
   homeworks Homework[] // Thêm dòng này
+  files     File[]     // Mối quan hệ với tài liệu của lớp học
 }
 
 model Subject {
@@ -323,4 +325,21 @@ model QuestionAnswer {
   question     Question           @relation(fields: [questionId], references: [id], onDelete: Cascade)
   submissionId Int
   submission   HomeworkSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+}
+
+model File {
+  id          String   @id @default(uuid())
+  name        String              // Tên gốc của file (ví dụ: "bai-giang-tuan-1.pdf")
+  url         String              // Đường dẫn đầy đủ đến file trên S3
+  type        String              // Loại file (pdf, docx, pptx, v.v.)
+  size        Int                 // Dung lượng file (bytes)
+  uploadedAt  DateTime @default(now())
+  uploadedBy  String              // ID của giáo viên upload
+
+  // Liên kết với giáo viên upload
+  teacher     Teacher  @relation(fields: [uploadedBy], references: [id])
+
+  // Liên kết với lớp học thông qua class code
+  classCode   String?  @map("class_code")
+  class       Class?   @relation(fields: [classCode], references: [class_code])
 }

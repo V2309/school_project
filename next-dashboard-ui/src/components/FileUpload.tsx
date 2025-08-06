@@ -1,14 +1,20 @@
 "use client";
 
-import { uploadToS3, getS3Url } from "@/lib/s3";
 import { Inbox, Loader2 } from "lucide-react";
 import React from "react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "react-hot-toast";
+import { useParams } from "next/navigation";
 
-const FileUpload = () => {
+interface FileUploadProps {
+  onFileUploaded?: () => void; // Callback để refresh danh sách file
+}
+
+const FileUpload = ({ onFileUploaded }: FileUploadProps) => {
   const [uploading, setUploading] = React.useState(false);
   const [uploadedUrl, setUploadedUrl] = React.useState<string | null>(null);
+  const params = useParams();
+  const classCode = params?.id as string; // Lấy class code từ URL
 
   const { getRootProps, getInputProps } = useDropzone({
     accept: {
@@ -28,17 +34,55 @@ const FileUpload = () => {
 
       try {
         setUploading(true);
-        const result = await uploadToS3(file);
+        
+        // 1. Upload file lên S3 thông qua API
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("classCode", classCode);
 
-        const fileUrl = getS3Url(result.file_key); // 🔧 Tạo URL đầy đủ từ file_key
-        setUploadedUrl(fileUrl); // 🔄 Lưu để hiển thị nếu muốn
-        toast.success("Tải lên thành công!");
-        console.log("Uploaded File URL:", fileUrl);
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
 
-        // 👉 Nếu muốn gửi URL đến backend hoặc lưu DB, gọi API tại đây
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload file');
+        }
+
+        const uploadData = await uploadResponse.json();
+        
+        // 2. Lưu thông tin file vào database
+        const saveResponse = await fetch('/api/files', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: uploadData.fileName,
+            url: uploadData.fileUrl,
+            type: uploadData.fileType,
+            size: uploadData.fileSize,
+            classCode: classCode,
+          }),
+        });
+
+        if (!saveResponse.ok) {
+          throw new Error('Failed to save file to database');
+        }
+
+        const saveData = await saveResponse.json();
+        console.log('File saved to database:', saveData);
+
+        setUploadedUrl(uploadData.fileUrl);
+        toast.success("Tải lên và lưu tài liệu thành công!");
+        
+        // Gọi callback để refresh danh sách file nếu có
+        if (onFileUploaded) {
+          onFileUploaded();
+        }
       } catch (error) {
         console.error("Upload error:", error);
-        toast.error("Lỗi khi tải lên");
+        toast.error("Lỗi khi tải lên hoặc lưu tài liệu");
       } finally {
         setUploading(false);
       }

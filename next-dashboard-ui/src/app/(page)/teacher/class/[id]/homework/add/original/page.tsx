@@ -4,9 +4,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { uploadFileToStorage } from '@/lib/storage';
 import { createHomeworkWithQuestions } from '@/lib/actions';
-import { DocxViewer } from "@/components/DocxViewer";
+
 export default function AddHomeworkPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -30,16 +29,29 @@ export default function AddHomeworkPage({ params }: { params: { id: string } }) 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Upload file
+  // Upload file tạm vào local để preview
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
       setFile(selectedFile);
       setPreviewContent(`File: ${selectedFile.name}`);
+      
       try {
-        const uploaded = await uploadFileToStorage(selectedFile);
-        setUploadedUrl(uploaded.url);
+        // Upload tạm vào public/uploads để preview
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        
+        const response = await fetch('/api/upload-temp', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!response.ok) throw new Error('Failed to upload temp file');
+        
+        const data = await response.json();
+        setUploadedUrl(data.url); // URL local để preview
       } catch (err) {
+        console.error('Error uploading temp file:', err);
         setPreviewContent("Lỗi upload file!");
         setUploadedUrl("");
       }
@@ -81,7 +93,7 @@ export default function AddHomeworkPage({ params }: { params: { id: string } }) 
     setPoints(parseInt(e.target.value) || 0);
   };
 
-  // Bước 2: Tạo bài tập
+  // Bước 2: Tạo bài tập và upload lên S3
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -89,14 +101,28 @@ export default function AddHomeworkPage({ params }: { params: { id: string } }) 
     try {
       if (!file) throw new Error('Vui lòng chọn file bài tập');
       if (!startTime || !deadline) throw new Error('Vui lòng nhập thời gian bắt đầu và hạn chót');
-      const uploaded = { url: uploadedUrl, name: file.name, type: file.type };
+      
+      // Upload file lên S3 khi submit
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('classCode', params.id);
+      
+      const uploadResponse = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!uploadResponse.ok) throw new Error('Failed to upload file to S3');
+      
+      const uploadData = await uploadResponse.json();
+      
       const perQuestion = numQuestions > 0 ? points / numQuestions : 0;
 
       await createHomeworkWithQuestions({
         class_code: params.id as string,
-        fileUrl: uploaded.url,
-        fileName: uploaded.name,
-        fileType: uploaded.type,
+        fileUrl: uploadData.fileUrl, // URL từ S3
+        fileName: uploadData.fileName,
+        fileType: uploadData.fileType,
         points,
         questions: answers.map((answer, index) => ({
           questionNumber: index + 1,
