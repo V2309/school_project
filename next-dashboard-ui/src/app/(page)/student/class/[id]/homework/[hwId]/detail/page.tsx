@@ -1,39 +1,73 @@
-"use client";
-import { ArrowLeft,ArrowRight } from "lucide-react";
-
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { getCurrentUser } from "@/lib/hooks/auth";
+import prisma from "@/lib/prisma";
+import { redirect } from "next/navigation";
+import PDFViewer from "@/components/PDFViewer";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Worker, Viewer } from "@react-pdf-viewer/core";
-import "@react-pdf-viewer/core/lib/styles/index.css";
+interface PageProps {
+  params: { id: string; hwId: string };
+  searchParams: { utid?: string; homeworkId?: string; getBest?: string };
+}
 
-export default function HomeworkDetail() {
-  const router = useRouter();
-  const [submission, setSubmission] = useState<any>(null);
+export default async function HomeworkDetail({ params, searchParams }: PageProps) {
+  const user = await getCurrentUser();
+  
+  if (!user || user.role !== 'student') {
+    redirect("/404");
+  }
 
-  useEffect(() => {
-    const utid = new URLSearchParams(window.location.search).get("utid");
-    if (!utid) {
-      router.push("/404");
-      return;
-    }
+  let submission;
 
-    const fetchSubmission = async () => {
-      const response = await fetch(`/api/homework/detail?utid=${utid}`);
-      const result = await response.json();
-      if (response.ok) {
-        setSubmission(result);
-      } else {
-        console.error(result.error);
+  if (searchParams.utid) {
+    // Lấy submission cụ thể theo ID
+    submission = await prisma.homeworkSubmission.findUnique({
+      where: { id: Number(searchParams.utid) },
+      include: {
+        questionAnswers: {
+          include: {
+            question: true,
+          },
+        },
+        attachments: true,
+        homework: {
+          include: {
+            attachments: true,
+          },
+        }
+      },
+    });
+  } else if (searchParams.homeworkId && searchParams.getBest) {
+    // Lấy submission có điểm cao nhất
+    submission = await prisma.homeworkSubmission.findFirst({
+      where: {
+        homeworkId: Number(searchParams.homeworkId),
+        studentId: user.id as string,
+        grade: { not: null }
+      },
+      include: {
+        questionAnswers: {
+          include: {
+            question: true,
+          },
+        },
+        attachments: true,
+        homework: {
+          include: {
+            attachments: true,
+          },
+        }
+      },
+      orderBy: {
+        grade: 'desc'
       }
-    };
-
-    fetchSubmission();
-  }, [router]);
+    });
+  } else {
+    redirect("/404");
+  }
 
   if (!submission) {
-    return <div>Đang tải kết quả...</div>;
+    redirect("/404");
   }
 
   // Tính toán số câu đúng, sai, và chưa làm
@@ -58,11 +92,7 @@ export default function HomeworkDetail() {
           submission.homework.attachments.map((attachment: any) => (
             <div key={attachment.id} className="mb-4">
               {attachment.type === "application/pdf" ? (
-                <div className="border rounded p-2 h-[400px] lg:h-[600px] bg-white">
-                  <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-                    <Viewer fileUrl={attachment.url} />
-                  </Worker>
-                </div>
+                <PDFViewer fileUrl={attachment.url} />
               ) : (
                 <a
                   href={attachment.url}
@@ -86,7 +116,11 @@ export default function HomeworkDetail() {
         {/* table thông tin chi tiết */}
         <div className="mb-4">
           <p className="text-lg font-semibold">Tổng điểm: {submission.grade}</p>
-          <p><strong>Thời gian làm bài:</strong> {Math.floor(submission.timeSpent / 60)} phút {submission.timeSpent % 60} giây</p>
+          <p><strong>Thời gian làm bài:</strong> {
+            submission.timeSpent 
+              ? `${Math.floor(submission.timeSpent / 60)} phút ${submission.timeSpent % 60} giây`
+              : 'Không có dữ liệu'
+          }</p>
           <p><strong>Nộp lúc:</strong> {new Date(submission.submittedAt).toLocaleString()}</p>
           <p><strong>Số câu đúng:</strong> {correctAnswers}</p>
           <p><strong>Số câu sai:</strong> {incorrectAnswers}</p>

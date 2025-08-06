@@ -16,7 +16,7 @@ export default function HomeworkListClient({ homeworks, role }: { homeworks: any
             className={`cursor-pointer ${selected?.id === hw.id ? "ring-2 ring-blue-500" : ""}`}
             onClick={() => setSelected(hw)}
           >
-            <HomeworkCard homework={hw} />
+            <HomeworkCard homework={hw} role={role} />
           </div>
         ))}
       </div>

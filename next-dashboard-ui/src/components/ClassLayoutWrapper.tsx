@@ -27,7 +27,7 @@ export default function ClassLayoutWrapper({ children, classDetail, role }: Clas
       </div>
 
       {/* Nội dung bên phải */}
-      <div className="ml-[25%] md:ml-[20%] lg:ml-[18%] flex-grow bg-gray-100 overflow-hidden">
+      <div className="ml-[25%] md:ml-[20%] lg:ml-[18%] flex-grow bg-gray-100 overflow-y-auto">
         {children}
       </div>
     </div>

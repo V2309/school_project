@@ -11,6 +11,10 @@ export default async function HomeworkList({ params }: { params: { id: string } 
       class: { select: { name: true, class_code: true } },
       subject: { select: { name: true } },
       attachments: true,
+      submissions: { // Thêm submissions để tránh lỗi, nhưng teacher không cần xem điểm
+        select: { grade: true },
+        take: 0 // Không lấy submission nào cho teacher
+      }
     },
     orderBy: { endTime: "asc" }
   });

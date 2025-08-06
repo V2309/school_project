@@ -19,6 +19,7 @@ model Admin {
 }
 
 model User {
+
   id         String   @id @default(cuid())
   username   String
   class_name String
@@ -56,7 +57,7 @@ model Student {
   attendances Attendance[]
   results     Result[]
 
-  homeworkSubmissions HomeworkSubmission[] // Thêm dòng này
+  homeworkSubmissions HomeworkSubmission[] 
 }
 
 model Teacher {
@@ -71,15 +72,14 @@ model Teacher {
   phone     String?  @unique
   createdAt DateTime @default(now())
   password  String
-
   userId String? @unique
-  user   User?   @relation(fields: [userId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id]) // mối quan hệ 1 1 với User
 
-  subjects Subject[]
-  lessons  Lesson[]
-  classes  Class[]
+  subjects Subject[] // Mối quan hệ nhiều nhiều với Subject
+  lessons  Lesson[] // Mối quan hệ nhiều nhiều với Lesson
+  classes  Class[] // Mối quan hệ nhiều nhiều với Class
 
-  homeworks Homework[] // Thêm dòng này
+  homeworks Homework[] // Mối quan hệ nhiều nhiều với Homework
 }
 
 model Grade {

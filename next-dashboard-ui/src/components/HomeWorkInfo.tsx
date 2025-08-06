@@ -39,7 +39,8 @@ export function HomeWorkInfo({ homework, role }: { homework: Homework, role: str
   const [isPending, startTransition] = useTransition();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [submissionCount, setSubmissionCount] = useState(0);
-  const [latestSubmissionId, setLatestSubmissionId] = useState<string | null>(null);
+  const [bestSubmissionId, setBestSubmissionId] = useState<string | null>(null);
+  const [bestGrade, setBestGrade] = useState<number | null>(null);
   const [showExport, setShowExport] = useState(false);
 
   // Cập nhật thời gian hiện tại mỗi giây
@@ -59,7 +60,8 @@ export function HomeWorkInfo({ homework, role }: { homework: Homework, role: str
           const data = await response.json();
           if (data.success) {
             setSubmissionCount(data.count);
-            setLatestSubmissionId(data.latestSubmissionId);
+            setBestSubmissionId(data.bestSubmissionId);
+            setBestGrade(data.bestGrade);
           }
         } catch (error) {
           console.error("Error fetching submission data:", error);
@@ -100,7 +102,14 @@ export function HomeWorkInfo({ homework, role }: { homework: Homework, role: str
     // Giả sử homework có trường classCode hoặc class.class_code
     const classCode = (homework as any).classCode || (homework as any).class?.class_code;
     if (classCode) {
-      router.push(`/student/class/${classCode}/homework/${homework.id}/detail?utid=${latestSubmissionId}`);
+      // Sử dụng homeworkId và studentId để lấy submission có điểm cao nhất
+      // Hoặc vẫn dùng utid nếu muốn xem submission cụ thể
+      if (bestSubmissionId) {
+        router.push(`/student/class/${classCode}/homework/${homework.id}/detail?utid=${bestSubmissionId}`);
+      } else {
+        // Fallback: sử dụng homeworkId và studentId để lấy submission tốt nhất
+        router.push(`/student/class/${classCode}/homework/${homework.id}/detail?homeworkId=${homework.id}&getBest=true`);
+      }
     } else {
       toast.error("Không tìm thấy mã lớp!");
     }
@@ -188,7 +197,12 @@ export function HomeWorkInfo({ homework, role }: { homework: Homework, role: str
         <InfoItem label="Số lần làm bài tối đa" value={homework.maxAttempts?.toString() || "Không"} />
         <InfoItem label="Ngày tạo" value={formatDateTime(homework.createdAt)} />
         {role === "student" && (
-          <InfoItem label="Số lần đã làm" value={`${submissionCount}/${homework.maxAttempts || 1}`} />
+          <>
+            <InfoItem label="Số lần đã làm" value={`${submissionCount}/${homework.maxAttempts || 1}`} />
+            {bestGrade !== null && (
+              <InfoItem label="Điểm cao nhất" value={`${bestGrade}/${homework.points || 10} điểm`} />
+            )}
+          </>
         )}
       </div>
 

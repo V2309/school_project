@@ -55,6 +55,10 @@ async function main() {
   }
 
   // Create Teachers and Users
+
+   
+
+
   const teachers = [];
   for (let i = 1; i <= 15; i++) {
     const user = await prisma.user.create({
@@ -106,6 +110,7 @@ async function main() {
       },
     });
   }
+  
 
   // Create Students and Users
   const students = [];
@@ -236,3 +241,4 @@ main()
     await prisma.$disconnect();
     process.exit(1);
   });
+

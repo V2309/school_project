@@ -8,14 +8,30 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ error: "Invalid homework id" }, { status: 400 });
   }
 
-  // Lấy submissions và thông tin student
+  // Lấy submission cuối cùng của mỗi học sinh
   const submissions = await prisma.homeworkSubmission.findMany({
-    where: { homeworkId },
+    where: { 
+      homeworkId,
+      attemptNumber: { gt: 0 }, // Chỉ lấy submission thật sự của học sinh
+    },
     include: {
       student: true,
     },
-    orderBy: { submittedAt: "asc" },
+    orderBy: { submittedAt: "desc" },
   });
+
+  // Lọc để chỉ lấy submission cuối cùng của mỗi học sinh
+  const latestSubmissions = submissions.reduce((acc, submission) => {
+    const studentId = submission.studentId;
+    if (!acc[studentId] || new Date(submission.submittedAt) > new Date(acc[studentId].submittedAt)) {
+      acc[studentId] = submission;
+    }
+    return acc;
+  }, {} as Record<string, typeof submissions[0]>);
+
+  const finalSubmissions = Object.values(latestSubmissions).sort((a, b) => 
+    new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime()
+  );
 
   // Tạo workbook Excel
   const workbook = new ExcelJS.Workbook();
@@ -26,8 +42,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     "STT", "Họ và tên", "Vai trò", "Trường", "Lớp", "Điểm", "Thời gian làm bài (phút)", "Thời gian nộp bài"
   ]);
 
-  // Dữ liệu
-  submissions.forEach((sub, idx) => {
+  // Dữ liệu - sử dụng finalSubmissions thay vì submissions
+  finalSubmissions.forEach((sub, idx) => {
     const s = sub.student;
     sheet.addRow([
       idx + 1,

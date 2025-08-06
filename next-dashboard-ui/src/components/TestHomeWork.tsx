@@ -6,7 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { Worker, Viewer } from "@react-pdf-viewer/core";
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import { useRouter } from "next/navigation";
-import { useHomeworkSession } from "@/hooks/useHomeworkSession";
+import { useHomeworkSession } from "@/lib/hooks/useHomeworkSession";
 import { ExtractedQuestionsView } from "./ExtractedQuestionsView";
 
 interface Homework {
@@ -49,23 +49,37 @@ export function TestHomeWork({ homework, questions, duration, userId, classCode,
 
   const [submission, setSubmission] = useState<any>(null); // Lưu kết quả bài làm
   const [current, setCurrent] = useState(0);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
 
-  // Sử dụng custom hook để quản lý session
-  const {
-    answers,
-    timeLeft,
-    isInitialized,
-    updateAnswer,
-    getTimeSpent,
-    clearSession,
-    getUnansweredQuestions,
-    minutes,
-    seconds,
-  } = useHomeworkSession({
+  // Chỉ sử dụng session cho học sinh, giáo viên không cần
+  const sessionData = role === 'student' ? useHomeworkSession({
     homeworkId: homework.id,
     duration,
     onTimeUp: handleSubmit,
-  });
+    role,
+  }) : null;
+
+  // Helper functions cho giáo viên
+  const updateAnswer = (questionId: number, answer: string) => {
+    if (role === 'teacher') {
+      setAnswers(prev => ({ ...prev, [questionId]: answer }));
+    } else {
+      sessionData?.updateAnswer(questionId, answer);
+    }
+  };
+
+  const getAnswers = () => {
+    return role === 'teacher' ? answers : (sessionData?.answers || {});
+  };
+
+  const getTimeSpent = () => {
+    return role === 'teacher' ? 0 : (sessionData?.getTimeSpent() || 0);
+  };
+
+  const getUnansweredQuestions = (questionIds: number[]) => {
+    const currentAnswers = getAnswers();
+    return questionIds.filter(id => !currentAnswers[id]);
+  };
 
   const handleSelect = (qid: number, value: string) => {
     updateAnswer(qid, value);
@@ -79,31 +93,37 @@ export function TestHomeWork({ homework, questions, duration, userId, classCode,
   async function handleSubmit() {
     if (!homework) return;
     
+    const currentAnswers = getAnswers();
+    
     console.log({
       homeworkId: homework.id,
       studentId: userId,
-      answers,
+      answers: currentAnswers,
       role,
     });
 
-    const unanswered = getUnansweredQuestions(questions.map(q => q.id));
-    if (unanswered.length > 0) {
-      toast.error(
-        `Bạn chưa trả lời các câu: ${unanswered.join(", ")}`
-      );
-      return;
+    // Chỉ validate cho học sinh, giáo viên không cần
+    if (role === 'student') {
+      const unanswered = getUnansweredQuestions(questions.map(q => q.id));
+      if (unanswered.length > 0) {
+        toast.error(
+          `Bạn chưa trả lời các câu: ${unanswered.join(", ")}`
+        );
+        return;
+      }
     }
 
     // Tính thời gian làm bài chính xác
     const timeSpent = getTimeSpent();
     
-    const response = await fetch("/api/homework/submit", {
+    const response = await fetch("/api/homework/submissions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         homeworkId: homework.id,
         studentId: userId,
-        answers,
+        answers: currentAnswers,
+        role,
         timeSpent, // thời gian làm bài
         // nộp luôn file đề thi 
         file: {
@@ -119,12 +139,12 @@ export function TestHomeWork({ homework, questions, duration, userId, classCode,
     // nếu mà role là teacher có nghĩa là đang làm thử khi nộp bài quay về route home/listlist
     if (result.success && role === "student") {
       toast.success("Đã nộp bài!");
-      clearSession(); // Xóa trạng thái sau khi nộp bài
+      sessionData?.clearSession(); // Xóa trạng thái sau khi nộp bài
       router.push(`/student/class/${classCode}/homework/${homework.id}/detail?utid=${result.submission.id}`);
     } else {
       if (role === "teacher") {
         toast.success("Đã nộp bài!");
-        clearSession(); // Xóa trạng thái sau khi nộp bài
+        // Giáo viên không cần clear session
         router.push(`/teacher/class/${classCode}/homework/list`);
       }
       else {
@@ -200,8 +220,21 @@ export function TestHomeWork({ homework, questions, duration, userId, classCode,
 
       {/* Phiếu trả lời bên phải */}
       <div className="w-[350px] bg-white rounded shadow p-6 flex flex-col gap-4 h-full">
+        {role === 'teacher' && (
+          <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-2">
+            <div className="text-blue-700 font-semibold text-sm">
+              🎓 Chế độ xem trước (Giáo viên)
+            </div>
+            <div className="text-blue-600 text-xs mt-1">
+              Không giới hạn thời gian • Kết quả không ảnh hưởng đến học sinh
+            </div>
+          </div>
+        )}
         <div className="font-bold text-blue-700 text-lg mb-2">
-          Thời gian còn lại: {minutes}:{seconds.toString().padStart(2, "0")}
+          {role === 'teacher' 
+            ? `Thời gian gốc: ${duration} phút` 
+            : `Thời gian còn lại: ${sessionData?.minutes || 0}:${(sessionData?.seconds || 0).toString().padStart(2, "0")}`
+          }
         </div>
         <div className="mb-2">
           <div className="font-semibold mb-1">Phiếu trả lời</div>
@@ -212,14 +245,14 @@ export function TestHomeWork({ homework, questions, duration, userId, classCode,
                 className={`w-12 h-12 rounded border ${
                   current === idx
                     ? "bg-blue-500 text-white"
-                    : answers[q.id]
+                    : getAnswers()[q.id]
                     ? "bg-green-200"
                     : ""
                 }`}
                 onClick={() => setCurrent(idx)}
                 type="button"
               >
-                {idx + 1} {answers[q.id] || ""}
+                {idx + 1} {getAnswers()[q.id] || ""}
               </button>
             ))}
           </div>
@@ -230,7 +263,7 @@ export function TestHomeWork({ homework, questions, duration, userId, classCode,
                 <button
                   key={opt}
                   className={`px-3 py-1 border rounded ${
-                    answers[questions[current].id] === opt
+                    getAnswers()[questions[current].id] === opt
                       ? "bg-blue-500 text-white"
                       : ""
                   }`}
@@ -244,7 +277,7 @@ export function TestHomeWork({ homework, questions, duration, userId, classCode,
             <input
               className="border px-2 py-1 rounded w-full"
               placeholder="Nhập đáp án..."
-              value={answers[questions[current].id] || ""}
+              value={getAnswers()[questions[current].id] || ""}
               onChange={(e) =>
                 handleInput(questions[current].id, e.target.value)
               }

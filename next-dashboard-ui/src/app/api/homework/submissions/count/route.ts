@@ -23,24 +23,27 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Lấy submission mới nhất
-    const latestSubmission = await prisma.homeworkSubmission.findFirst({
+    // Lấy submission có điểm cao nhất
+    const bestSubmission = await prisma.homeworkSubmission.findFirst({
       where: {
         homeworkId: parseInt(homeworkId),
         studentId: user.id as string,
+        grade: { not: null }, // Chỉ lấy submission đã được chấm điểm
       },
       orderBy: {
-        submittedAt: 'desc',
+        grade: 'desc', // Sắp xếp theo điểm cao nhất
       },
       select: {
         id: true,
+        grade: true,
       },
     });
 
     return NextResponse.json({ 
       success: true, 
       count,
-      latestSubmissionId: latestSubmission?.id || null
+      bestSubmissionId: bestSubmission?.id || null,
+      bestGrade: bestSubmission?.grade || null
     });
   } catch (error) {
     console.error("Error counting submissions:", error);

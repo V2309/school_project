@@ -27,7 +27,8 @@ export default function MenuClass({ classDetail, role }: MenuClassProps) {
     groups: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4",
     homework: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4",
     lectures: "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z",
-    documents: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+    documents: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+    scoretable: "M3 3v18h18M7 17V13M11 17V7M15 17V10M19 17V5",
   };
 
   const links = [
@@ -36,6 +37,7 @@ export default function MenuClass({ classDetail, role }: MenuClassProps) {
     { href: `/${role}/class/${classDetail.class_code}/member`, label: "Thành viên", icon: menuIcons.members },
     { href: `/${role}/class/${classDetail.class_code}/groups`, label: "Nhóm học tập", icon: menuIcons.groups },
     { href: `/${role}/class/${classDetail.class_code}/homework/list`, label: "Bài tập", icon: menuIcons.homework },
+    { href: `/${role}/class/${classDetail.class_code}/scoretable`, label: "Bảng điểm", icon: menuIcons.scoretable },
     { href: `/${role}/class/${classDetail.class_code}/lectures`, label: "Bài giảng", icon: menuIcons.lectures },
     { href: `/${role}/class/${classDetail.class_code}/documents`, label: "Tài liệu", icon: menuIcons.documents },
   ];

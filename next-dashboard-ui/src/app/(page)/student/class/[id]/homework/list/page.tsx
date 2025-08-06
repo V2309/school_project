@@ -5,16 +5,24 @@ import Link from "next/link";
 import HomeworkListClient from "@/components/HomeworkListClient";
 import { getCurrentUser } from "@/lib/hooks/auth";
 export default async function HomeworkList({ params }: { params: { id: string } }) {
+  const user = await getCurrentUser();
+  const userId = user?.id as string;
+  
   const homeworks = await prisma.homework.findMany({
     where: { class: { class_code: params.id } },
     include: {
       class: { select: { name: true, class_code: true } },
       subject: { select: { name: true } },
       attachments: true,
+      submissions: {
+        where: { studentId: userId }, // Chỉ lấy submissions của học sinh hiện tại
+        select: { grade: true }, // Chỉ lấy trường grade
+        orderBy: { grade: 'desc' } // Sắp xếp theo điểm cao nhất
+      }
     },
     orderBy: { endTime: "asc" }
   });
-  const user = await getCurrentUser();
+  
   console.log("User:", user);
   const role = user?.role; 
   console.log("Role:", role);

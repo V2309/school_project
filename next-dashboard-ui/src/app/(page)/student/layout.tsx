@@ -12,8 +12,13 @@ export default function StudentLayout({
 
   // Kiểm tra nếu path là /student/class/[id]
   const isClassPage = pathname?.startsWith("/student/class/");
+  const isProfilePage = pathname?.startsWith("/student/profile");
 
   if (isClassPage) {
+    return <>{children}</>; // Không render layout của student
+  }
+
+  if (isProfilePage) {
     return <>{children}</>; // Không render layout của student
   }
 

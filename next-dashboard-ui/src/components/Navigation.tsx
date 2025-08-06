@@ -180,7 +180,7 @@ const role = user?.role;
           {openMenu && (
             <div className="absolute right-0 mt-2 w-80 bg-white rounded shadow border z-50 transform transition-all duration-300 ease-in-out">
               <Link
-                href="/profile"
+                href={`/${role}/profile`}
                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
               >
                 <Image

@@ -192,7 +192,7 @@ export const updateClassWithDetails = async (formData: FormData, classCode: stri
     const allowGradesView = formData.get("allowGradesView") === "on";
     const gradeId = formData.get("gradeId")?.toString();
     const newGradeLevel = formData.get("newGradeLevel")?.toString()?.trim();
-    const coverImage = formData.get("coverImage") as File;
+    const newImageUrl = formData.get("imageUrl")?.toString()?.trim(); // URL từ ImageUpload component
 
     // Debug: Log dữ liệu nhận được
     console.log("Form data received:", {
@@ -204,6 +204,7 @@ export const updateClassWithDetails = async (formData: FormData, classCode: stri
       allowGradesView,
       gradeId,
       newGradeLevel,
+      newImageUrl,
       classCode
     });
 
@@ -235,19 +236,14 @@ export const updateClassWithDetails = async (formData: FormData, classCode: stri
       }
     }
 
-    // Xử lý upload ảnh (nếu có)
-    let imageUrl = existingClass.img;
-    if (coverImage && coverImage.size > 0) {
-      // TODO: Implement image upload logic
-      // Tạm thời giữ nguyên ảnh cũ
-      imageUrl = existingClass.img;
-    }
+    // Xử lý ảnh: sử dụng URL từ ImageUpload component
+    const finalImageUrl = newImageUrl || existingClass.img;
 
     // Cập nhật vào database
     const updateData = {
       name: name && name.length > 0 ? name : existingClass.name,
       gradeId: finalGradeId,
-      img: imageUrl,
+      img: finalImageUrl,
       isProtected: protectionCode,
       isLocked: lockClass,
       requiresApproval: approveStudents,

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { updateClassWithDetails } from "@/lib/actions";
 import GradeSelection from "@/components/GradeSelection";
+import ClassImageManager from "@/components/ClassImageManager";
 
 // --- Helper Components (Để mã gọn gàng hơn) ---
 
@@ -131,42 +132,10 @@ return (
             </div>
 
             {/* Ảnh bìa */}
-            <div className="mb-6">
-              <label className="block text-gray-800 font-bold mb-2">Ảnh bìa</label>
-              <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-4 h-48 flex items-center justify-center text-center hover:border-blue-400 transition-colors">
-                {classEdit.img ? (
-                  <Image
-                    src={classEdit.img}
-                    alt="Ảnh bìa lớp học"
-                    fill
-                    className="object-cover rounded-md"
-                  />
-                ) : (
-                  <div className="text-gray-500">
-                    <svg className="mx-auto h-12 w-12 mb-4" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                      <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    <p className="text-sm">Chọn ảnh bìa cho lớp học</p>
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-lg">
-                  <span className="text-white font-semibold">Thay đổi ảnh</span>
-                </div>
-              </div>
-              <input 
-                type="file" 
-                name="coverImage" 
-                className="hidden" 
-                id="coverImage" 
-                accept="image/*"
-              />
-              <label 
-                htmlFor="coverImage" 
-                className="mt-2 inline-block text-sm text-blue-600 hover:text-blue-800 cursor-pointer transition-colors"
-              >
-                📷 Chọn ảnh mới
-              </label>
-            </div>
+            <ClassImageManager 
+              currentImage={classEdit.img}
+              classCode={params.id}
+            />
 
             {/* Các tùy chọn cài đặt */}
             <ToggleSwitch

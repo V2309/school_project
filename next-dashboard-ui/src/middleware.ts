@@ -95,6 +95,7 @@ export async function middleware(req: NextRequest) {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
     console.log("Middleware - Payload:", payload);
+    
     const allowedRoles = matched[1];
     if (!allowedRoles.includes(payload.role as string)) {
       console.log("Middleware - Role not allowed, redirecting to /");
