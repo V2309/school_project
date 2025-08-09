@@ -16,13 +16,20 @@ interface QuizData {
   filename: string;
   quiz_data: QuizQuestion[];
   total_questions: number;
+  originalFile?: {
+    tempUrl?: string; // URL tạm thời trong public/uploads
+    tempPath?: string; // Đường dẫn file tạm thời
+    url?: string; // URL S3 sau khi upload
+    name: string;
+    type: string;
+    size: number;
+  };
 }
 
 export default function AutoExtractPage({ params }: { params: { id: string } }) {
   const router = useRouter();
   const classId = params.id;
   
-  // File states
   const [file, setFile] = useState<File | null>(null);
   
   // AI extraction states
@@ -45,29 +52,68 @@ export default function AutoExtractPage({ params }: { params: { id: string } }) 
     setError("");
 
     try {
-      // Trích xuất câu hỏi qua Flask API
-      const formData = new FormData();
-      formData.append('file', selectedFile);
+      // 1. Upload file tạm thời vào thư mục uploads để preview
+      const tempFormData = new FormData();
+      tempFormData.append('file', selectedFile);
 
-      const response = await fetch('http://localhost:5000/api/extract-quiz', {
+      const tempUploadResponse = await fetch('/api/upload-temp', {
         method: 'POST',
-        body: formData,
+        body: tempFormData,
       });
 
-      const result = await response.json();
+      const tempUploadResult = await tempUploadResponse.json();
 
-      if (result.success) {
-        // Lưu dữ liệu vào localStorage và tự động chuyển hướng
-        localStorage.setItem('extractedQuiz', JSON.stringify(result));
+      if (!tempUploadResult.success) {
+        setError("Có lỗi khi lưu file tạm thời");
+        return;
+      }
+
+      // 2. Trích xuất câu hỏi qua Flask API
+      const extractFormData = new FormData();
+      extractFormData.append('file', selectedFile);
+
+      const extractResponse = await fetch('http://localhost:5000/api/extract-quiz', {
+        method: 'POST',
+        body: extractFormData,
+      });
+
+      const extractResult = await extractResponse.json();
+
+      if (extractResult.success) {
+        // Lưu dữ liệu vào localStorage kèm File object (như original)
+        const extractedData = {
+          ...extractResult,
+          originalFile: {
+            file: selectedFile, // Lưu File object để upload S3 sau
+            tempUrl: tempUploadResult.url, // URL tạm thời để preview
+            name: selectedFile.name,
+            type: selectedFile.type,
+            size: selectedFile.size,
+          }
+        };
+        
+        localStorage.setItem('extractedQuiz', JSON.stringify(extractedData, (key, value) => {
+          // Không serialize File object
+          if (key === 'file') return undefined;
+          return value;
+        }));
+        
+        // Lưu File object riêng vào sessionStorage (có thể lưu được)
+        sessionStorage.setItem('extractedQuizFile', JSON.stringify({
+          name: selectedFile.name,
+          type: selectedFile.type,
+          size: selectedFile.size,
+          lastModified: selectedFile.lastModified,
+        }));
         
         // Chuyển hướng ngay lập tức
         router.push(`/teacher/class/${classId}/homework/add/create?type=extracted`);
       } else {
-        setError(result.error || "Có lỗi xảy ra khi xử lý file");
+        setError(extractResult.error || "Có lỗi xảy ra khi xử lý file");
       }
     } catch (err) {
       setError("Không thể kết nối đến server. Vui lòng thử lại.");
-      console.error("Upload error:", err);
+      console.error("Processing error:", err);
     } finally {
       setIsExtracting(false);
     }

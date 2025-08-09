@@ -56,7 +56,7 @@ const config: Config = {
       colors: {
         // --- CÁC MÀU MỚI CHO GIAO DIỆN "CLASSFLOW" ---
         'primary': {
-          DEFAULT: '#4F46E5', // A vibrant indigo
+          DEFAULT: '#1e88e5', // A vibrant indigo
           'light': '#6366F1',
           'dark': '#4338CA',
         },

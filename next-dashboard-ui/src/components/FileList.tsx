@@ -5,8 +5,8 @@ import { useParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { Download, FileText, Trash2 } from "lucide-react";
 import {getCurrentUser} from "@/lib/hooks/auth";
-
-
+import Table from "@/components/Table";
+import TableSearch from "./TableSearch";
 interface FileData {
   id: string;
   name: string;
@@ -29,6 +29,8 @@ interface FileListProps {
 
 
 const FileList = ({ refreshTrigger }: FileListProps) => {
+
+  const columns = ['Tên tài liệu' , 'Ngày tải lên']
   const [files, setFiles] = useState<FileData[]>([]);
   const [loading, setLoading] = useState(true);
   const params = useParams();
@@ -117,7 +119,7 @@ const FileList = ({ refreshTrigger }: FileListProps) => {
               </h3>
               <div className="text-xs text-gray-500 space-y-1">
                 <p>Tải lên bởi: {file.teacher.username}</p>
-                <p>Kích thước: {formatFileSize(file.size)}</p>
+   
                 <p>Ngày tải: {formatDate(file.uploadedAt)}</p>
               </div>
             </div>

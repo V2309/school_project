@@ -25,8 +25,8 @@ export default function DashboardLayout({
       {/* Cấp 2: Nội dung chính */}
       <div className={
         isAddPage || isTestPage || isFindPage || isResultPage || isEditClassPage
-          ? "flex-grow bg-gray-100 flex flex-col"
-          : "flex-grow bg-gray-100 flex flex-col overflow-y-auto"
+          ? "flex-grow flex flex-col bg-gray-100"
+          : "flex-grow  flex flex-col bg-gray-100 overflow-y-auto"
       }>
         {children}
       </div>

@@ -71,6 +71,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const classCode = searchParams.get("classCode");
+    const search = searchParams.get("search");
 
     let whereClause: any = {};
     
@@ -80,6 +81,14 @@ export async function GET(request: NextRequest) {
     
     if (classCode) {
       whereClause.classCode = classCode;
+    }
+
+    // Thêm điều kiện search
+    if (search) {
+      whereClause.name = {
+        contains: search,
+        mode: "insensitive",
+      };
     }
 
     const files = await prisma.file.findMany({

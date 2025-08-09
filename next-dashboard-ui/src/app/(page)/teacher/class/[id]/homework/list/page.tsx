@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import Link from "next/link";
 import HomeworkListClient from "@/components/HomeworkListClient";
 import { getCurrentUser } from "@/lib/hooks/auth";
+import  TableSearch  from "@/components/TableSearch";
 export default async function HomeworkList({ params }: { params: { id: string } }) {
   const homeworks = await prisma.homework.findMany({
     where: { class: { class_code: params.id } },
@@ -24,15 +25,10 @@ export default async function HomeworkList({ params }: { params: { id: string } 
 
 
   return (
-    <div className="px-4 py-4 bg-white rounded-lg shadow-md flex flex-col h-full">
-      <h1 className="text-2xl font-bold mb-6">Danh sách bài tập</h1>
-      <Link
-        href={`/teacher/class/${params.id}/homework/add`}
-        className="text-blue-500 hover:text-blue-600 mb-4  font-bold "
-      >
-        + Thêm bài tập
-      </Link>
-      <HomeworkListClient homeworks={homeworks} role={role as string} />
+    <div className="px-4 pt-4 bg-white rounded-lg shadow-md flex flex-col h-full">
+      <h1 className="text-2xl font-bold">Danh sách bài tập</h1>
+   
+      <HomeworkListClient homeworks={homeworks} role={role as string}  class_code={params.id}/>
     </div>
   );
 }

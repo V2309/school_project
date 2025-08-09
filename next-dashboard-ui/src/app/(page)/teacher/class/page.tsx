@@ -37,6 +37,7 @@ const ClassListPage = async ({
   const query: Prisma.ClassWhereInput = {
     supervisorId: teacher.id,
   };
+  
   if (queryParams) {
     for (const [key, value] of Object.entries(queryParams)) {
       if (value !== undefined) {

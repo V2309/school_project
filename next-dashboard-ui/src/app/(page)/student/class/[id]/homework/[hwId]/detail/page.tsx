@@ -88,25 +88,50 @@ export default async function HomeworkDetail({ params, searchParams }: PageProps
         </div>
         <h2 className="text-xl font-bold mb-4 text-blue-500">{submission.homework.title}</h2>
         </div>
-        {submission.homework.attachments.length > 0 ? (
-          submission.homework.attachments.map((attachment: any) => (
-            <div key={attachment.id} className="mb-4">
-              {attachment.type === "application/pdf" ? (
-                <PDFViewer fileUrl={attachment.url} />
+        
+        {/* Hiển thị file đề thi theo type */}
+        {submission.homework.type === "extracted" ? (
+          // Với bài tập extracted, hiển thị file gốc
+          submission.homework.originalFileUrl ? (
+            <div className="mb-4">
+              {submission.homework.originalFileType === "application/pdf" ? (
+                <PDFViewer fileUrl={submission.homework.originalFileUrl} />
               ) : (
                 <a
-                  href={attachment.url}
+                  href={submission.homework.originalFileUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-500 underline"
                 >
-                  {attachment.name} ({attachment.type})
+                  {submission.homework.originalFileName} ({submission.homework.originalFileType})
                 </a>
               )}
             </div>
-          ))
+          ) : (
+            <p>Không có file đề thi gốc.</p>
+          )
         ) : (
-          <p>Không có file đề thi.</p>
+          // Với bài tập original, hiển thị từ attachments
+          submission.homework.attachments.length > 0 ? (
+            submission.homework.attachments.map((attachment: any) => (
+              <div key={attachment.id} className="mb-4">
+                {attachment.type === "application/pdf" ? (
+                  <PDFViewer fileUrl={attachment.url} />
+                ) : (
+                  <a
+                    href={attachment.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 underline"
+                  >
+                    {attachment.name} ({attachment.type})
+                  </a>
+                )}
+              </div>
+            ))
+          ) : (
+            <p>Không có file đề thi.</p>
+          )
         )}
       </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Worker, Viewer } from "@react-pdf-viewer/core";
@@ -50,6 +50,7 @@ export function TestHomeWork({ homework, questions, duration, userId, classCode,
   const [submission, setSubmission] = useState<any>(null); // Lưu kết quả bài làm
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const questionRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
   // Chỉ sử dụng session cho học sinh, giáo viên không cần
   const sessionData = role === 'student' ? useHomeworkSession({
@@ -88,6 +89,29 @@ export function TestHomeWork({ homework, questions, duration, userId, classCode,
   const handleInput = (qid: number, value: string) => {
     const v = value.toUpperCase().replace(/[^A-D]/g, "").slice(0, 1);
     updateAnswer(qid, v);
+  };
+
+  // Callback để nhận đáp án từ ExtractedQuestionsView
+  const handleAnswerChange = (questionId: number, answer: string) => {
+    updateAnswer(questionId, answer);
+  };
+
+  // Function để scroll tới câu hỏi khi click vào phiếu trả lời
+  const scrollToQuestion = (questionIndex: number) => {
+    setCurrent(questionIndex);
+    
+    // Chỉ scroll khi homework.type === "extracted"
+    if (homework?.type === "extracted") {
+      const questionId = questions[questionIndex].id;
+      const questionElement = questionRefs.current[questionId];
+      
+      if (questionElement) {
+        questionElement.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      }
+    }
   };
 
   async function handleSubmit() {
@@ -158,7 +182,7 @@ export function TestHomeWork({ homework, questions, duration, userId, classCode,
     <div className="flex gap-8 min-h-screen h-screen overflow-hidden">
       {/* Đề bài bên trái */}
       {!submission ? (
-        <div className="flex-1 bg-white rounded shadow p-6 h-full overflow-auto">
+        <div className="flex-1 bg-white rounded shadow p-6 h-full ">
           {homework && (
             <div className="mb-6">
               <h2 className="text-xl font-bold">{homework.title}</h2>
@@ -168,8 +192,12 @@ export function TestHomeWork({ homework, questions, duration, userId, classCode,
               
               {/* Hiển thị theo loại homework */}
               {homework.type === "extracted" ? (
-                // Hiển thị câu hỏi đã tách
-                <ExtractedQuestionsView questions={questions} />
+                // Hiển thị câu hỏi đã tách với callback để cập nhật phiếu trả lời
+                <ExtractedQuestionsView 
+                  questions={questions} 
+                  onAnswerChange={handleAnswerChange}
+                  questionRefs={questionRefs}
+                />
               ) : (
                 // Hiển thị file PDF/Word gốc (dạng original)
                 <div>
@@ -249,7 +277,7 @@ export function TestHomeWork({ homework, questions, duration, userId, classCode,
                     ? "bg-green-200"
                     : ""
                 }`}
-                onClick={() => setCurrent(idx)}
+                onClick={() => scrollToQuestion(idx)}
                 type="button"
               >
                 {idx + 1} {getAnswers()[q.id] || ""}

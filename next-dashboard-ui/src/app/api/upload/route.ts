@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import AWS from "aws-sdk";
 import { getCurrentUser } from "@/lib/hooks/auth";
 
+
 export async function POST(request: NextRequest) {
   try {
     const user = await getCurrentUser();

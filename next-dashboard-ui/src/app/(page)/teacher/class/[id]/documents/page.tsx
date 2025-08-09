@@ -5,7 +5,6 @@ import FileUpload from "@/components/FileUpload";
 import FileList from "@/components/FileList";
 import { useState } from "react";
 
-
 export default function Document() {
 
 
@@ -25,6 +24,7 @@ export default function Document() {
 
       <div className="flex-1">
         <h2 className="text-xl font-bold mb-4">Danh sách tài liệu</h2>
+      
         <FileList refreshTrigger={refreshTrigger} />
       </div>
     </div>

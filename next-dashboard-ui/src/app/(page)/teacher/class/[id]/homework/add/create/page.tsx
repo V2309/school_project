@@ -17,6 +17,14 @@ interface QuizData {
   filename: string;
   quiz_data: QuizQuestion[];
   total_questions: number;
+  originalFile?: {
+    file?: File; // File object để upload S3 sau
+    tempUrl?: string; // URL tạm thời để preview
+    url?: string; // URL S3 sau khi upload
+    name: string;
+    type: string;
+    size: number;
+  };
 }
 
 export default function CreateHomeworkPage({ params }: { params: { id: string } }) {
@@ -51,7 +59,34 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
       const savedData = localStorage.getItem('extractedQuiz');
       if (savedData) {
         const data = JSON.parse(savedData);
-        setQuizData(data);
+        
+        // Lấy File object từ sessionStorage hoặc tạo lại từ temp file
+        const fileInfo = sessionStorage.getItem('extractedQuizFile');
+        if (fileInfo) {
+          const fileData = JSON.parse(fileInfo);
+          // Tạo lại File object từ temp URL
+          if (data.originalFile?.tempUrl) {
+            fetch(data.originalFile.tempUrl)
+              .then(response => response.blob())
+              .then(blob => {
+                const file = new File([blob], fileData.name, { 
+                  type: fileData.type,
+                  lastModified: fileData.lastModified 
+                });
+                data.originalFile.file = file;
+                setQuizData(data);
+              })
+              .catch(() => {
+                // Nếu không lấy được file, vẫn set data nhưng không có file
+                setQuizData(data);
+              });
+          } else {
+            setQuizData(data);
+          }
+        } else {
+          setQuizData(data);
+        }
+        
         setTitle(`Bài tập từ ${data.filename}`);
         
         // Chọn tất cả câu hỏi mặc định
@@ -135,6 +170,27 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
       if (!quizData) throw new Error('Vui lòng chọn file bài tập');
       if (!startTime || !deadline) throw new Error('Vui lòng nhập thời gian bắt đầu và hạn chót');
       
+      let originalFileUrl = quizData.originalFile?.url;
+      
+      // Nếu có file tạm thời, upload lên S3 (giống như original)
+      if (quizData.originalFile?.file && !originalFileUrl) {
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', quizData.originalFile.file);
+        uploadFormData.append('classCode', classId);
+        
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: uploadFormData,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload file to S3');
+        }
+
+        const uploadResult = await uploadResponse.json();
+        originalFileUrl = uploadResult.fileUrl;
+      }
+      
       // Chuẩn bị dữ liệu cho homework dạng extracted
       const extractedQuestions = answers.map((answer, index) => {
         const originalQuestion = quizData.quiz_data[index];
@@ -152,8 +208,9 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
       await createHomeworkFromExtractedQuestions({
         title,
         class_code: classId,
-        originalFileName: quizData.filename,
-        originalFileType: 'application/pdf', // hoặc lấy từ localStorage
+        originalFileUrl,
+        originalFileName: quizData.originalFile?.name,
+        originalFileType: quizData.originalFile?.type,
         extractedQuestions,
         duration,
         startTime,
@@ -163,6 +220,7 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
       
       // Xóa dữ liệu đã lưu và chuyển về danh sách bài tập
       localStorage.removeItem('extractedQuiz');
+      sessionStorage.removeItem('extractedQuizFile');
       router.push(`/teacher/class/${classId}/homework/list`);
       
     } catch (error) {

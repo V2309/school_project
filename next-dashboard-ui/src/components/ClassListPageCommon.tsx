@@ -23,22 +23,32 @@ export default function ClassListPageCommon({
   extraHeader,
 }: ClassListPageCommonProps) {
   return (
-    <div className="h-full w-full flex justify-center items-start px-8 py-8 bg-gray-100 mb-[150px]">
+    <div className="h-full w-full flex justify-center items-start px-8 py-8  mb-[150px]">
       <div className="w-full max-w-6xl">
-        <div className="mb-6 flex justify-between items-center">
-          <h2 className="text-2xl font-bold mb-4">
-            {role === "teacher" ? "Danh sách lớp học" : "Danh sách lớp học của tôi"}
-          </h2>
-          <div className="flex items-center gap-4">
-            <TableSearch />
-            {extraHeader}
-          </div>
-        </div>
+      <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+  {/* Title */}
+  <h2 className="text-xl sm:text-2xl font-bold m-0">
+    {role === "teacher" ? "Danh sách lớp học" : "Danh sách lớp học của tôi"}
+  </h2>
+
+  {/* Search + extra (responsive) */}
+  <div className="flex w-full md:w-auto items-center gap-3 md:gap-4">
+    <div className="flex-1 md:flex-none md:w-80">
+      {/* Search full-width trên mobile, cố định 320px trên md */}
+      <TableSearch />
+    </div>
+
+    {/* Extra header (nút, dropdown...) tự co giãn và wrap nếu chật */}
+    <div className="flex items-center gap-2 flex-wrap justify-end">
+      {extraHeader}
+    </div>
+  </div>
+</div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
           {data.map((item) => (
             <div key={item.id} className="relative">
-              <div className="bg-white rounded-xl shadow p-4 flex flex-col relative">
+              <div className="bg-white rounded-xl shadow p-4 flex flex-col relative border border-gray-400">
                 {/* Hình nền lớp học */}
                 <a
                   href={`/${role}/class/${item.class_code || item.id}/newsfeed`}

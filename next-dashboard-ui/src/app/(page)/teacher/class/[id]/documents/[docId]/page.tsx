@@ -36,9 +36,6 @@ export default async function DocumentDetail({
     notFound();
   }
 
-
-
-
   return (
     <div className="bg-gray-50">
       {/* Header */}
