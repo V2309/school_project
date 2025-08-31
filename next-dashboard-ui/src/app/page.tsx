@@ -52,8 +52,8 @@ export default function Home() {
   return (
     <div className="bg-background text-copy-base font-sans">
       <Head>
-        <title>ClassFlow - Nền tảng quản lý lớp học toàn diện</title>
-        <meta name="description" content="ClassFlow giúp đơn giản hóa việc dạy và học trực tuyến. Quản lý lớp học, bài tập và giao tiếp ở cùng một nơi." />
+        <title>DoCus - Nền tảng quản lý lớp học toàn diện</title>
+        <meta name="description" content="DoCus giúp đơn giản hóa việc dạy và học trực tuyến. Quản lý lớp học, bài tập và giao tiếp ở cùng một nơi." />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
@@ -62,7 +62,7 @@ export default function Home() {
         <nav className="flex items-center justify-between p-4 max-w-7xl mx-auto">
           <Link href="/" className="flex items-center space-x-2">
             <svg className="w-8 h-8 text-primary" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            <span className="text-xl font-bold text-copy-base">ClassFlow</span>
+            <span className="text-xl font-bold text-copy-base">DoCus</span>
           </Link>
           <div className="hidden md:flex items-center space-x-8">
             <Link href="#features" className="text-copy-light hover:text-primary transition-colors">Tính năng</Link>
@@ -80,7 +80,7 @@ export default function Home() {
       <main>
         {/* Hero Section */}
         <section className="py-24 sm:py-32 px-6 max-w-7xl mx-auto text-center">
-          <h1 className="text-4xl md:text-6xl font-extrabold text-copy-base leading-tight mb-6">Dạy và học hiệu quả hơn với <span className="text-primary">ClassFlow</span></h1>
+          <h1 className="text-4xl md:text-6xl font-extrabold text-copy-base leading-tight mb-6">Dạy và học hiệu quả hơn với <span className="text-primary">DoCus</span></h1>
           <p className="text-lg text-copy-light max-w-3xl mx-auto mb-10">Nền tảng tất cả trong một giúp bạn quản lý lớp học, giao bài tập, theo dõi tiến độ và kết nối với học sinh một cách liền mạch.</p>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
             <Link href="/sign-up" className="inline-block px-8 py-4 bg-primary text-white rounded-lg font-semibold hover:bg-primary-dark transition-transform hover:scale-105 shadow-lg">Bắt đầu ngay</Link>
@@ -107,7 +107,7 @@ export default function Home() {
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
               <h2 className="text-3xl font-bold text-copy-base mb-4">Mọi công cụ bạn cần cho lớp học số</h2>
-              <p className="text-copy-light max-w-2xl mx-auto">ClassFlow được thiết kế với các tính năng mạnh mẽ để hỗ trợ giáo viên và truyền cảm hứng cho học sinh.</p>
+              <p className="text-copy-light max-w-2xl mx-auto">DoCus được thiết kế với các tính năng mạnh mẽ để hỗ trợ giáo viên và truyền cảm hứng cho học sinh.</p>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {features.map((feature) => (
@@ -180,8 +180,8 @@ export default function Home() {
         <section id="solutions" className="py-20 px-6 bg-surface border-y border-gray-200">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold text-copy-base mb-4">ClassFlow dành cho ai?</h2>
-              <p className="text-copy-light max-w-2xl mx-auto">Cho dù bạn là giáo viên, quản trị viên hay phụ huynh, ClassFlow đều có giải pháp giúp trải nghiệm giáo dục tốt hơn.</p>
+              <h2 className="text-3xl font-bold text-copy-base mb-4">DoCus dành cho ai?</h2>
+              <p className="text-copy-light max-w-2xl mx-auto">Cho dù bạn là giáo viên, quản trị viên hay phụ huynh, DoCus đều có giải pháp giúp trải nghiệm giáo dục tốt hơn.</p>
             </div>
             <div className="grid md:grid-cols-3 gap-8">
               <div className="bg-background p-8 rounded-xl border border-gray-200 text-center hover:shadow-lg transition-shadow">
@@ -211,7 +211,7 @@ export default function Home() {
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-16">
                     <h2 className="text-3xl font-bold text-copy-base mb-4">Bắt đầu chỉ với 3 bước đơn giản</h2>
-                    <p className="text-copy-light max-w-2xl mx-auto">Gia nhập ClassFlow và thiết lập lớp học của bạn chưa bao giờ dễ dàng hơn.</p>
+                    <p className="text-copy-light max-w-2xl mx-auto">Gia nhập DoCus và thiết lập lớp học của bạn chưa bao giờ dễ dàng hơn.</p>
                 </div>
                 <div className="grid md:grid-cols-3 gap-x-8 gap-y-12 text-center">
                     <HowItWorksStep number={1} title="Tạo Lớp Học" description="Thiết lập lớp học ảo của bạn trong vài phút và gửi mã mời cho học sinh tham gia."/>
@@ -225,12 +225,12 @@ export default function Home() {
         <section className="py-20 px-6 bg-surface border-y border-gray-200"> {/* Changed to bg-surface and added border for visual separation */}
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-16">
-                    <h2 className="text-3xl font-bold text-copy-base mb-4">Giáo viên và học sinh nói gì về ClassFlow?</h2>
+                    <h2 className="text-3xl font-bold text-copy-base mb-4">Giáo viên và học sinh nói gì về DoCus?</h2>
                     <p className="text-copy-light max-w-2xl mx-auto">Chúng tôi tự hào khi được đồng hành và hỗ trợ công việc giảng dạy mỗi ngày.</p>
                 </div>
                 <div className="grid lg:grid-cols-3 gap-8">
                     <TestimonialCard
-                        quote="ClassFlow đã thay đổi hoàn toàn cách tôi quản lý lớp học. Mọi thứ đều tập trung ở một nơi, giúp tôi tiết kiệm rất nhiều thời gian và công sức."
+                        quote="DoCus đã thay đổi hoàn toàn cách tôi quản lý lớp học. Mọi thứ đều tập trung ở một nơi, giúp tôi tiết kiệm rất nhiều thời gian và công sức."
                         name="Cô Mai Anh"
                         role="Giáo viên Văn, Trường THPT Chuyên Lam Sơn"
                         avatar="/path/to/avatar1.jpg"
@@ -255,7 +255,7 @@ export default function Home() {
         <section id="pricing" className="py-20 px-6 bg-background">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl font-bold text-copy-base mb-4">Chọn gói phù hợp với bạn</h2>
-            <p className="text-copy-light max-w-2xl mx-auto mb-12">ClassFlow cung cấp các gói linh hoạt để đáp ứng nhu cầu của mọi quy mô lớp học và tổ chức.</p>
+            <p className="text-copy-light max-w-2xl mx-auto mb-12">DoCus cung cấp các gói linh hoạt để đáp ứng nhu cầu của mọi quy mô lớp học và tổ chức.</p>
             <div className="grid md:grid-cols-2 gap-8">
               <div className="bg-surface p-8 rounded-xl border border-gray-200 shadow-md">
                 <h3 className="text-2xl font-bold text-copy-base mb-2">Miễn phí</h3>
@@ -291,7 +291,7 @@ export default function Home() {
         <section className="bg-primary py-20 px-6">
             <div className="max-w-4xl mx-auto text-center">
                 <h2 className="text-4xl font-extrabold text-white mb-6">Sẵn sàng để chuyển đổi lớp học của bạn?</h2>
-                <p className="text-lg text-white/70 mb-10">Tham gia cùng hàng ngàn giáo viên đang giảng dạy hiệu quả hơn với ClassFlow. Đăng ký tài khoản miễn phí ngay hôm nay.</p>
+                <p className="text-lg text-white/70 mb-10">Tham gia cùng hàng ngàn giáo viên đang giảng dạy hiệu quả hơn với DoCus. Đăng ký tài khoản miễn phí ngay hôm nay.</p>
                 <Link href="/sign-up" className="inline-block px-10 py-4 bg-white text-primary rounded-lg font-bold text-lg hover:bg-gray-200 transition-colors shadow-2xl">
                     Dùng thử miễn phí ngay
                 </Link>
@@ -340,7 +340,7 @@ export default function Home() {
           </div>
         </div>
         <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-gray-200 text-center text-copy-light">
-          <p>© {new Date().getFullYear()} ClassFlow. Đã đăng ký bản quyền.</p>
+          <p>© {new Date().getFullYear()} DoCus. Đã đăng ký bản quyền.</p>
         </div>
       </footer>
     </div>

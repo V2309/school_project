@@ -1,110 +1,37 @@
-'use client';
+import prisma from "@/lib/prisma";
+import Feed from "@/components/Feed";
+import Share from "@/components/Share";
+import { getCurrentUser } from "@/lib/hooks/auth";
+import { AcademicCapIcon } from '@heroicons/react/24/outline';
 
-import { useState } from 'react';
-import {
-  PaperClipIcon,
-  PhotoIcon, // dùng PhotoIcon thay vì PhotographIcon trong phiên bản mới
-  AcademicCapIcon, // ví dụ icon mới bạn đề cập
-} from '@heroicons/react/24/outline';
+export default async function NewsfeedPage({ params }: { params: { id: string } }) {
+  // Lấy thông tin lớp học từ class_code (vì params.id có thể là class_code)
+  const classInfo = await prisma.class.findUnique({
+    where: { class_code: params.id },
+    select: { class_code: true, name: true }
+  });
 
-export default function NewsfeedPage() {
-  const [postContent, setPostContent] = useState('');
-  const [posts, setPosts] = useState([
-    {
-      id: 1,
-      content: 'Nơi trao đổi các vấn đề trong lớp học dành cho giáo viên học sinh',
-      author: 'Hệ thống',
-      timestamp: '2 giờ trước',
-      isPinned: true
-    }
-  ]);
+  if (!classInfo) {
+    return <div>Không tìm thấy lớp học</div>;
+  }
 
-  const handlePostSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!postContent.trim()) return;
-
-    const newPost = {
-      id: posts.length + 1,
-      content: postContent,
-      author: 'Bạn',
-      timestamp: 'Vừa xong',
-      isPinned: false
-    };
-
-    setPosts([newPost, ...posts]);
-    setPostContent('');
-  };
+  // Lấy thông tin user hiện tại
+  const user = await getCurrentUser();
 
   return (
-    <div className="max-w-3xl mx-auto ">
+    <div className="max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold mb-6 flex items-center gap-2 bg-white p-4 rounded-lg shadow">
         <AcademicCapIcon className="h-6 w-6 text-blue-600" />
-        Bảng tin
+        Bảng tin - {classInfo.name}
       </h1>
 
-      {/* Post creation form */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <form onSubmit={handlePostSubmit}>
-          <textarea
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-3"
-            rows={3}
-            placeholder="Nhập nội dung thảo luận với lớp học..."
-            value={postContent}
-            onChange={(e) => setPostContent(e.target.value)}
-          />
-
-          <div className="flex justify-between items-center">
-            <div className="flex space-x-2">
-              <button
-                type="button"
-                className="flex items-center text-gray-600 hover:text-blue-600"
-              >
-                <PhotoIcon className="h-5 w-5 mr-1" />
-                <span>Thêm hình ảnh</span>
-              </button>
-              <button
-                type="button"
-                className="flex items-center text-gray-600 hover:text-blue-600"
-              >
-                <PaperClipIcon className="h-5 w-5 mr-1" />
-                <span>Thêm tệp</span>
-              </button>
-            </div>
-
-            <button
-              type="submit"
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
-              disabled={!postContent.trim()}
-            >
-              Đăng tin
-            </button>
-          </div>
-        </form>
+      {/* Form tạo bài viết mới */}
+      <div className="bg-white rounded-lg shadow mb-6">
+        <Share classCode={classInfo.class_code!} userImg={user?.img as string || undefined} />
       </div>
 
-      {/* Pinned post */}
-      {posts.filter(post => post.isPinned).map(post => (
-        <div key={post.id} className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg mb-4">
-          <div className="flex justify-between items-start mb-2">
-            <span className="font-semibold">{post.author}</span>
-            <span className="text-sm text-gray-500">{post.timestamp}</span>
-          </div>
-          <p className="text-gray-800">{post.content}</p>
-        </div>
-      ))}
-
-      {/* Posts list */}
-      <div className="space-y-4">
-        {posts.filter(post => !post.isPinned).map(post => (
-          <div key={post.id} className="bg-white rounded-lg shadow p-4">
-            <div className="flex justify-between items-start mb-2">
-              <span className="font-semibold">{post.author}</span>
-              <span className="text-sm text-gray-500">{post.timestamp}</span>
-            </div>
-            <p className="text-gray-800">{post.content}</p>
-          </div>
-        ))}
-      </div>
+      {/* Sử dụng component Feed với classCode */}
+      <Feed classCode={classInfo.class_code || undefined} />
     </div>
   );
 }

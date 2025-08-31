@@ -28,8 +28,8 @@ export default function StudentLayout({
       <div className="fixed left-0 h-full w-[25%] md:w-[20%] lg:w-[18%] bg-white shadow-md p-4">
         <MenuItem />
       </div>
-      {/* Nội dung bên phải */}
-      <div className="ml-[25%] md:ml-[20%] lg:ml-[18%] flex-grow bg-gray-100 p-6 overflow-y-auto">
+      {/* Nội dung bên phải  overflow-y-auto*/}
+      <div className="ml-[25%] md:ml-[20%] lg:ml-[18%] flex-grow bg-gray-100 ">
         {children}
       </div>
     </div>

@@ -60,7 +60,7 @@ export default async function StudentResultsPage() {
   });
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 p-6">
       <h1 className="text-2xl font-bold mb-6 text-blue-700">Kết quả làm bài tập theo lớp</h1>
       {classResults.map((cls, idx) => (
         <div key={idx} className="bg-white rounded-lg p-6 shadow-md">

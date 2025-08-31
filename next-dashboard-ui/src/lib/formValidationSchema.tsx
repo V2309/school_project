@@ -103,3 +103,29 @@ export const homeworkSchema = z.object({
 });
 
 export type HomeworkSchema = z.infer<typeof homeworkSchema>;
+
+// validation schema cho form đăng ký
+
+
+export const signupSchema = z.object({
+  username: z.string().min(3, { message: "Tên người dùng phải có ít nhất 3 ký tự!" }).max(50, { message: "Tên người dùng không được quá 50 ký tự!" }),
+  class_name: z.string().min(1, { message: "Lớp học là bắt buộc!" }),
+  school: z.string().min(1, { message: "Tên trường là bắt buộc!" }),
+  birthday: z.string().min(1, { message: "Ngày sinh là bắt buộc!" }),
+  province: z.string().min(1, { message: "Tỉnh/Thành phố là bắt buộc!" }),
+  info: z.string().min(1, { message: "Email hoặc số điện thoại là bắt buộc!" })
+    .refine((val) => {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const phoneRegex = /^[0-9]{10,11}$/;
+      return emailRegex.test(val) || phoneRegex.test(val);
+    }, { message: "Vui lòng nhập email hợp lệ hoặc số điện thoại (10-11 chữ số)!" }),
+  role: z.enum(["student", "teacher"], { message: "Vui lòng chọn vai trò!" }),
+  password: z.string().min(8, { message: "Mật khẩu phải có ít nhất 8 ký tự!" }),
+  "confirm-password": z.string().min(1, { message: "Vui lòng xác nhận mật khẩu!" }),
+  terms: z.boolean().refine((v) => v === true, { message: "Bạn phải đồng ý với điều khoản dịch vụ!" }),
+}).refine((data) => data.password === data["confirm-password"], {
+  message: "Mật khẩu xác nhận không khớp!",
+  path: ["confirm-password"],
+});
+
+export type SignupSchema = z.infer<typeof signupSchema>;

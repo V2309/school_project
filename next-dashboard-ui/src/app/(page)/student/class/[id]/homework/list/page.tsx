@@ -30,7 +30,7 @@ export default async function HomeworkList({ params }: { params: { id: string } 
     <div className="px-4 py-4 bg-white rounded-lg shadow-md flex flex-col h-full">
       <h1 className="text-2xl font-bold mb-6">Danh sách bài tập</h1>
 
-      <HomeworkListClient homeworks={homeworks} role={role as string} />
+      <HomeworkListClient homeworks={homeworks} role={role as string}  class_code={params.id}/>
     </div>
   );
 }

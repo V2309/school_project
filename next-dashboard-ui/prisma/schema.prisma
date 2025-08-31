@@ -26,15 +26,24 @@ model User {
   schoolname String
   birthday   DateTime
   address    String
-
+  img        String?
   email     String?  @unique
   phone     String?  @unique
   role      UserRole @default(student)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
   password  String
 
+  // RELATIONS
   student Student?
+
   teacher Teacher?
+  // post 
+  posts Post[]
+
+  likes Like[]
+
+  saves SavedPosts[]
 }
 
 model Student {
@@ -44,10 +53,11 @@ model Student {
   schoolname String
   birthday   DateTime
   address    String
-
+  img         String?
   email     String?  @unique
   phone     String?  @unique
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
   password  String
 
   userId String? @unique
@@ -67,10 +77,11 @@ model Teacher {
   schoolname String
   birthday   DateTime
   address    String
-
+  img        String?
   email     String?  @unique
   phone     String?  @unique
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
   password  String
   userId String? @unique
   user   User?   @relation(fields: [userId], references: [id]) // mối quan hệ 1 1 với User
@@ -115,6 +126,8 @@ model Class {
 
   homeworks Homework[] // Thêm dòng này
   files     File[]     // Mối quan hệ với tài liệu của lớp học
+
+  posts     Post[]     // Thêm dòng này
 }
 
 model Subject {
@@ -342,4 +355,65 @@ model File {
   // Liên kết với lớp học thông qua class code
   classCode   String?  @map("class_code")
   class       Class?   @relation(fields: [classCode], references: [class_code])
+}
+
+
+// post model
+
+model Post {
+  id          Int      @id @default(autoincrement())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  desc        String?  @db.VarChar(255)
+  img         String?
+  imgHeight   Int?
+  video       String?
+  isSensitive Boolean  @default(false)
+
+  // RELATIONS
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  rePostId Int?
+  rePost   Post?  @relation("RePosts", fields: [rePostId], references: [id])
+  rePosts  Post[] @relation("RePosts")
+
+  parentPostId Int?
+  parentPost   Post?  @relation("PostComments", fields: [parentPostId], references: [id])
+  comments     Post[] @relation("PostComments")
+
+  likes Like[]
+
+  saves SavedPosts[]
+
+    // NEW: gắn bài viết vào 1 lớp (có thể để null nếu muốn post “toàn trường”)
+  classCode   String?  @map("class_code")
+  class       Class?   @relation(fields: [classCode], references: [class_code])
+}
+
+// like model
+model Like {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  // RELATIONS
+  userId String
+  postId Int
+
+  user User @relation(fields: [userId], references: [id])
+  post Post @relation(fields: [postId], references: [id])
+}
+
+
+// saves model
+model SavedPosts {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  // RELATIONS
+  userId String
+  postId Int
+
+  user User @relation(fields: [userId], references: [id])
+  post Post @relation(fields: [postId], references: [id])
 }

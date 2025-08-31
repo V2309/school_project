@@ -9,6 +9,10 @@ import { getCurrentUser } from "@/lib/hooks/auth";
 import { NextApiRequest, NextApiResponse } from "next";
 import { NextResponse } from "next/server";
 import { jwtVerify } from "jose"; // Uncomment if you need to verify JWT
+
+import { z } from "zod";
+import { UploadResponse } from "imagekit/dist/libs/interfaces";
+import { imagekit } from "./utils";
 // import . env
 
 import {
@@ -316,6 +320,7 @@ export const deleteClass = async (
     return { success: false, error: true };
   }
 };
+
 
 const prisma = new PrismaClient();
 const JWT_SECRET = new TextEncoder().encode(
@@ -649,6 +654,120 @@ export const deleteHomework = async (
       },
     });
 
+    return { success: true, error: false };
+  } catch (err) {
+    console.log(err);
+    return { success: false, error: true };
+  }
+};
+
+
+
+// add post cho lớp học cụ thể
+export const addPostToClass = async (
+  prevState: { success: boolean; error: boolean },
+  formData: FormData
+) => {
+  const user = await getCurrentUser();
+
+  if (!user) return { success: false, error: true };
+
+  const desc = formData.get("desc") as string;
+  const file = formData.get("file") as File;
+  const classCode = formData.get("classCode") as string;
+
+  // Kiểm tra classCode
+  if (!classCode) {
+    return { success: false, error: true };
+  }
+
+  // Xác thực người dùng có quyền post vào lớp này không
+  if (user.role === "teacher") {
+    const teacher = await prisma.teacher.findUnique({
+      where: { userId: user.id as string },
+    });
+    if (!teacher) {
+      return { success: false, error: true };
+    }
+    
+    const classExists = await prisma.class.findFirst({
+      where: { 
+        class_code: classCode,
+        supervisorId: teacher.id 
+      },
+    });
+    
+    if (!classExists) {
+      return { success: false, error: true };
+    }
+  } else if (user.role === "student") {
+    const student = await prisma.student.findUnique({
+      where: { userId: user.id as string },
+      include: { classes: true },
+    });
+    
+    if (!student) {
+      return { success: false, error: true };
+    }
+    
+    const isInClass = student.classes.some(cls => cls.class_code === classCode);
+    if (!isInClass) {
+      return { success: false, error: true };
+    }
+  }
+
+  let img = "";
+  let imgHeight = 0;
+  let video = "";
+
+  if (file && file.size > 0) {
+    const uploadFile = async (file: File): Promise<UploadResponse> => {
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+
+      return new Promise((resolve, reject) => {
+        imagekit.upload(
+          {
+            file: buffer,
+            fileName: file.name,
+            folder: "/posts",
+          },
+          function (error, result) {
+            if (error) reject(error);
+            else resolve(result as UploadResponse);
+          }
+        );
+      });
+    };
+
+    try {
+      const result: UploadResponse = await uploadFile(file);
+      if (result.fileType === "image") {
+        img = result.filePath;
+        imgHeight = result.height || 0;
+      } else {
+        video = result.filePath;
+      }
+    } catch (error) {
+      console.log("Upload error:", error);
+    }
+  }
+
+  try {
+    await prisma.post.create({
+      data: {
+        desc,
+        userId: user.id as string,
+        classCode,
+        img,
+        imgHeight,
+        video,
+        isSensitive: false,
+      },
+    });
+    
+    revalidatePath(`/teacher/class/${classCode}/newsfeed`);
+    revalidatePath(`/student/class/${classCode}/newsfeed`);
     return { success: true, error: false };
   } catch (err) {
     console.log(err);

@@ -130,46 +130,48 @@ export default function HomeworkListClient({
               </div>
 
               {/* Tạo bài tập (bên phải) */}
-              <div className="sm:order-3 justify-self-end">
-                <Link
-                  href={`/teacher/class/${class_code}/homework/add`}
-                  className="px-4 py-2 rounded-md font-bold text-white bg-blue-500 hover:bg-blue-600"
-                >
-                  + Tạo bài tập
-                </Link>
-              </div>
+              {/* kiem tra role */}
+              {role === "teacher" && (
+                <div className="sm:order-3 justify-self-end">
+                  <Link
+                    href={`/teacher/class/${class_code}/homework/add`}
+                    className="px-4 py-2 rounded-md font-bold text-white bg-blue-500 hover:bg-blue-600"
+                  >
+                    + Tạo bài tập
+                  </Link>
+                </div>
+              )}
             </div>
+              
           </div>
 
-          {/* Danh sách bài tập */}
-          <div className="p-4">
-            {sortedHomeworks.length > 0 ? (
-              sortedHomeworks.map((hw) => (
-                <div
-                  key={hw.id}
-                  className={`cursor-pointer ${
-                    selected?.id === hw.id
-                      ? "ring-2 ring-blue-500 rounded-md"
-                      : ""
-                  }`}
-                  onClick={() => setSelected(hw)}
-                >
-                  <HomeworkCard homework={hw} role={role} />
-                </div>
-              ))
-            ) : (
-              <div className="text-center text-gray-500 py-8">
-                <p className="mb-2">Chưa có bài tập nào trong lớp này.</p>
-                <p>
-                  Dùng nút{" "}
-                  <span className="font-semibold text-blue-600">
-                    + Tạo bài tập
-                  </span>{" "}
-                  để đăng bài tập của bạn.
-                </p>
-              </div>
-            )}
-          </div>
+     {/* Danh sách bài tập kiểm tra theo role */}
+<div className="p-4">
+  {sortedHomeworks.length > 0 ? (
+    sortedHomeworks.map((hw) => (
+      <div
+        key={hw.id}
+        className={`cursor-pointer ${selected?.id === hw.id ? "ring-2 ring-blue-500 rounded-md" : ""}`}
+        onClick={() => setSelected(hw)}
+      >
+        <HomeworkCard homework={hw} role={role} />
+      </div>
+    ))
+  ) : role === "teacher" ? (
+    <div className="text-center text-gray-500 py-8">
+      <p className="mb-2">Chưa có bài tập nào trong lớp này.</p>
+      <p>
+        Dùng nút{" "}
+        <span className="font-semibold text-blue-600">+ Tạo bài tập</span>{" "}
+        để đăng bài tập của bạn.
+      </p>
+    </div>
+  ) : (
+    <div className="text-center text-gray-500 py-8">
+      <p>Chưa có bài tập nào trong lớp này.</p>
+    </div>
+  )}
+</div>
         </div>
 
         {/* Cột chi tiết nếu không có bài tập thì ẩn */}
