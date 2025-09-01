@@ -17,7 +17,7 @@ const addUser = (username, socketId) => {
 
   if (!isExist) {
     onlineUsers.push({ username, socketId });
-    console.log(username + "added!");
+    console.log(username + " added!");
   }
 };
 
@@ -41,12 +41,19 @@ app.prepare().then(() => {
     });
 
     socket.on("sendNotification", ({ receiverUsername, data }) => {
+      console.log(`Sending notification to: ${receiverUsername}`, data);
       const receiver = getUser(receiverUsername);
-
-      io.to(receiver.socketId).emit("getNotification", {
-        id: uuidv4(),
-        ...data,
-      });
+      
+      if (receiver) {
+        console.log(`Found receiver socket: ${receiver.socketId}`);
+        io.to(receiver.socketId).emit("getNotification", {
+          id: uuidv4(),
+          ...data,
+        });
+      } else {
+        console.log(`User ${receiverUsername} not found in online users`);
+        console.log("Current online users:", onlineUsers);
+      }
     });
 
     socket.on("disconnect", () => {

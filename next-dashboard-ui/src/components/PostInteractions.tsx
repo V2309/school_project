@@ -1,10 +1,10 @@
 "use client";
-
-// import { likePost, rePost, savePost } from "@/action";
+import { likePost, addComment as addCommentAction } from "@/lib/actions";
 import { socket } from "@/socket";
-import { useUser } from "@clerk/nextjs";
+import { useUser } from "@/lib/hooks/useUser";
 import Link from "next/link";
-import { useOptimistic, useState } from "react";
+import { useOptimistic, useState, useEffect } from "react";
+import SimpleComments from "./SimpleComments";
 
 const PostInteractions = ({
   username,
@@ -13,6 +13,7 @@ const PostInteractions = ({
   isLiked,
   isRePosted,
   isSaved,
+  classCode,
 }: {
   username: string;
   postId: number;
@@ -20,6 +21,7 @@ const PostInteractions = ({
   isLiked: boolean;
   isRePosted: boolean;
   isSaved: boolean;
+  classCode?: string;
 }) => {
   const [state, setState] = useState({
     likes: count.likes,
@@ -27,7 +29,32 @@ const PostInteractions = ({
     rePosts: count.rePosts,
     isRePosted,
     isSaved,
+    comments: count.comments,
   });
+
+  const [showComments, setShowComments] = useState(false);
+  const [commentsList, setCommentsList] = useState<any[]>([]);
+  const [commentsLoaded, setCommentsLoaded] = useState(false);
+
+  // Load comments when user opens comment section for the first time
+  useEffect(() => {
+    if (showComments && !commentsLoaded) {
+      fetchComments();
+    }
+  }, [showComments, commentsLoaded]);
+
+  const fetchComments = async () => {
+    try {
+      const response = await fetch(`/api/posts/${postId}/comments`);
+      if (response.ok) {
+        const comments = await response.json();
+        setCommentsList(comments);
+        setCommentsLoaded(true);
+      }
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+    }
+  };
 
   const { user } = useUser();
 
@@ -35,18 +62,21 @@ const PostInteractions = ({
     if (!user) return;
 
     if (!optimisticCount.isLiked) {
-      socket.emit("sendNotification", {
+      const notificationData = {
         receiverUsername: username,
         data: {
           senderUsername: user.username,
           type: "like",
           link: `/${username}/status/${postId}`,
         },
-      });
+      };
+      
+      console.log("Sending notification:", notificationData);
+      socket.emit("sendNotification", notificationData);
     }
 
     addOptimisticCount("like");
-   // await likePost(postId);
+    await likePost(postId);
     setState((prev) => {
       return {
         ...prev,
@@ -65,13 +95,13 @@ const PostInteractions = ({
         data: {
           senderUsername: user.username,
           type: "rePost",
-          link: `/${username}/status/${postId}`,
+       //   link: `/${username}/status/${postId}`,
         },
       });
     }
 
     addOptimisticCount("rePost");
-   // await rePost(postId);
+    //await rePost(postId);
     setState((prev) => {
       return {
         ...prev,
@@ -89,6 +119,59 @@ const PostInteractions = ({
         isSaved: !prev.isSaved,
       };
     });
+  };
+
+  const addCommentOptimistic = (commentText: string) => {
+    if (!user) return;
+    
+    // Tạo comment mới optimistically
+    const newComment = {
+      id: Date.now(), // temporary ID
+      desc: commentText,
+      createdAt: new Date(),
+      user: {
+        username: user.username,
+        img: null
+      }
+    };
+    
+    // Add to comments list
+    setCommentsList(prev => [...prev, newComment]);
+    
+    // Update comment count
+    setState(prev => ({
+      ...prev,
+      comments: prev.comments + 1
+    }));
+    
+    // Submit to server in background
+    addComment(postId, commentText);
+  };
+
+  const addComment = async (postId: number, commentText: string) => {
+    try {
+      // Call the actual server action to save comment
+      const formData = new FormData();
+      formData.append("postId", postId.toString());
+      formData.append("username", username);
+      formData.append("desc", commentText);
+      if (classCode) {
+        formData.append("classCode", classCode);
+      }
+      
+      const result = await addCommentAction({ success: false, error: false }, formData);
+      
+      if (result.success) {
+        // Optionally refresh comments from server to get real IDs
+        await fetchComments();
+      } else {
+        console.error("Failed to save comment to server");
+        // Could revert optimistic update here
+      }
+    } catch (error) {
+      console.error("Failed to add comment:", error);
+      // On error, you could revert the optimistic update
+    }
   };
 
   const [optimisticCount, addOptimisticCount] = useOptimistic(
@@ -118,25 +201,30 @@ const PostInteractions = ({
     }
   );
   return (
-    <div className="flex items-center justify-between gap-4 lg:gap-16 my-2 text-textGray">
-      <div className="flex items-center justify-between flex-1">
-        {/* COMMENTS */}
-        <Link href={`/${username}/status/${postId}`} className="flex items-center gap-2 cursor-pointer group">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
+    <div>
+      {/* INTERACTION BUTTONS */}
+      <div className="flex items-center justify-between gap-4 lg:gap-16 my-2 text-textGray">
+        <div className="flex items-center justify-between flex-1">
+          {/* COMMENTS */}
+          <button 
+            onClick={() => setShowComments(!showComments)}
+            className="flex items-center gap-2 cursor-pointer group"
           >
-            <path
-              className="fill-textGray group-hover:fill-iconBlue"
-              d="M1.751 10c0-4.42 3.584-8 8.005-8h4.366c4.49 0 8.129 3.64 8.129 8.13 0 2.96-1.607 5.68-4.196 7.11l-8.054 4.46v-3.69h-.067c-4.49.1-8.183-3.51-8.183-8.01zm8.005-6c-3.317 0-6.005 2.69-6.005 6 0 3.37 2.77 6.08 6.138 6.01l.351-.01h1.761v2.3l5.087-2.81c1.951-1.08 3.163-3.13 3.163-5.36 0-3.39-2.744-6.13-6.129-6.13H9.756z"
-            />
-          </svg>
-          <span className="group-hover:text-iconBlue text-sm">
-            {count.comments}
-          </span>
-        </Link>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+            >
+              <path
+                className={`${showComments ? "fill-iconBlue" : "fill-textGray"} group-hover:fill-iconBlue`}
+                d="M1.751 10c0-4.42 3.584-8 8.005-8h4.366c4.49 0 8.129 3.64 8.129 8.13 0 2.96-1.607 5.68-4.196 7.11l-8.054 4.46v-3.69h-.067c-4.49.1-8.183-3.51-8.183-8.01zm8.005-6c-3.317 0-6.005 2.69-6.005 6 0 3.37 2.77 6.08 6.138 6.01l.351-.01h1.761v2.3l5.087-2.81c1.951-1.08 3.163-3.13 3.163-5.36 0-3.39-2.744-6.13-6.129-6.13H9.756z"
+              />
+            </svg>
+            <span className={`${showComments ? "text-iconBlue" : "text-textGray"} group-hover:text-iconBlue text-sm`}>
+              {state.comments}
+            </span>
+          </button>
         {/* REPOST */}
         <form action={rePostAction}>
           <button className="flex items-center gap-2 cursor-pointer group">
@@ -220,6 +308,15 @@ const PostInteractions = ({
           </svg>
         </div>
       </form>
+      </div>
+      
+      {/* COMMENTS SECTION */}
+      {showComments && (
+        <SimpleComments
+          comments={commentsList}
+          onAddComment={addCommentOptimistic}
+        />
+      )}
     </div>
   );
 };

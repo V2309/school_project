@@ -6,7 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import React, { useState, useRef, useEffect } from "react";
 import { logoutAction } from "@/lib/actions";
 import Image from "next/image";
-
+import Socket from "./Socket";
+import Notification from "./Notification";
 /* =========================
    Config menu gộp chung file
    ========================= */
@@ -131,10 +132,10 @@ const Navigation: React.FC = () => {
 
         {/* Thông báo */}
         <div className="relative cursor-pointer">
-          <span className="text-lg">🔔</span>
-          <div className="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center bg-purple-500 text-white rounded-full text-xs">
-            1
-          </div>
+          <span className="text-lg">
+            <Notification />
+          </span>
+          
         </div>
 
         {/* Avatar dropdown */}
@@ -181,7 +182,9 @@ const Navigation: React.FC = () => {
           )}
         </div>
       </div>
+        <Socket />
     </nav>
+  
   );
 };
 

@@ -3,6 +3,8 @@ import Feed from "@/components/Feed";
 import Share from "@/components/Share";
 import { getCurrentUser } from "@/lib/hooks/auth";
 import { AcademicCapIcon } from '@heroicons/react/24/outline';
+import Notification from "@/components/Notification";
+import Socket from "@/components/Socket";
 
 export default async function NewsfeedPage({ params }: { params: { id: string } }) {
   // Lấy thông tin lớp học từ class_code (vì params.id có thể là class_code)
@@ -19,10 +21,11 @@ export default async function NewsfeedPage({ params }: { params: { id: string } 
   const user = await getCurrentUser();
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="flex">
+        <div className="max-w-3xl mx-auto">
       <h1 className="text-2xl font-bold mb-6 flex items-center gap-2 bg-white p-4 rounded-lg shadow">
         <AcademicCapIcon className="h-6 w-6 text-blue-600" />
-        Bảng tin - {classInfo.name}
+        Bảng Tin Lớp: {classInfo.name}
       </h1>
 
       {/* Form tạo bài viết mới */}
@@ -32,6 +35,11 @@ export default async function NewsfeedPage({ params }: { params: { id: string } 
 
       {/* Sử dụng component Feed với classCode */}
       <Feed classCode={classInfo.class_code || undefined} />
+    </div>
+
+      {/* notifi */}
+      {/* <Notification /> */}
+  
     </div>
   );
 }

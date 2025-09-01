@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { socket } from "@/socket";
-import { useUser } from "@clerk/nextjs";
+import { useUser } from "@/lib/hooks/useUser";
 
 export default function Socket() {
   const [isConnected, setIsConnected] = useState(false);
@@ -18,11 +18,13 @@ export default function Socket() {
     function onConnect() {
       setIsConnected(true);
       setTransport(socket.io.engine.transport.name);
-
+      
       socket.io.engine.on("upgrade", (transport) => {
         setTransport(transport.name);
       });
+      
       if (user) {
+        console.log("Registering user with socket:", user.username);
         socket.emit("newUser", user.username);
       }
     }

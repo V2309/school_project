@@ -33,7 +33,7 @@ const Feed = async ({ userProfileId, classCode }: { userProfileId?: string, clas
       },
       ...postIncludeQuery,
     },
-    take: 3,
+   
     skip: 0,
     orderBy: { createdAt: "desc" },
   });
