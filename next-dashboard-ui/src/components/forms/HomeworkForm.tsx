@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { homeworkSchema } from "@/lib/formValidationSchema";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { createHomework } from "@/lib/actions";
+import { createHomework } from "@/lib/actions/actions";
 
 interface HomeworkFormProps {
   classId: number;

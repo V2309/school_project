@@ -1,6 +1,6 @@
 "use client";
 
-import { useUser } from "@/lib/hooks/useUser";
+import { useUser } from "@/hooks/useUser";
 import Image from "next/image";
 import { useState } from "react";
 

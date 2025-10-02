@@ -1,7 +1,7 @@
 "use client";
-import { likePost, addComment as addCommentAction } from "@/lib/actions";
+import { likePost, addComment as addCommentAction } from "@/lib/actions/actions";
 import { socket } from "@/socket";
-import { useUser } from "@/lib/hooks/useUser";
+import { useUser } from "@/hooks/useUser";
 import Link from "next/link";
 import { useOptimistic, useState, useEffect } from "react";
 import SimpleComments from "./SimpleComments";

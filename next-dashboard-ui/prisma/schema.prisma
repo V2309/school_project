@@ -21,6 +21,8 @@ model Admin {
 model User {
 
   id         String   @id @default(cuid())
+
+
   username   String
   class_name String
   schoolname String
@@ -33,6 +35,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt @default(now())
   password  String
+
+ 
 
   // RELATIONS
   student Student?
@@ -114,6 +118,10 @@ model Class {
   requiresApproval Boolean @default(false)
   blockLeave       Boolean @default(false)
   allowGradesView  Boolean @default(false)
+  
+  // Trường xóa mềm
+  deleted          Boolean @default(false)
+  deletedAt        DateTime?
 
   supervisorId  String?
   supervisor    Teacher?       @relation(fields: [supervisorId], references: [id])

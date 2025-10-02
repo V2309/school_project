@@ -1,13 +1,16 @@
+"use client";
 import Link from "next/link";
 import Image from "next/image";
 import Pagination from "@/components/Pagination";
 import TableSearch from "@/components/TableSearch";
 import FormContainer from "@/components/FormContainer";
+import Table from "@/components/Table";
 
 import { Menu, MenuItem } from "@szhsin/react-menu";
 import "@szhsin/react-menu/dist/index.css";
-import { FiMoreVertical, FiEdit, FiLogIn, FiTrash } from "react-icons/fi";
-import { ReactNode } from "react";
+import { FiMoreVertical, FiEdit, FiLogIn, FiTrash, FiGrid, FiList } from "react-icons/fi";
+import { ReactNode, useState } from "react";
+import ClassDeleteActions from "@/components/ClassDeleteActions";
 
 interface ClassItem {
   id: string | number;
@@ -16,6 +19,9 @@ interface ClassItem {
   class_code?: string;
   img?: string;
   supervisor?: { username?: string } | null;
+  deleted?: boolean;
+  deletedAt?: Date | null;
+  _count?: { students?: number };
 }
 
 interface ClassListPageCommonProps {
@@ -33,8 +39,107 @@ export default function ClassListPageCommon({
   role,
   extraHeader,
 }: ClassListPageCommonProps) {
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  const columns = [
+    {
+      header: "Tên lớp",
+      accessor: "name",
+      className: "p-4",
+    },
+    {
+      header: "Mã lớp",
+      accessor: "class_code",
+      className: "hidden md:table-cell",
+    },
+    {
+      header: "Giáo viên",
+      accessor: "supervisor",
+      className: "hidden lg:table-cell",
+    },
+    {
+      header: "Học sinh",
+      accessor: "studentCount",
+      className: "hidden lg:table-cell",
+    },
+    ...(role === "teacher"
+      ? [
+          {
+            header: "Thao tác",
+            accessor: "action",
+          },
+        ]
+      : []),
+  ];
+
+  const renderRow = (item: ClassItem) => (
+    <tr
+      key={item.id}
+      className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-blue-50"
+    >
+      <td className="flex items-center gap-4 p-4">
+        <Image
+          src={item.img || "/school.jpg"}
+          alt={item.name || "Class cover"}
+          width={40}
+          height={40}
+          className="w-10 h-10 rounded-lg object-cover"
+        />
+        <div className="flex flex-col">
+          <h3 className="font-semibold">{item.name}</h3>
+          {item.deleted && (
+            <span className="text-xs text-red-500 bg-red-100 px-2 py-0.5 rounded-full">
+              Đã xóa
+            </span>
+          )}
+        </div>
+      </td>
+      <td className="hidden md:table-cell">
+        <span className="font-mono text-sm">{item.class_code || "—"}</span>
+      </td>
+      <td className="hidden lg:table-cell">
+        {item.supervisor?.username || "Chưa phân công"}
+      </td>
+      <td className="hidden lg:table-cell">
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          {item._count?.students || 0} học sinh
+        </span>
+      </td>
+      <td>
+        <div className="flex items-center gap-2">
+          {item.deleted ? (
+            <ClassDeleteActions 
+              classId={item.id as number} 
+              isDeleted={true}
+            />
+          ) : (
+            <>
+              <Link href={`/${role}/class/${item.class_code || item.id}/newsfeed`}>
+                <button className="w-7 h-7 flex items-center justify-center rounded-full bg-blue-100 hover:bg-blue-200 transition-colors">
+                  <FiLogIn className="w-4 h-4 text-blue-600" />
+                </button>
+              </Link>
+              {role === "teacher" && (
+                <>
+                  <Link href={`/${role}/class/${item.class_code || item.id}/edit`}>
+                    <button className="w-7 h-7 flex items-center justify-center rounded-full bg-green-100 hover:bg-green-200 transition-colors">
+                      <FiEdit className="w-4 h-4 text-green-600" />
+                    </button>
+                  </Link>
+                  <ClassDeleteActions 
+                    classId={item.id as number} 
+                    isDeleted={false}
+                  />
+                </>
+              )}
+            </>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
   return (
-    <div className="min-h-screen w-full flex justify-center items-start px-4 sm:px-6 lg:px-8 py-8 bg-slate-50">
+    <div className="min-h-screen w-full flex justify-center items-start px-4 sm:px-6 lg:px-8 py-8 ">
       <div className="w-full max-w-6xl">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
@@ -45,12 +150,40 @@ export default function ClassListPageCommon({
               <TableSearch />
             </div>
             <div className="flex items-center gap-2 flex-wrap justify-end">
+              {/* Toggle View Mode */}
+              <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-md transition-colors ${
+                    viewMode === 'grid' 
+                      ? 'bg-white shadow-sm text-blue-600' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                  title="Dạng lưới"
+                >
+                  <FiGrid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-md transition-colors ${
+                    viewMode === 'list' 
+                      ? 'bg-white shadow-sm text-blue-600' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                  title="Dạng danh sách"
+                >
+                  <FiList className="w-4 h-4" />
+                </button>
+              </div>
               {extraHeader}
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+        {/* Content based on view mode */}
+        {viewMode === 'grid' ? (
+          // Grid View
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
           {data?.length ? (
             data.map((item) => (
               <div key={item.id} className="group relative">
@@ -65,41 +198,61 @@ export default function ClassListPageCommon({
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
                       <span className="absolute bottom-3 left-3 text-white text-sm font-medium px-3 py-1 rounded-full bg-black/40 backdrop-blur-sm">
-                        {role === "teacher" ? `Số lượng: ${item.capacity ?? "-"}` : `Sức chứa: ${item.capacity ?? "-"}`}
+                        {item._count?.students || 0} học sinh
                       </span>
                     </div>
                   </Link>
 
                   <div className="absolute right-2 top-2 z-10">
-                    <Menu
-                      menuButton={
-                        <button
-                          aria-label="More actions"
-                          className="p-2 rounded-full bg-white/90 backdrop-blur shadow-sm hover:bg-white"
-                        >
-                          <FiMoreVertical />
-                        </button>
-                      }
-                      transition
-                    >
-                      <MenuItem>
-                        <Link href={`/${role}/class/${item.class_code || item.id}/newsfeed`} className="flex items-center gap-2 text-sm">
-                          <FiLogIn /> Vào lớp
-                        </Link>
-                      </MenuItem>
-                      <MenuItem>
-                        <Link href={`/${role}/class/${item.class_code || item.id}/edit`} className="flex items-center gap-2 text-sm">
-                          <FiEdit /> Chỉnh sửa
-                        </Link>
-                      </MenuItem>
-                      <MenuItem>
-                        <div className="flex items-center gap-2 text-sm text-red-600">
-                          <FiTrash />
-                          {/* {<FormContainer table="class" type="delete" id={item.id as any} />} */}
-                          <span>Xóa</span>
-                        </div>
-                      </MenuItem>
-                    </Menu>
+                    {item.deleted ? (
+                      // Hiển thị badge "Đã xóa" và nút khôi phục cho lớp học đã xóa
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full">
+                          Đã xóa
+                        </span>
+                        <ClassDeleteActions 
+                          classId={item.id as number} 
+                          isDeleted={true}
+                        />
+                      </div>
+                    ) : (
+                      // Menu thông thường cho lớp học chưa xóa
+                      <Menu
+                        menuButton={
+                          <button
+                            aria-label="More actions"
+                            className="p-2 rounded-full bg-white/90 backdrop-blur shadow-sm hover:bg-white"
+                          >
+                            <FiMoreVertical />
+                          </button>
+                        }
+                        transition
+                      >
+                        <MenuItem>
+                          <Link href={`/${role}/class/${item.class_code || item.id}/newsfeed`} className="flex items-center gap-2 text-sm">
+                            <FiLogIn /> Vào lớp
+                          </Link>
+                        </MenuItem>
+                        {role === "teacher" && (
+                          <MenuItem>
+                            <Link href={`/${role}/class/${item.class_code || item.id}/edit`} className="flex items-center gap-2 text-sm">
+                              <FiEdit /> Chỉnh sửa
+                            </Link>
+                          </MenuItem>
+                        )}
+                        {role === "teacher" && (
+                          <MenuItem>
+                            <div className="flex items-center gap-2 text-sm">
+                              <ClassDeleteActions 
+                                classId={item.id as number} 
+                                isDeleted={false}
+                                className=""
+                              />
+                            </div>
+                          </MenuItem>
+                        )}
+                      </Menu>
+                    )}
                   </div>
 
                   <div className="p-4">
@@ -122,10 +275,20 @@ export default function ClassListPageCommon({
                 </div>
               </div>
             ))
-          ) : (
-            <div className="col-span-full text-center text-slate-500">Chưa có lớp nào</div>
-          )}
-        </div>
+            ) : (
+              <div className="col-span-full text-center text-slate-500">Chưa có lớp nào</div>
+            )}
+          </div>
+        ) : (
+          // List View (Table)
+          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+            {data?.length ? (
+              <Table columns={columns} renderRow={renderRow} data={data} />
+            ) : (
+              <div className="text-center py-12 text-slate-500">Chưa có lớp nào</div>
+            )}
+          </div>
+        )}
 
         <div className="">
           <Pagination count={count} page={page} />

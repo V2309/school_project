@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { uploadToImageKit } from "@/lib/imagekit";
-import { getCurrentUser } from "@/lib/hooks/auth";
+import { getCurrentUser } from "@/hooks/auth";
 
 export async function POST(request: NextRequest) {
   try {

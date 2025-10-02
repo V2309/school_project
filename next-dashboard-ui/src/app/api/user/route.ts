@@ -1,3 +1,4 @@
+// api/user/route.ts
 import { NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import { cookies } from "next/headers";

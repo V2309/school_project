@@ -37,7 +37,7 @@
 
 import prisma from "@/lib/prisma";
 import ClassLayoutWrapper from "@/components/ClassLayoutWrapper";
-import { getCurrentUser } from "@/lib/hooks/auth";
+import { getCurrentUser } from "@/hooks/auth";
 
 export default async function ClassLayout({
   children,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { getCurrentUser } from "@/lib/hooks/auth";
+import { getCurrentUser } from "@/hooks/auth";
 
 const prisma = new PrismaClient();
 

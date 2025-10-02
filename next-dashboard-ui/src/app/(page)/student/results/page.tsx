@@ -1,5 +1,5 @@
 import prisma from '@/lib/prisma';
-import { getCurrentUser } from '@/lib/hooks/auth';
+import { getCurrentUser } from '@/hooks/auth';
 import Table from '@/components/Table';
 import dynamic from 'next/dynamic';
 

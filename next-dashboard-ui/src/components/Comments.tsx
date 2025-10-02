@@ -1,12 +1,12 @@
 "use client";
 
-import { useUser } from "@/lib/hooks/useUser";
+import { useUser } from "@/hooks/useUser";
 // import Image from "./Image";
 import Post from "./Post";
 import { Post as PostType } from "@prisma/client";
 import { useFormState, useFormStatus } from "react-dom";
 import { useEffect, useRef, useState } from "react";
-import { addComment } from "@/lib/actions";
+import { addComment } from "@/lib/actions/actions";
 import { socket } from "@/socket";
 import Image from "next/image";
 

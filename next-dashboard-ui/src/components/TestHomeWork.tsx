@@ -6,7 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { Worker, Viewer } from "@react-pdf-viewer/core";
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import { useRouter } from "next/navigation";
-import { useHomeworkSession } from "@/lib/hooks/useHomeworkSession";
+import { useHomeworkSession } from "@/hooks/useHomeworkSession";
 import { ExtractedQuestionsView } from "./ExtractedQuestionsView";
 
 interface Homework {

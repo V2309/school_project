@@ -5,7 +5,7 @@ import {
  
   deleteSubject,
   
-} from "@/lib/actions";
+} from "@/lib/actions/actions";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useRouter } from "next/navigation";

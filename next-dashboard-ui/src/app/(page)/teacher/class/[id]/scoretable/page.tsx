@@ -2,7 +2,7 @@
 // Đã cập nhật để sử dụng nền trắng
 
 import prisma from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/hooks/auth";
+import { getCurrentUser } from "@/hooks/auth";
 import { redirect } from "next/navigation";
 import { Award, BookOpen, Frown, Smile, BarChart3, Info, Users } from "lucide-react";
 

@@ -1,6 +1,6 @@
 import Profile from '@/components/Profile';
 import prisma from '@/lib/prisma';
-import { getCurrentUser } from '@/lib/hooks/auth';
+import { getCurrentUser } from '@/hooks/auth';
 
 export default async function StudentProfilePage() {
   const userSession = await getCurrentUser();

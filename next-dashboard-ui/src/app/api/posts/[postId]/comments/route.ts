@@ -1,4 +1,4 @@
-import { getPostComments } from "@/lib/actions";
+import { getPostComments } from "@/lib/actions/actions";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(

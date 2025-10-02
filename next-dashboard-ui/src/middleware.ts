@@ -65,14 +65,15 @@ const protectedRoutes: Record<string, string[]> = {
   "/teacher": ["teacher"],
   "/student": ["student"],
  
+ 
 };
 
 export async function middleware(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
-  console.log(`Middleware - Processing request for: ${pathname}`);
+ 
 
   if (pathname === "/sign-in") {
-    console.log("Middleware - Skipping /sign-in");
+    // console.log("Middleware - Skipping /sign-in");
     return NextResponse.next();
   }
 
@@ -80,31 +81,31 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith(route)
   );
   if (!matched) {
-    console.log("Middleware - No protected route matched, allowing request");
+    // console.log("Middleware - No protected route matched, allowing request");
     return NextResponse.next();
   }
 
   const token = req.cookies.get("session")?.value;
-  console.log("Middleware - Token:", token);
+  // console.log("Middleware - Token:", token);
 
   if (!token) {
-    console.log("Middleware - No token, redirecting to /sign-in");
+
     return NextResponse.redirect(new URL("/sign-in", req.url));
   }
 
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
-    console.log("Middleware - Payload:", payload);
+    // console.log("Middleware - Payload:", payload);
     
     const allowedRoles = matched[1];
     if (!allowedRoles.includes(payload.role as string)) {
-      console.log("Middleware - Role not allowed, redirecting to /");
+  
       return NextResponse.redirect(new URL("/sign-in", req.url));
     }
-    console.log("Middleware - Access granted, proceeding to route");
+    // console.log("Middleware - Access granted, proceeding to route");
     return NextResponse.next();
   } catch (err) {
-    console.error("Middleware - JWT Error:", err);
+    // console.error("Middleware - JWT Error:", err);
     return NextResponse.redirect(new URL("/sign-in", req.url));
   }
 }

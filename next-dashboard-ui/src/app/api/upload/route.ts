@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import AWS from "aws-sdk";
-import { getCurrentUser } from "@/lib/hooks/auth";
+import { getCurrentUser } from "@/hooks/auth";
 
 
 export async function POST(request: NextRequest) {

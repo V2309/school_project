@@ -170,7 +170,7 @@
 
 import prisma from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/setting";
-import { getCurrentUser } from "@/lib/hooks/auth";
+import { getCurrentUser } from "@/hooks/auth";
 import { Prisma } from "@prisma/client";
 import { Student, Class } from "@prisma/client";
 import MemberList from "@/components/MemberList";

@@ -69,9 +69,9 @@ const MemberList = ({
         />
         <div className="flex flex-col">
           <h3 className="font-semibold">{item.username}</h3>
-          <p className="text-xs text-gray-500">
+          {/* <p className="text-xs text-gray-500">
             {item.classes.map((cls) => cls.name).join(", ")}
-          </p>
+          </p> */}
         </div>
       </td>
       <td className="hidden md:table-cell">{item.schoolname}</td>

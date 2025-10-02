@@ -1,6 +1,6 @@
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/hooks/auth";
+import { getCurrentUser } from "@/hooks/auth";
 import prisma from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import PDFViewer from "@/components/PDFViewer";

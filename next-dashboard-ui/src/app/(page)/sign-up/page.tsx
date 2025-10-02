@@ -109,20 +109,43 @@ export default function Signup() {
       {/* Header tối giản */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
-          <Link href="/" className="flex items-center">
-            <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
-                clipRule="evenodd"
-              />
-            </svg>
-            <span className="ml-2 text-xl font-bold text-gray-900">YourLogo</span>
+            <Link href="/" className="flex items-center space-x-3 group">
+            <div className="w-10 h-10 text-primary rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300">
+              <svg
+                className="w-6 h-6 text-primary-foreground"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M12 2L2 7L12 12L22 7L12 2Z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M2 17L12 22L22 17"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M2 12L12 17L22 12"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <span className="text-2xl font-bold text-gradient">DoCus</span>
           </Link>
           <div className="flex items-center space-x-4">
-            <Link href="/login" className="text-gray-600 hover:text-gray-900">Sign In</Link>
-            <Link href="/signup" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
-              Sign Up
+            <Link href="/sign-in" className="text-gray-600 hover:text-gray-900">Đăng nhập</Link>
+            <Link href="/sign-up" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+              Đăng ký
             </Link>
           </div>
         </div>
@@ -155,8 +178,8 @@ export default function Signup() {
           )}
 
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Create your account</h1>
-            <p className="text-gray-600">Join our platform to get started</p>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Tạo mới tài khoản</h1>
+            <p className="text-gray-600">Tham gia nền tảng của chúng tôi để bắt đầu</p>
           </div>
 
           <form className="space-y-6" onSubmit={handleSubmit}>
@@ -241,7 +264,7 @@ export default function Signup() {
             {/* Email / SĐT */}
             <div>
               <label htmlFor="info" className="block text-sm font-medium text-gray-700 mb-1">
-                Email address or Phone number
+                Email hoặc SĐT
               </label>
               <input
                 id="info"
@@ -256,7 +279,7 @@ export default function Signup() {
             {/* Mật khẩu */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-                Password
+                Mật khẩu
               </label>
               <input
                 id="password"
@@ -272,7 +295,7 @@ export default function Signup() {
             {/* Xác nhận mật khẩu */}
             <div>
               <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1">
-                Confirm Password
+              Xác nhận mật khẩu
               </label>
               <input
                 id="confirm-password"
@@ -315,7 +338,7 @@ export default function Signup() {
                 disabled={loading}
                 className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 disabled:opacity-70 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                {loading ? "Processing..." : "Create Account"}
+                {loading ? "Processing..." : "Tạo ngay tài khoản"}
               </button>
             </div>
           </form>

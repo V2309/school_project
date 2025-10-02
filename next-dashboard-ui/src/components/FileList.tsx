@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { Download, FileText, Trash2 } from "lucide-react";
-import {getCurrentUser} from "@/lib/hooks/auth";
+import {getCurrentUser} from "@/hooks/auth";
 import Table from "@/components/Table";
 import TableSearch from "./TableSearch";
 interface FileData {

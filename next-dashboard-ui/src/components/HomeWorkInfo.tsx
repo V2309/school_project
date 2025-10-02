@@ -15,7 +15,7 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useTransition, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { deleteHomework } from "@/lib/actions";
+import { deleteHomework } from "@/lib/actions/actions";
 import ExportHomeworkModal from "@/components/ExportHomeworkModal";
 
 /** ================= Types ================= */

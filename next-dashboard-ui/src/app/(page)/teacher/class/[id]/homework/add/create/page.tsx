@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createHomeworkFromExtractedQuestions } from '@/lib/actions';
+import { createHomeworkFromExtractedQuestions } from '@/lib/actions/actions';
 import Breadcrumb from "@/components/Breadcrumb";
 
 interface QuizQuestion {

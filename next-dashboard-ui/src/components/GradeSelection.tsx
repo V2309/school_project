@@ -55,9 +55,9 @@ export default function GradeSelection({ grades, currentGradeId, currentGradeLev
         <p className="text-sm text-gray-600 mb-3">
           Khối hiện tại: <span className="font-semibold text-blue-600">{currentGradeLevel}</span>
         </p>
-        <div className="flex flex-wrap gap-3 mb-2">
+        <div className="flex flex-wrap gap-5 mb-2  ">
           {grades.map((g) => (
-            <span key={g.id} className="px-5 py-2 rounded-full font-semibold bg-gray-200 text-gray-800">
+            <span key={g.id} className="px-5 py-2 rounded-full font-semibold bg-gray-200 text-gray-800 mt-2 ">
               {g.level}
             </span>
           ))}
@@ -65,7 +65,7 @@ export default function GradeSelection({ grades, currentGradeId, currentGradeLev
             ➕ Khác
           </span>
         </div>
-        <p className="text-xs text-gray-500 mt-2">
+        <p className="text-xs text-gray-500 mt-4">
           Chọn khối lớp phù hợp hoặc chọn "Khác" để tạo khối mới
         </p>
       </div>

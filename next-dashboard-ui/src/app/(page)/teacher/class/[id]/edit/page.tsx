@@ -2,9 +2,13 @@ import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { updateClassWithDetails } from "@/lib/actions";
+import { updateClassWithDetails } from "@/lib/actions/actions";
 import GradeSelection from "@/components/GradeSelection";
 import ClassImageManager from "@/components/ClassImageManager";
+import { softDeleteClass, restoreClass } from "@/lib/actions/actions";
+
+
+import ClassDeleteActions from "@/components/ClassDeleteActions";
 
 // --- Helper Components (Để mã gọn gàng hơn) ---
 
@@ -101,13 +105,7 @@ export default async function EditClassPage({ params }: { params: { id: string }
     }
   }
 
-  // Server Action để xoá lớp học
-  async function deleteClass() {
-    "use server";
-    // await prisma.class.delete({ where: { class_code: params.id } });
-    console.log(`Lớp học ${params.id} đã được yêu cầu xoá.`);
-    redirect("/teacher/dashboard");
-  }
+
 
 return (
   <div className="bg-gray-50 min-h-screen">
@@ -188,27 +186,14 @@ return (
         {/* Cột phụ (bên phải) */}
         <div className="lg:col-span-1 space-y-6">
           <div className="space-y-3">
-            {/* Form xóa riêng biệt */}
-            <form action={deleteClass}>
-              <button
-                type="submit"
-                className="w-full border-2 border-red-200 text-red-500 bg-white font-bold py-3 px-4 rounded-lg hover:bg-red-50 hover:border-red-500 transition-colors flex items-center justify-center gap-2"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Xóa lớp học
-              </button>
-            </form>
+        
+                              <ClassDeleteActions 
+                                classId={classEdit.id}
+
+                                isDeleted={false}
+                                className="w-full border-2 border-red-200 text-red-500 bg-white font-bold py-3 px-4 rounded-lg hover:bg-red-50 hover:border-red-500 transition-colors flex items-center justify-center gap-2"
+                              />
+
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import { TestHomeWork } from "@/components/TestHomeWork";
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/hooks/auth";
+import { getCurrentUser } from "@/hooks/auth";
 
 export default async function HomeworkTestPage({ params }: { params: { id: string; hwId: number } }) {
   const homework = await prisma.homework.findUnique({

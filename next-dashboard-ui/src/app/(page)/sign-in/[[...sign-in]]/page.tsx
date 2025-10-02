@@ -1,6 +1,6 @@
 "use client";
 import { useFormState } from "react-dom";
-import { loginAction } from "@/lib/actions"; // Adjust the import path as necessary
+import { loginAction } from "@/lib/actions/actions"; // Adjust the import path as necessary
 import Link from "next/link";
 
 export default function SignInPage () {

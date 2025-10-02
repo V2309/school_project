@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { socket } from "@/socket";
-import { useUser } from "@/lib/hooks/useUser";
+import { useUser } from "@/hooks/useUser";
 
 export default function Socket() {
   const [isConnected, setIsConnected] = useState(false);

@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { createHomeworkWithQuestions } from '@/lib/actions';
+import { createHomeworkWithQuestions } from '@/lib/actions/actions';
 
 export default function AddHomeworkPage({ params }: { params: { id: string } }) {
   const router = useRouter();

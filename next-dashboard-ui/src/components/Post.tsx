@@ -8,9 +8,9 @@ import Video from "@/components/Video";
 import Link from "next/link";
 import {Post as PostType } from "@prisma/client";
 import { format } from "timeago.js";
-import { useUser } from "@/lib/hooks/useUser";
+import { useUser } from "@/hooks/useUser";
 import { useState, useEffect, useRef } from "react";
-import { deletePost, updatePost } from "@/lib/actions";
+import { deletePost, updatePost } from "@/lib/actions/actions";
 import { toast } from "react-toastify";
 import { useFormState } from "react-dom";
 
@@ -46,6 +46,7 @@ const Post = ({
   const [editDesc, setEditDesc] = useState(originalPost.desc || "");
   const [editMedia, setEditMedia] = useState<File | null>(null);
   const [removeCurrentMedia, setRemoveCurrentMedia] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   
   const [editState, editFormAction] = useFormState(updatePost, {
@@ -157,8 +158,13 @@ const Post = ({
     }
   }, [editState]);
 
+  // Handle client-side rendering for time display
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   return (
-    <div className="p-4 border-y-[1px] border-borderGray">
+    <div className=" bg-white rounded-lg shadow mb-6 border-1 p-4">
       {/* POST TYPE */}
       {post.rePostId && (
         <div className="flex items-center gap-2 text-sm text-textGray mb-2 from-bold">
@@ -223,14 +229,10 @@ const Post = ({
                 <h1 className="text-md font-bold">
                   {originalPost.user.username}
                 </h1>
-                <span
-                  className={`text-textGray ${type === "status" && "text-sm"}`}
-                >
-                  @{originalPost.user.username}
-                </span>
+                
                 {type !== "status" && (
-                  <span className="text-textGray">
-                    {format(originalPost.createdAt)}
+                  <span className="text-textGray" suppressHydrationWarning>
+                    {isClient ? format(originalPost.createdAt) : new Date(originalPost.createdAt).toLocaleDateString()}
                   </span>
                 )}
               </div>

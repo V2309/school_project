@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 
 interface MenuClassProps {
   classDetail: {
@@ -40,6 +41,7 @@ export default function MenuClass({ classDetail, role }: MenuClassProps) {
     { href: `/${role}/class/${classDetail.class_code}/scoretable`, label: "Bảng điểm", icon: menuIcons.scoretable },
     { href: `/${role}/class/${classDetail.class_code}/lectures`, label: "Bài giảng", icon: menuIcons.lectures },
     { href: `/${role}/class/${classDetail.class_code}/documents`, label: "Tài liệu", icon: menuIcons.documents },
+
   ];
 
   return (
@@ -54,7 +56,7 @@ export default function MenuClass({ classDetail, role }: MenuClassProps) {
 
         <div className="flex items-center mt-2">
           <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-300">
-          
+
           </div>
           <p className="ml-2 text-sm md:text-base">
             {classDetail.supervisor?.username || "Chưa phân công"}
@@ -68,18 +70,16 @@ export default function MenuClass({ classDetail, role }: MenuClassProps) {
           <Link
             key={link.href}
             href={link.href}
-            className={`flex items-center gap-2 ${
-              pathname === link.href 
-                ? "text-blue-700 font-bold" 
-                : "text-gray-700 hover:text-blue-700"
-            }`}
+            className={`flex items-center gap-2 ${pathname === link.href
+              ? "text-blue-700 font-bold"
+              : "text-gray-700 hover:text-blue-700"
+              }`}
           >
             <span>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className={`w-5 h-5 md:w-6 md:h-6 ${
-                  pathname === link.href ? "text-blue-700" : "text-gray-500"
-                }`}
+                className={`w-5 h-5 md:w-6 md:h-6 ${pathname === link.href ? "text-blue-700" : "text-gray-500"
+                  }`}
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -95,6 +95,23 @@ export default function MenuClass({ classDetail, role }: MenuClassProps) {
             <span className="text-sm md:text-base">{link.label}</span>
           </Link>
         ))}
+
+
+      </div>
+      <div className="text-xs text-gray-400 italic mt-5">
+        <button className="flex items-center text-xs text-gray-400 italic mt-5 hover:text-gray-600">
+         <span className="ml-1 mr-2">
+            <Image
+              src={role=="student" ? "/exit.png" : "/setting.png"}
+              alt={role=="student" ? "Rời khỏi lớp học" : "Cài đặt lớp"}
+              width={24}
+              height={24}
+            />
+          </span>
+          <span>{role=="student" ? "Rời khỏi lớp học" : "Cài đặt lớp"}</span>
+      
+     
+        </button>
       </div>
     </div>
   );

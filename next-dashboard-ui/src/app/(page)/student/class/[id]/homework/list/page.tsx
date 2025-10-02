@@ -3,7 +3,7 @@ import { HomeWorkInfo } from "@/components/HomeWorkInfo";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
 import HomeworkListClient from "@/components/HomeworkListClient";
-import { getCurrentUser } from "@/lib/hooks/auth";
+import { getCurrentUser } from "@/hooks/auth";
 export default async function HomeworkList({ params }: { params: { id: string } }) {
   const user = await getCurrentUser();
   const userId = user?.id as string;

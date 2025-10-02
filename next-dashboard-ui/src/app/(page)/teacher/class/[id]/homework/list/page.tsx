@@ -3,7 +3,7 @@ import { HomeWorkInfo } from "@/components/HomeWorkInfo";
 import prisma from "@/lib/prisma";
 import Link from "next/link";
 import HomeworkListClient from "@/components/HomeworkListClient";
-import { getCurrentUser } from "@/lib/hooks/auth";
+import { getCurrentUser } from "@/hooks/auth";
 import  TableSearch  from "@/components/TableSearch";
 export default async function HomeworkList({ params }: { params: { id: string } }) {
   const homeworks = await prisma.homework.findMany({

@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import Post from "@/components/Post";
-import { getCurrentUser } from "@/lib/hooks/auth";
+import { getCurrentUser } from "@/hooks/auth";
 
 
 const Feed = async ({ userProfileId, classCode }: { userProfileId?: string, classCode?: string }) => {
