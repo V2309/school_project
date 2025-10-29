@@ -116,7 +116,26 @@ export default function AddHomeworkPage({ params }: { params: { id: string } }) 
       
       const uploadData = await uploadResponse.json();
       
-      const perQuestion = numQuestions > 0 ? points / numQuestions : 0;
+      // Tính điểm chính xác - phương pháp đơn giản
+      const basePointPerQuestion = Number((points / numQuestions).toFixed(2));
+      let totalAssigned = 0;
+
+      const questionsWithPoints = answers.map((answer, index) => {
+        let pointForThis;
+        if (index === numQuestions - 1) {
+          // Câu cuối cùng: gán phần còn lại để đảm bảo tổng = points
+          pointForThis = Number((points - totalAssigned).toFixed(2));
+        } else {
+          pointForThis = basePointPerQuestion;
+          totalAssigned += pointForThis;
+        }
+
+        return {
+          questionNumber: index + 1,
+          answer,
+          point: pointForThis
+        };
+      });
 
       await createHomeworkWithQuestions({
         class_code: params.id as string,
@@ -124,11 +143,7 @@ export default function AddHomeworkPage({ params }: { params: { id: string } }) 
         fileName: uploadData.fileName,
         fileType: uploadData.fileType,
         points,
-        questions: answers.map((answer, index) => ({
-          questionNumber: index + 1,
-          answer,
-          point: perQuestion
-        })),
+        questions: questionsWithPoints,
         title,
         duration,
         startTime,
@@ -247,7 +262,13 @@ export default function AddHomeworkPage({ params }: { params: { id: string } }) 
                       <label className="block text-sm mb-1">Điểm</label>
                       <input
                         type="number"
-                        value={numQuestions > 0 ? (points / numQuestions).toString() : '0'}
+                        value={
+                          numQuestions > 0 
+                            ? index === numQuestions - 1 
+                              ? (points - (Math.round((points / numQuestions) * 100) / 100) * (numQuestions - 1)).toFixed(2)
+                              : (Math.round((points / numQuestions) * 100) / 100).toFixed(2)
+                            : '0'
+                        }
                         readOnly
                         className="w-full border rounded px-3 py-2 bg-gray-100 text-gray-700"
                       />

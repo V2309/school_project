@@ -105,15 +105,43 @@ export async function GET(request: NextRequest) {
             class_code: true,
           },
         },
+        views: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+              },
+            },
+          },
+          orderBy: {
+            viewedAt: 'asc' // Sắp xếp theo thời gian xem để lấy lần đầu tiên
+          }
+        },
+        _count: {
+          select: {
+            views: true,
+          },
+        },
       },
       orderBy: {
         uploadedAt: "desc",
       },
     });
 
+    // Thêm thông tin về việc user hiện tại đã xem file hay chưa
+    const filesWithViewStatus = files.map(file => {
+      const userView = file.views.find(view => view.user.id === user.id);
+      return {
+        ...file,
+        viewedByCurrentUser: !!userView,
+        firstViewedAt: userView?.viewedAt || null
+      };
+    });
+
     return NextResponse.json({
       success: true,
-      files,
+      files: filesWithViewStatus,
     });
   } catch (error) {
     console.error("Error fetching files:", error);

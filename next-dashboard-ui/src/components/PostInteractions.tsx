@@ -1,5 +1,5 @@
 "use client";
-import { likePost, addComment as addCommentAction } from "@/lib/actions/actions";
+import { likePost, addComment as addCommentAction } from "@/lib/actions/post.action";
 import { socket } from "@/socket";
 import { useUser } from "@/hooks/useUser";
 import Link from "next/link";

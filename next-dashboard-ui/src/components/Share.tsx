@@ -217,7 +217,7 @@ import { useFormState, useFormStatus } from "react-dom";
 import Image from "./Image";
 import NextImage from "next/image";
 import ImageEditor from "@/components/ImageEditor";
-import { addPostToClass } from "@/lib/actions/actions";
+import { addPostToClass } from "@/lib/actions/post.action";
 import { toast } from "react-toastify";
 
 // Component con để sử dụng useFormStatus

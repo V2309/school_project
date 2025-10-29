@@ -1,9 +1,9 @@
 'use client';
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 
+import Link from "next/link";
 interface MenuClassProps {
   classDetail: {
     id: number | string;
@@ -32,15 +32,18 @@ export default function MenuClass({ classDetail, role }: MenuClassProps) {
     scoretable: "M3 3v18h18M7 17V13M11 17V7M15 17V10M19 17V5",
   };
 
+
+  const class_code = classDetail.class_code;
+
   const links = [
-    { href: `/${role}/class/${classDetail.class_code}/newsfeed`, label: "Bảng tin", icon: menuIcons.newsfeed },
-    { href: `/${role}/class/${classDetail.class_code}/schedule`, label: "Lịch học", icon: menuIcons.schedule },
-    { href: `/${role}/class/${classDetail.class_code}/member`, label: "Thành viên", icon: menuIcons.members },
-    { href: `/${role}/class/${classDetail.class_code}/groups`, label: "Nhóm học tập", icon: menuIcons.groups },
-    { href: `/${role}/class/${classDetail.class_code}/homework/list`, label: "Bài tập", icon: menuIcons.homework },
-    { href: `/${role}/class/${classDetail.class_code}/scoretable`, label: "Bảng điểm", icon: menuIcons.scoretable },
-    { href: `/${role}/class/${classDetail.class_code}/lectures`, label: "Bài giảng", icon: menuIcons.lectures },
-    { href: `/${role}/class/${classDetail.class_code}/documents`, label: "Tài liệu", icon: menuIcons.documents },
+    { href: `/${role}/class/${class_code}/newsfeed`, label: "Bảng tin", icon: menuIcons.newsfeed },
+    { href: `/${role}/class/${class_code}/schedule`, label: "Lịch học", icon: menuIcons.schedule },
+    { href: `/${role}/class/${class_code}/member`, label: "Thành viên", icon: menuIcons.members },
+    // { href: `/${role}/class/${class_code}/groups`, label: "Nhóm học tập", icon: menuIcons.groups },
+    { href: `/${role}/class/${class_code}/homework/list`, label: "Bài tập", icon: menuIcons.homework },
+    { href: `/${role}/class/${class_code}/scoretable`, label: "Bảng điểm", icon: menuIcons.scoretable },
+    { href: `/${role}/class/${class_code}/video`, label: "Bài giảng", icon: menuIcons.lectures },
+    { href: `/${role}/class/${class_code}/documents`, label: "Tài liệu", icon: menuIcons.documents },
 
   ];
 
@@ -108,7 +111,9 @@ export default function MenuClass({ classDetail, role }: MenuClassProps) {
               height={24}
             />
           </span>
-          <span>{role=="student" ? "Rời khỏi lớp học" : "Cài đặt lớp"}</span>
+         <Link href={role=="student" ? `/${role}/class/${class_code}/leave` : `/${role}/class/${class_code}/edit`}>
+            {role=="student" ? "Rời khỏi lớp học" : "Cài đặt lớp"}
+         </Link>
       
      
         </button>

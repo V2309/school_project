@@ -85,7 +85,12 @@ const MemberList = ({
                   <Image src="/view.png" alt="Xem chi tiết học sinh" width={16} height={16} />
                 </button>
               </Link>
-              <FormModal table="student" type="delete" id={item.id} />
+              <FormModal 
+                table="studentFromClass" 
+                type="delete" 
+                id={item.id} 
+                relatedData={{ classCode: classId }} 
+              />
             </>
           )}
         </div>
@@ -113,7 +118,9 @@ const MemberList = ({
         </div>
       </div>
       {/* List */}
-      <Table columns={columns} renderRow={renderRow} data={data} />
+      <div className="flex-1">
+          <Table columns={columns} renderRow={renderRow} data={data} />
+      </div>
       {/* Pagination */}
       <div className="mt-4">
         <Pagination page={page} count={count} />

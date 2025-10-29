@@ -205,7 +205,7 @@ export function HomeWorkInfo({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <InfoItem label="Môn học" value={homework.subject?.name || "Không"} />
-        <InfoItem label="Tổng điểm" value={homework.points?.toString() || "Không"} />
+        <InfoItem label="Tổng điểm" value={homework.points ? (Math.round(homework.points * 100) / 100).toString() : "Không"} />
         <InfoItem label="Thời gian bắt đầu" value={formatDateTime(homework.startTime)} />
         <InfoItem label="Hạn chót nộp bài" value={formatDateTime(homework.endTime)} />
         <InfoItem

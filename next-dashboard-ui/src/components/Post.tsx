@@ -10,7 +10,7 @@ import {Post as PostType } from "@prisma/client";
 import { format } from "timeago.js";
 import { useUser } from "@/hooks/useUser";
 import { useState, useEffect, useRef } from "react";
-import { deletePost, updatePost } from "@/lib/actions/actions";
+import { deletePost, updatePost } from "@/lib/actions/post.action";
 import { toast } from "react-toastify";
 import { useFormState } from "react-dom";
 

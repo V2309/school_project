@@ -1,6 +1,6 @@
 "use client";
 
-import { softDeleteClass, restoreClass } from "@/lib/actions/actions";
+import { softDeleteClass, restoreClass } from "@/lib/actions/class.action";
 import { Trash2, RotateCcw } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useFormState } from "react-dom";
@@ -50,11 +50,12 @@ const ClassDeleteActions = ({ classId, isDeleted, className = "" }: ClassDeleteA
     if (deleteState.success) {
       toast.success("Lớp học đã được xóa!");
       setShowConfirm(false);
-      router.refresh();
+      router.refresh();;
+      // router.refresh();
     }
     if (deleteState.error) {
       toast.error("Có lỗi xảy ra khi xóa lớp học!");
-    }
+    } 
   }, [deleteState, router]);
 
   useEffect(() => {

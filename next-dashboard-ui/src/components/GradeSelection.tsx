@@ -55,7 +55,7 @@ export default function GradeSelection({ grades, currentGradeId, currentGradeLev
         <p className="text-sm text-gray-600 mb-3">
           Khối hiện tại: <span className="font-semibold text-blue-600">{currentGradeLevel}</span>
         </p>
-        <div className="flex flex-wrap gap-5 mb-2  ">
+        <div className="flex flex-wrap gap-5 mb-2 mt-2  ">
           {grades.map((g) => (
             <span key={g.id} className="px-5 py-2 rounded-full font-semibold bg-gray-200 text-gray-800 mt-2 ">
               {g.level}

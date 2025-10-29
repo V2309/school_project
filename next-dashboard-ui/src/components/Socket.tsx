@@ -22,11 +22,6 @@ export default function Socket() {
       socket.io.engine.on("upgrade", (transport) => {
         setTransport(transport.name);
       });
-      
-      if (user) {
-        console.log("Registering user with socket:", user.username);
-        socket.emit("newUser", user.username);
-      }
     }
 
     function onDisconnect() {
@@ -41,7 +36,15 @@ export default function Socket() {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
     };
-  }, [user]);
+  }, []);
+
+  // Separate useEffect for user registration
+  useEffect(() => {
+    if (user && socket.connected) {
+      console.log("Registering user with socket:", user.username);
+      socket.emit("newUser", user.username);
+    }
+  }, [user?.id]); // Only depend on user.id to avoid unnecessary re-runs
 
   return (
     <span></span>

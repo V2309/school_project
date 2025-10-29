@@ -4,16 +4,16 @@ import { useUser } from "@/hooks/useUser";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useState, useRef, useEffect } from "react";
-import { logoutAction } from "@/lib/actions/actions";
+import { logoutAction } from "@/lib/actions/auth.action";
 import Image from "next/image";
 import Socket from "./Socket";
 import Notification from "./Notification";
 /* =========================
    Config menu gộp chung file
    ========================= */
-export type Role = "admin" | "teacher" | "student" | "parent";
+export type Role =  "teacher" | "student" ;
 
-// - Teacher: class / materials / schedule
+  // - Teacher: class / materials / schedule
 // - Student: overview / class / schedule
 export const topNavItems = [
   // Teacher
@@ -72,7 +72,7 @@ const Navigation: React.FC = () => {
     : [];
 
   return (
-    <nav className="relative flex items-center justify-between p-4 h-[70px] bg-white shadow z-50">
+    <nav className="relative flex items-center justify-between p-4 h-[70px] bg-white shadow z-10">
       {/* Left side: Logo & Site Name */}
       <div className="flex items-center space-x-2">
         <svg

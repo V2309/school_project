@@ -1,20 +1,60 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import InputField from "../InputField";
-import {
-  classSchema,
-  ClassSchema,
-} from "@/lib/formValidationSchema";
-import {
-  createClass,
-  updateClass,
-} from "@/lib/actions/actions";
+import { useForm, UseFormRegister, FieldError } from "react-hook-form";
+import InputField from "../InputField"; // Giữ nguyên InputField của bạn
+import { classSchema, ClassSchema } from "@/lib/formValidationSchema";
+import { createClass, updateClass } from "@/lib/actions/class.action";
 import { useFormState } from "react-dom";
 import { Dispatch, SetStateAction, useEffect } from "react";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion"; // 1. Import motion
+
+// Định nghĩa props cho SelectField tái sử dụng
+type SelectFieldProps = {
+  label: string;
+  name: keyof ClassSchema; // Đảm bảo name là key của schema
+  register: UseFormRegister<ClassSchema>;
+  error?: FieldError;
+  options: { value: string | number; label: string | number }[];
+  defaultValue?: any;
+};
+
+// 2. Component SelectField để tái sử dụng, giúp code gọn gàng
+const SelectField = ({
+  label,
+  name,
+  register,
+  error,
+  options,
+  defaultValue,
+}: SelectFieldProps) => (
+  <div className="w-full">
+    <label
+      htmlFor={name}
+      className="block text-sm font-medium text-gray-700 mb-1"
+    >
+      {label}
+    </label>
+    <select
+      id={name}
+      className="block w-full rounded-lg border border-gray-300 shadow-sm p-2.5 text-sm
+                 focus:border-blue-500 focus:ring-blue-500 transition duration-150"
+      {...register(name)}
+      defaultValue={defaultValue}
+    >
+      {options.map((option) => (
+        <option value={option.value} key={option.value}>
+          {option.label}
+        </option>
+      ))}
+    </select>
+    {error?.message && (
+      <p className="mt-1 text-xs text-red-500">{error.message.toString()}</p>
+    )}
+  </div>
+);
 
 const ClassForm = ({
   type,
@@ -33,6 +73,14 @@ const ClassForm = ({
     formState: { errors },
   } = useForm<ClassSchema>({
     resolver: zodResolver(classSchema),
+    defaultValues: {
+      // Set default values để form hoạt động tốt hơn với RHF
+      name: data?.name || "",
+      capacity: data?.capacity || 0,
+      id: data?.id || undefined,
+      supervisorId: data?.supervisorId || undefined,
+      gradeId: data?.gradeId || undefined,
+    },
   });
 
   const [state, formAction] = useFormState(
@@ -51,102 +99,136 @@ const ClassForm = ({
 
   useEffect(() => {
     if (state.success) {
-      toast(`Class has been ${type === "create" ? "created" : "updated"}!`);
+      toast.success(`Lớp học đã được tạo mới thành công!`);
       setOpen(false);
       router.refresh();
+    }
+    // Bạn cũng có thể thêm toast.error nếu state.error là một tin nhắn
+    if (state.error && typeof state.error === "string") {
+       toast.error(state.error);
     }
   }, [state, router, type, setOpen]);
 
   const { teachers, grades } = relatedData;
 
-  return (
-    <form className="flex flex-col gap-8" onSubmit={onSubmit}>
-      <h1 className="text-xl font-semibold">
-        {type === "create" ? "Tạo mới lớp học " : "Update the class"}
-      </h1>
+  // 3. Chuẩn bị dữ liệu cho SelectField
+  const teacherOptions = teachers.map((teacher: { id: string; username: string }) => ({
+    value: teacher.id,
+    label: teacher.username,
+  }));
 
-      <div className="flex justify-between flex-wrap gap-4">
-        <InputField
-          label="Tên lớp học"
-          name="name"
-          defaultValue={data?.name}
-          register={register}
-          error={errors?.name}
-        />
-        <InputField
-          label="Số lượng học sinh"
-          name="capacity"
-          defaultValue={data?.capacity}
-          register={register}
-          error={errors?.capacity}
-        />
-        {data && (
+  const gradeOptions = grades.map((grade: { id: number; level: number }) => ({
+    value: grade.id,
+    label: `${grade.level}`, // Thêm chữ "Khối" cho rõ ràng
+  }));
+
+  // 4. Thêm hiệu ứng animation cho form
+  const formVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
+    exit: { opacity: 0, y: 20, transition: { duration: 0.2 } },
+  };
+
+  return (
+    // Sử dụng motion.form và gán variants
+    <motion.form
+      className="flex flex-col gap-6 bg-white p-6 rounded-lg" // Thêm padding và bg
+      onSubmit={onSubmit}
+      variants={formVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
+      autoComplete="off"
+    >
+      {/* 5. Cập nhật tiêu đề */}
+      <div className="text-center">
+        <h1 className="text-2xl font-bold text-gray-800">
+          {type === "create" ? "Tạo Lớp Học Mới" : "Cập Nhật Lớp Học"}
+        </h1>
+        <p className="text-sm text-gray-500 mt-1">
+          Vui lòng điền thông tin bên dưới.
+        </p>
+      </div>
+
+      {/* 6. Layout Grid responsive đẹp hơn */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-1">
           <InputField
-            label="Id"
-            name="id"
-            defaultValue={data?.id}
+            label="Tên lớp học"
+            name="name"
+            defaultValue={data?.name}
             register={register}
-            error={errors?.id}
-            hidden
+            error={errors?.name}
+            inputProps={{
+              placeholder: "Nhập tên lớp học (VD: 10A1, 11B2)"
+            }}
           />
-        )}
-        {/* Supervisor: chỉ cho phép chọn khi update, ẩn khi tạo mới */}
+        </div>
+        <div className="space-y-1">
+          <InputField
+            label="Số lượng học sinh"
+            name="capacity"
+            type="number"
+            defaultValue={data?.capacity}
+            register={register}
+            error={errors?.capacity}
+            inputProps={{
+              placeholder: "Nhập số lượng (VD: 30, 35)",
+              min: "1",
+              max: "50"
+            }}
+          />
+        </div>
+
+        {/* 7. Sử dụng SelectField đã refactor */}
         {type === "update" && (
-          <div className="flex flex-col gap-2 w-full md:w-1/4">
-            <label className="text-xs text-gray-500">Supervisor</label>
-            <select
-              className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-              {...register("supervisorId")}
+          <div className="md:col-span-1">
+            <SelectField
+              label="Giáo viên chủ nhiệm"
+              name="supervisorId"
+              register={register}
+              error={errors.supervisorId}
+              options={teacherOptions}
               defaultValue={data?.supervisorId}
-            >
-              {teachers.map(
-                (teacher: { id: string; username: string }) => (
-                  <option
-                    value={teacher.id}
-                    key={teacher.id}
-                  >
-                    {teacher.username}
-                  </option>
-                )
-              )}
-            </select>
-            {errors.supervisorId?.message && (
-              <p className="text-xs text-red-400">
-                {errors.supervisorId.message.toString()}
-              </p>
-            )}
+            />
           </div>
         )}
-        <div className="flex flex-col gap-2 w-full md:w-1/4">
-          <label className="text-xs text-gray-500">Chọn khối lớp</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("gradeId")}
+
+        <div className={type === "create" ? "md:col-span-2" : "md:col-span-1"}>
+          <SelectField
+            label="Chọn khối lớp"
+            name="gradeId"
+            register={register}
+            error={errors.gradeId}
+            options={gradeOptions}
             defaultValue={data?.gradeId}
-          >
-            {grades.map((grade: { id: number; level: number }) => (
-              <option
-                value={grade.id}
-                key={grade.id}
-              >
-                {grade.level}
-              </option>
-            ))}
-          </select>
-          {errors.gradeId?.message && (
-            <p className="text-xs text-red-400">
-              {errors.gradeId.message.toString()}
-            </p>
-          )}
+          />
         </div>
+
+        {/* Input ẩn cho ID (khi update) */}
+        {data && (
+          <input type="hidden" {...register("id")} defaultValue={data?.id} />
+        )}
       </div>
+
+      {/* 8. Cập nhật style cho thông báo lỗi server */}
       {state.error && (
-        <span className="text-red-500">Something went wrong!</span>
+        <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm text-center">
+          <span>Có lỗi xảy ra, vui lòng thử lại!</span>
+        </div>
       )}
-      <button className="bg-blue-400 text-white p-2 rounded-md">
-        {type === "create" ? "Create" : "Update"}
+
+      {/* 9. Cập nhật style cho button */}
+      <button
+        type="submit"
+        className="w-full bg-blue-600 text-white p-3 rounded-lg font-semibold
+                   hover:bg-blue-700 transition-colors duration-200
+                   focus-visible:outline focus-visible:outline-2 
+                   focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+      >
+        {type === "create" ? "Tạo Lớp" : "Cập Nhật"}
       </button>
-    </form>
+    </motion.form>
   );
 };
 

@@ -14,7 +14,10 @@ export type FormContainerProps = {
     | "result"
     | "attendance"
     | "event"
-    | "announcement";
+    | "announcement"
+    | "course"
+    | "folder"
+    | "studentFromClass";
   type: "create" | "update" | "delete";
   data?: any;
   id?: number | string;
@@ -62,6 +65,12 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
           select: { id: true, name: true },
         });
         relatedData = { lessons: examLessons };
+        break;
+      case "course":
+        const courseFolders = await prisma.folder.findMany({
+          select: { id: true, name: true },
+        });
+        relatedData = { folders: courseFolders };
         break;
 
       default:

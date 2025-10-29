@@ -1,4 +1,4 @@
-import { getDeletedClasses } from "@/lib/actions/actions";
+import { getDeletedClasses } from "@/lib/actions/class.action";
 import ClassListPageCommon from "@/components/ClassListPageCommon";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";

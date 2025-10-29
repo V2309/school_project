@@ -8,7 +8,7 @@ interface HomeworkCardProps {
     id: number;
     title: string;
     description: string | null; // Thêm null vào kiểu dữ liệu
-    
+    type?: string | null; // Thêm type để phân biệt loại bài tập
     points?: number | null; // Thêm null nếu cần
     createdAt: Date;
     class: {
@@ -24,7 +24,10 @@ interface HomeworkCardProps {
     }[] | null;
     submissions?: {
       grade: number | null;
+      studentId?: string; // Thêm studentId để đếm số học sinh đã làm
     }[]; // Thêm submissions để lấy điểm cao nhất
+    totalStudents?: number; // Tổng số học sinh trong lớp
+    completedStudents?: number; // Số học sinh đã làm bài
   };
   role?: string; // Thêm role để phân biệt teacher/student
 }
@@ -34,6 +37,14 @@ export function HomeworkCard({ homework, role }: HomeworkCardProps) {
   const classInfo = homework.class || { name: "Không xác định", class_code: "" };
   const subjectName = homework.subject?.name || "Không";
   const description = homework.description || "Không có mô tả";
+  
+  // Xác định loại bài tập
+  const homeworkType = homework.type === "extracted" ? "Trắc nghiệm tách câu" : "Trắc nghiệm";
+  
+  // Tính số lượng học sinh đã làm (cho teacher)
+  const completedCount = homework.completedStudents || 0;
+  const totalStudents = homework.totalStudents || 0;
+  const submissionStats = `${completedCount}/${totalStudents} đã làm`;
   
   // Tính điểm cao nhất từ submissions
   const getHighestGrade = () => {
@@ -75,10 +86,12 @@ export function HomeworkCard({ homework, role }: HomeworkCardProps) {
             
             <div className="mt-2 flex items-center text-sm text-gray-500">
               <span className="mr-4">
-                <span className="font-medium">Lớp:</span> {classInfo.name}
+                <span className="font-medium">Loại:</span> {homeworkType}
               </span>
               <span>
-                <span className="font-medium">Môn:</span> {subjectName}
+                <span className="font-medium">
+                  {role === "teacher" ? "Học sinh:" : "Môn:"}
+                </span> {role === "teacher" ? submissionStats : subjectName}
               </span>
             </div>
           </div>

@@ -2,10 +2,10 @@ import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { updateClassWithDetails } from "@/lib/actions/actions";
+import { updateClassWithDetails } from "@/lib/actions/class.action";
 import GradeSelection from "@/components/GradeSelection";
 import ClassImageManager from "@/components/ClassImageManager";
-import { softDeleteClass, restoreClass } from "@/lib/actions/actions";
+import { softDeleteClass, restoreClass } from "@/lib/actions/class.action";
 
 
 import ClassDeleteActions from "@/components/ClassDeleteActions";
@@ -100,6 +100,7 @@ export default async function EditClassPage({ params }: { params: { id: string }
     if (result.success) {
       revalidatePath(`/teacher/class/${params.id}/edit`);
       redirect(`/teacher/class/${params.id}/newsfeed`);
+    
     } else {
       console.log("Error updating class:", result.error);
     }

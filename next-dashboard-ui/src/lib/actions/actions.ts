@@ -1,609 +1,18 @@
 "use server";
-import { PrismaClient } from "@prisma/client";
-import { compare } from "bcryptjs";
-import { SignJWT } from "jose";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import prisma from "@/lib/prisma";
+
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/hooks/auth";
-import { NextApiRequest, NextApiResponse } from "next";
-import { NextResponse } from "next/server";
-import { jwtVerify } from "jose"; // Uncomment if you need to verify JWT
 
-import { z } from "zod";
-import { UploadResponse } from "imagekit/dist/libs/interfaces";
-import { imagekit } from "../utils";
-// import . env
 
 import {
-  ClassSchema,
-  ExamSchema,
-  StudentSchema,
-  SubjectSchema,
-  TeacherSchema,
   HomeworkSchema,
+  homeworkSchema,
+
+
 } from "../formValidationSchema";
 
 type CurrentState = { success: boolean; error: boolean };
-
-export const createSubject = async (
-  currentState: CurrentState,
-  data: SubjectSchema
-) => {
-  try {
-    await prisma.subject.create({
-      data: {
-        name: data.name,
-        teachers: {
-          connect: data.teachers.map((teacherId) => ({ id: teacherId })),
-        },
-      },
-    });
-
-    // revalidatePath("/list/subjects");
-    return { success: true, error: false };
-  } catch (err) {
-    console.log(err);
-    return { success: false, error: true };
-  }
-};
-
-export const updateSubject = async (
-  currentState: CurrentState,
-  data: SubjectSchema
-) => {
-  try {
-    await prisma.subject.update({
-      where: {
-        id: data.id,
-      },
-      data: {
-        name: data.name,
-        teachers: {
-          set: data.teachers.map((teacherId) => ({ id: teacherId })),
-        },
-      },
-    });
-
-    // revalidatePath("/list/subjects");
-    return { success: true, error: false };
-  } catch (err) {
-    console.log(err);
-    return { success: false, error: true };
-  }
-};
-
-export const deleteSubject = async (
-  currentState: CurrentState,
-  data: FormData
-) => {
-  const id = data.get("id") as string;
-  try {
-    await prisma.subject.delete({
-      where: {
-        id: parseInt(id),
-      },
-    });
-
-    // revalidatePath("/list/subjects");
-    return { success: true, error: false };
-  } catch (err) {
-    console.log(err);
-    return { success: false, error: true };
-  }
-};
-
-// Hàm tạo mã lớp học ngẫu nhiên
-
-function generateClassId(length = 5) {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  let result = "";
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
-}
-
-const imgs= [
-  "/school.jpg",
-  "/school1.jpg",
-  "/school2.jpg",
-  "/school3.jpg",
-  "/school4.jpg",
-  "/school5.jpg",
-  "/school6.jpg",
-]
-// hàm tảo ảnh lớp ngẫu nhiên
-function generateRandomCoverImage() {
-  const index = Math.floor(Math.random() * imgs.length);
-  return imgs[index];
-}
-
-export const createClass = async (
-  currentState: CurrentState,
-  data: ClassSchema
-) => {
-  try {
-    const user = await getCurrentUser();
-    if (!user || user.role !== "teacher") {
-      return { success: false, error: true };
-    }
-    const teacher = await prisma.teacher.findUnique({
-      where: { userId: user.id as string },
-    });
-    if (!teacher) {
-      return { success: false, error: true };
-    }
-    const classId = generateClassId();
-    await prisma.class.create({
-      data: {
-        ...data,
-        class_code: classId,
-        supervisorId: teacher.id,
-        img: generateRandomCoverImage(),
-      },
-    });
-    return { success: true, error: false };
-  } catch (err) {
-    console.log(err);
-    return { success: false, error: true };
-  }
-};
-
-export const updateClass = async (
-  currentState: CurrentState,
-  data: ClassSchema
-) => {
-  try {
-    await prisma.class.update({
-      where: {
-        id: data.id,
-      },
-      data,
-    });
-
-    // revalidatePath("/list/class");
-    return { success: true, error: false };
-  } catch (err) {
-    console.log(err);
-    return { success: false, error: true };
-  }
-};
-
-// Server Action để cập nhật lớp học với đầy đủ thông tin
-export const updateClassWithDetails = async (formData: FormData, classCode: string) => {
-  try {
-    const user = await getCurrentUser();
-    if (!user || user.role !== "teacher") {
-      return { success: false, error: "Unauthorized" };
-    }
-
-    const teacher = await prisma.teacher.findUnique({
-      where: { userId: user.id as string },
-    });
-    if (!teacher) {
-      return { success: false, error: "Teacher not found" };
-    }
-
-    // Lấy dữ liệu từ form
-    const name = formData.get("name")?.toString()?.trim();
-    const protectionCode = formData.get("protectionCode") === "on";
-    const lockClass = formData.get("lockClass") === "on";
-    const approveStudents = formData.get("approveStudents") === "on";
-    const blockLeave = formData.get("blockLeave") === "on";
-    const allowGradesView = formData.get("allowGradesView") === "on";
-    const gradeId = formData.get("gradeId")?.toString();
-    const newGradeLevel = formData.get("newGradeLevel")?.toString()?.trim();
-    const newImageUrl = formData.get("imageUrl")?.toString()?.trim(); // URL từ ImageUpload component
-
-    // Debug: Log dữ liệu nhận được
-    console.log("Form data received:", {
-      name,
-      protectionCode,
-      lockClass,
-      approveStudents,
-      blockLeave,
-      allowGradesView,
-      gradeId,
-      newGradeLevel,
-      newImageUrl,
-      classCode
-    });
-
-    // Kiểm tra xem lớp có tồn tại và thuộc về teacher này không
-    const existingClass = await prisma.class.findUnique({
-      where: { class_code: classCode, supervisorId: teacher.id },
-    });
-    if (!existingClass) {
-      return { success: false, error: "Class not found or unauthorized" };
-    }
-
-    // Xử lý grade: nếu có newGradeLevel thì tạo grade mới
-    let finalGradeId = gradeId ? parseInt(gradeId) : existingClass.gradeId;
-    
-    if (newGradeLevel && newGradeLevel !== "") {
-      // Kiểm tra xem grade đã tồn tại chưa
-      const existingGrade = await prisma.grade.findUnique({
-        where: { level: newGradeLevel },
-      });
-      
-      if (existingGrade) {
-        finalGradeId = existingGrade.id;
-      } else {
-        // Tạo grade mới
-        const newGrade = await prisma.grade.create({
-          data: { level: newGradeLevel },
-        });
-        finalGradeId = newGrade.id;
-      }
-    }
-
-    // Xử lý ảnh: sử dụng URL từ ImageUpload component
-    const finalImageUrl = newImageUrl || existingClass.img;
-
-    // Cập nhật vào database
-    const updateData = {
-      name: name && name.length > 0 ? name : existingClass.name,
-      gradeId: finalGradeId,
-      img: finalImageUrl,
-      isProtected: protectionCode,
-      isLocked: lockClass,
-      requiresApproval: approveStudents,
-      blockLeave: blockLeave,
-      allowGradesView: allowGradesView,
-    };
-
-    console.log("Updating class with data:", updateData);
-
-    await prisma.class.update({
-      where: { class_code: classCode },
-      data: updateData,
-    });
-
-    return { success: true, error: false };
-  } catch (err) {
-    console.log(err);
-    return { success: false, error: true };
-  }
-};
-
-// Server Action để tạo grade mới
-export const createGrade = async (gradeLevel: string) => {
-  try {
-    const user = await getCurrentUser();
-    if (!user || user.role !== "teacher") {
-      return { success: false, error: "Unauthorized" };
-    }
-
-    if (!gradeLevel || gradeLevel.trim() === "") {
-      return { success: false, error: "Grade level is required" };
-    }
-
-    // Kiểm tra xem grade đã tồn tại chưa
-    const existingGrade = await prisma.grade.findUnique({
-      where: { level: gradeLevel.trim() },
-    });
-    if (existingGrade) {
-      return { success: false, error: "Grade already exists" };
-    }
-
-    // Tạo grade mới
-    const newGrade = await prisma.grade.create({
-      data: { level: gradeLevel.trim() },
-    });
-
-    return { success: true, error: false, data: newGrade };
-  } catch (err) {
-    console.log(err);
-    return { success: false, error: true };
-  }
-};
-
-// Xóa mềm lớp học
-export const softDeleteClass = async (
-  currentState: CurrentState,
-  data: FormData
-) => {
-  const id = data.get("id") as string;
-  try {
-    const user = await getCurrentUser();
-    if (!user || user.role !== "teacher") {
-      return { success: false, error: true };
-    }
-
-    const teacher = await prisma.teacher.findUnique({
-      where: { userId: user.id as string },
-    });
-    if (!teacher) {
-      return { success: false, error: true };
-    }
-
-    // Kiểm tra quyền sở hữu lớp học
-    const classRecord = await prisma.class.findUnique({
-      where: { 
-        id: parseInt(id),
-        supervisorId: teacher.id 
-      },
-    });
-    if (!classRecord) {
-      return { success: false, error: true };
-    }
-
-    await prisma.class.update({
-      where: {
-        id: parseInt(id),
-      },
-      data: {
-        deleted: true,
-        deletedAt: new Date(),
-      },
-    });
-
-    return { success: true, error: false };
-  } catch (err) {
-    console.log(err);
-    return { success: false, error: true };
-  }
-};
-
-// Khôi phục lớp học
-export const restoreClass = async (
-  currentState: CurrentState,
-  data: FormData
-) => {
-  const id = data.get("id") as string;
-  try {
-    const user = await getCurrentUser();
-    if (!user || user.role !== "teacher") {
-      return { success: false, error: true };
-    }
-
-    const teacher = await prisma.teacher.findUnique({
-      where: { userId: user.id as string },
-    });
-    if (!teacher) {
-      return { success: false, error: true };
-    }
-
-    // Kiểm tra quyền sở hữu lớp học
-    const classRecord = await prisma.class.findUnique({
-      where: { 
-        id: parseInt(id),
-        supervisorId: teacher.id 
-      },
-    });
-    if (!classRecord) {
-      return { success: false, error: true };
-    }
-
-    await prisma.class.update({
-      where: {
-        id: parseInt(id),
-      },
-      data: {
-        deleted: false,
-        deletedAt: null,
-      },
-    });
-
-    return { success: true, error: false };
-  } catch (err) {
-    console.log(err);
-    return { success: false, error: true };
-  }
-};
-
-// Giữ lại hàm deleteClass cũ để tương thích
-export const deleteClass = async (
-  currentState: CurrentState,
-  data: FormData
-) => {
-  // Chuyển hướng sang xóa mềm
-  return await softDeleteClass(currentState, data);
-};
-
-
-const prisma = new PrismaClient();
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET_KEY ||
-    "71ae05550c898138fc632e4e6c0fba3f14cc10104e5697f19eb6fde9467b8d0cd19ab1faaa659f982a4c479d7f3d8827f815043d5064bec6b0c1d6e45842b77a"
-);
-
-export async function loginAction(prevState: any, formData: FormData) {
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-
-  const user = await prisma.user.findFirst({
-    where: {
-      OR: [{ email: email }, { phone: email }],
-    },
-  });
-
-  if (!user) {
-    return { error: "Tài khoản không tồn tại." };
-  }
-
-  const isMatch = await compare(password, user.password);
-  if (!isMatch) {
-    return { error: "Mật khẩu không đúng." };
-  }
-
-  const payload = {
-    id: user.id,
-    username: user.username,
-    role: user.role,
-  };
-
-  const token = await new SignJWT(payload)
-    .setProtectedHeader({ alg: "HS256" })
-    .setExpirationTime("1d")
-    .sign(JWT_SECRET);
-  console.log("LoginAction - Token created:", token);
-
-  cookies().set("session", token, {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24,
-    secure: process.env.NODE_ENV === "production",
-  });
-  console.log("LoginAction - Cookie set:", cookies().get("session"));
-  console.log(process.env.NODE_ENV);
-  if (user.role === "teacher") {
-    console.log("LoginAction - Redirecting to /teacher/class");
-    //window.dispatchEvent(new Event("user-logged-in"));
-    redirect("/teacher/class");
-  } else if (user.role === "student") {
-    console.log("LoginAction - Redirecting to /student/overview");
-
-    redirect("/student/overview");
-  }
-
-  return { success: true, role: user.role };
-}
-
-export async function logoutAction() {
-  cookies().delete("session");
-  console.log("LogoutAction - Cookie session deleted");
-
-  redirect("/");
-}
-
-// tham gia lớp học và kiểm tra xem học sinh đã tham gia lớp học hay chưa
-export const joinClassAction = async (classCode: string) => {
-  const user = await getCurrentUser();
-  if (!user || user.role !== "student") {
-    return { success: false, error: "Unauthorized" };
-  }
-
-  try {
-    // Lấy thông tin student và các lớp đã tham gia
-    const student = await prisma.student.findUnique({
-      where: { userId: user.id as string },
-      include: { classes: true },
-    });
-    if (!student) {
-      return { success: false, error: "Không tìm thấy thông tin học sinh." };
-    }
-
-    // Tìm lớp theo mã
-    const classToJoin = await prisma.class.findUnique({
-      where: { class_code: classCode },
-    });
-    if (!classToJoin) {
-      return { success: false, error: "Lớp không tồn tại" };
-    }
-
-    // Kiểm tra xem học sinh đã tham gia lớp này chưa
-    const alreadyJoined = student.classes.some(cls => cls.id === classToJoin.id);
-    if (alreadyJoined) {
-      return { success: false, error: "Bạn đã tham gia lớp học này rồi nhé" };
-    }
-
-    // Thêm học sinh vào lớp
-    await prisma.student.update({
-      where: { userId: user.id as string },
-      data: {
-        classes: {
-          connect: { id: classToJoin.id },
-        },
-      },
-    });
-
-    return { success: true };
-  } catch (err) {
-    console.error(err);
-    return { success: false, error: "Đã xảy ra lỗi khi tham gia lớp" };
-  }
-};
-// hiện thị tất cả  danh sách lớp hiện tại đã tham gia của học sinh (chỉ lớp chưa bị xóa)
-export async function getStudentClasses() {
-  const user = await getCurrentUser();
-  if (!user || user.role !== "student") {
-    return [];
-  }
-
-  const student = await prisma.student.findUnique({
-    where: { userId: user.id as string },
-    include: {
-      classes: {
-        where: {
-          deleted: false, // Chỉ lấy lớp chưa bị xóa
-        },
-      },
-    },
-  });
-
-  if (!student) {
-    return [];
-  }
-
-  return student.classes; // Trả về tất cả các lớp chưa bị xóa
-}
-
-// Lấy danh sách lớp của giáo viên (chỉ lớp chưa bị xóa)
-export async function getTeacherClasses(includeDeleted: boolean = false) {
-  const user = await getCurrentUser();
-  if (!user || user.role !== "teacher") {
-    return [];
-  }
-
-  const teacher = await prisma.teacher.findUnique({
-    where: { userId: user.id as string },
-    include: {
-      classes: {
-        where: includeDeleted ? {} : { deleted: false },
-        include: {
-          supervisor: {
-            select: { username: true },
-          },
-          _count: {
-            select: { students: true },
-          },
-        },
-      },
-    },
-  });
-
-  if (!teacher) {
-    return [];
-  }
-
-  return teacher.classes;
-}
-
-// Lấy danh sách lớp đã bị xóa mềm
-export async function getDeletedClasses() {
-  const user = await getCurrentUser();
-  if (!user || user.role !== "teacher") {
-    return [];
-  }
-
-  const teacher = await prisma.teacher.findUnique({
-    where: { userId: user.id as string },
-  });
-  if (!teacher) {
-    return [];
-  }
-
-  const deletedClasses = await prisma.class.findMany({
-    where: {
-      supervisorId: teacher.id,
-      deleted: true,
-    },
-    include: {
-      supervisor: {
-        select: { username: true },
-      },
-      _count: {
-        select: { students: true },
-      },
-    },
-  });
-
-  return deletedClasses;
-}
-
 
 export async function createHomeworkWithQuestions({
   title,
@@ -730,6 +139,25 @@ export async function createHomeworkFromExtractedQuestions({
   deadline: string;
   attempts: number;
 }) {
+  // Validation với homeworkSchema
+  const totalPoints = Math.round(extractedQuestions.reduce((sum, q) => sum + q.point, 0) * 100) / 100;
+  const validationData = {
+    title,
+    startTime,
+    endTime: deadline,
+    duration,
+    maxAttempts: attempts,
+    points: totalPoints,
+    numQuestions: extractedQuestions.length,
+    classCode: class_code,
+  };
+
+  const validationResult = homeworkSchema.safeParse(validationData);
+  if (!validationResult.success) {
+    const errorMessages = validationResult.error.errors.map(err => err.message).join(', ');
+    throw new Error(`Validation failed: ${errorMessages}`);
+  }
+
   const user = await getCurrentUser();
   if (!user || user.role !== "teacher") {
     throw new Error("Unauthorized");
@@ -748,8 +176,6 @@ export async function createHomeworkFromExtractedQuestions({
   if (!classRecord) {
     throw new Error("Class not found or unauthorized");
   }
-
-  const totalPoints = extractedQuestions.reduce((sum, q) => sum + q.point, 0);
 
   return await prisma.$transaction(async (prisma) => {
     // Tạo bài tập
@@ -780,7 +206,7 @@ export async function createHomeworkFromExtractedQuestions({
         questionType: "multiple_choice",
         options: q.options, // Lưu dưới dạng JSON
         answer: q.correct_answer_char,
-        point: q.point,
+        point: Math.round(q.point * 100) / 100, // Làm tròn điểm khi lưu
         homeworkId: homework.id,
       })),
     });
@@ -811,411 +237,61 @@ export const deleteHomework = async (
 
 
 
-// add post cho lớp học cụ thể
-export const addPostToClass = async (
-  prevState: { success: boolean; error: boolean },
+
+// Remove student from class
+export const removeStudentFromClass = async (
+  currentState: CurrentState,
   formData: FormData
 ) => {
-  const user = await getCurrentUser();
+  try {
+    const user = await getCurrentUser();
+    
+    if (!user || user.role !== "teacher") {
+      return { success: false, error: true };
+    }
 
-  if (!user) return { success: false, error: true };
+    const studentId = formData.get("id") as string;
+    const classCode = formData.get("classCode") as string;
 
-  const desc = formData.get("desc") as string;
-  const file = formData.get("file") as File;
-  const classCode = formData.get("classCode") as string;
+    if (!studentId || !classCode) {
+      return { success: false, error: true };
+    }
 
-  // Kiểm tra classCode
-  if (!classCode) {
-    return { success: false, error: true };
-  }
-
-  // Xác thực người dùng có quyền post vào lớp này không
-  if (user.role === "teacher") {
+    // Kiểm tra teacher có quyền truy cập lớp học không
     const teacher = await prisma.teacher.findUnique({
       where: { userId: user.id as string },
     });
+
     if (!teacher) {
       return { success: false, error: true };
     }
-    
-    const classExists = await prisma.class.findFirst({
-      where: { 
-        class_code: classCode,
-        supervisorId: teacher.id 
-      },
-    });
-    
-    if (!classExists) {
-      return { success: false, error: true };
-    }
-  } else if (user.role === "student") {
-    const student = await prisma.student.findUnique({
-      where: { userId: user.id as string },
-      include: { classes: true },
-    });
-    
-    if (!student) {
-      return { success: false, error: true };
-    }
-    
-    const isInClass = student.classes.some(cls => cls.class_code === classCode);
-    if (!isInClass) {
-      return { success: false, error: true };
-    }
-  }
 
-  let img = "";
-  let imgHeight = 0;
-  let video = "";
-
-  if (file && file.size > 0) {
-    if (!imagekit) {
-      throw new Error("ImageKit is not configured. Please check your environment variables.");
-    }
-
-    const uploadFile = async (file: File): Promise<UploadResponse> => {
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-
-      return new Promise((resolve, reject) => {
-        imagekit.upload(
-          {
-            file: buffer,
-            fileName: file.name,
-            folder: "/posts",
-          },
-          function (error, result) {
-            if (error) reject(error);
-            else resolve(result as UploadResponse);
-          }
-        );
-      });
-    };
-
-    try {
-      const result: UploadResponse = await uploadFile(file);
-      if (result.fileType === "image") {
-        img = result.filePath;
-        imgHeight = result.height || 0;
-      } else {
-        video = result.filePath;
-      }
-    } catch (error) {
-      console.log("Upload error:", error);
-    }
-  }
-
-  try {
-    await prisma.post.create({
-      data: {
-        desc,
-        userId: user.id as string,
-        classCode,
-        img,
-        imgHeight,
-        video,
-        isSensitive: false,
-      },
-    });
-    
-    revalidatePath(`/teacher/class/${classCode}/newsfeed`);
-    revalidatePath(`/student/class/${classCode}/newsfeed`);
-    return { success: true, error: false };
-  } catch (err) {
-    console.log(err);
-    return { success: false, error: true };
-  }
-};
-
-
-// like post
-export const likePost = async (postId: number) => {
-  const user = await getCurrentUser();
-
-  if (!user) return { success: false, error: "Unauthorized" };
-
-  try {
-    const existingLike = await prisma.like.findFirst({
+    const classRoom = await prisma.class.findFirst({
       where: {
-        userId: user.id as string,
-        postId: postId,
+        class_code: classCode,
+        supervisorId: teacher.id,
+        deleted: false,
       },
     });
 
-    if (existingLike) {
-      // Unlike: xóa like
-      await prisma.like.delete({
-        where: { id: existingLike.id },
-      });
-      return { success: true, liked: false };
-    } else {
-      // Like: tạo like mới
-      await prisma.like.create({
-        data: { 
-          userId: user.id as string, 
-          postId 
-        },
-      });
-      return { success: true, liked: true };
+    if (!classRoom) {
+      return { success: false, error: true };
     }
-  } catch (err) {
-    console.log(err);
-    return { success: false, error: "Failed to toggle like" };
-  }
-};
 
-
-
-// add comment
-
-export const addComment = async (
-  prevState: { success: boolean; error: boolean },
-  formData: FormData
-) => {
-
-const user = await getCurrentUser();
-  if (!user) return { success: false, error: true };
-
-  const postId = formData.get("postId");
-  const username = formData.get("username");
-  const desc = formData.get("desc");
-
-  const Comment = z.object({
-    parentPostId: z.number(),
-    desc: z.string().max(140),
-  });
-
-  const validatedFields = Comment.safeParse({
-    parentPostId: Number(postId),
-    desc,
-  });
-
-  if (!validatedFields.success) {
-    console.log(validatedFields.error.flatten().fieldErrors);
-    return { success: false, error: true };
-  }
-
-  try {
-    await prisma.post.create({
+    // Remove student from class (disconnect the relation)
+    await prisma.student.update({
+      where: { id: studentId },
       data: {
-        ...validatedFields.data,
-        userId: user.id as string,
+        classes: {
+          disconnect: { class_code: classCode },
+        },
       },
     });
-    revalidatePath(`/${username}/status/${postId}`);
+
+    revalidatePath(`/teacher/class/${classCode}/member`);
     return { success: true, error: false };
   } catch (err) {
-    console.log(err);
-    return { success: false, error: true };
-  }
-};
-
-// get comments for a post
-export const getPostComments = async (postId: number) => {
-  const user = await getCurrentUser();
-  if (!user) return [];
-
-  try {
-    const comments = await prisma.post.findMany({
-      where: { parentPostId: postId },
-      include: {
-        user: { select: { username: true, img: true } },
-        _count: { select: { likes: true, rePosts: true, comments: true } },
-        likes: { where: { userId: user.id as string }, select: { id: true } },
-        rePosts: { where: { userId: user.id as string }, select: { id: true } },
-        saves: { where: { userId: user.id as string }, select: { id: true } },
-      },
-      orderBy: { createdAt: "asc" },
-    });
-
-    return comments;
-  } catch (err) {
-    console.log(err);
-    return [];
-  }
-};
-
-// delete post
-export const deletePost = async (postId: number) => {
-  const user = await getCurrentUser();
-  if (!user) return { success: false, error: "Unauthorized" };
-
-  try {
-    // Tìm post để kiểm tra quyền sở hữu
-    const post = await prisma.post.findUnique({
-      where: { id: postId },
-      select: { userId: true, classCode: true },
-    });
-
-    if (!post) {
-      return { success: false, error: "Post not found" };
-    }
-
-    // Kiểm tra quyền xóa: chỉ người tạo post hoặc teacher của lớp mới được xóa
-    let hasPermission = false;
-
-    if (post.userId === user.id) {
-      // Người tạo post
-      hasPermission = true;
-    } else if (user.role === "teacher" && post.classCode) {
-      // Teacher của lớp có thể xóa post trong lớp của mình
-      const teacher = await prisma.teacher.findUnique({
-        where: { userId: user.id as string },
-      });
-      
-      if (teacher) {
-        const classExists = await prisma.class.findFirst({
-          where: { 
-            class_code: post.classCode,
-            supervisorId: teacher.id 
-          },
-        });
-        
-        if (classExists) {
-          hasPermission = true;
-        }
-      }
-    }
-
-    if (!hasPermission) {
-      return { success: false, error: "Permission denied" };
-    }
-
-    // Sử dụng transaction để xóa tất cả dữ liệu liên quan
-    await prisma.$transaction(async (prisma) => {
-      // 1. Xóa tất cả likes của post này
-      await prisma.like.deleteMany({
-        where: { postId: postId },
-      });
-
-      // 2. Xóa tất cả saved posts
-      await prisma.savedPosts.deleteMany({
-        where: { postId: postId },
-      });
-
-      // 3. Xóa tất cả comments (posts con)
-      await prisma.post.deleteMany({
-        where: { parentPostId: postId },
-      });
-
-      // 4. Xóa tất cả reposts
-      await prisma.post.deleteMany({
-        where: { rePostId: postId },
-      });
-
-      // 5. Cuối cùng xóa post chính
-      await prisma.post.delete({
-        where: { id: postId },
-      });
-    });
-
-    // Revalidate các trang liên quan
-    if (post.classCode) {
-      revalidatePath(`/teacher/class/${post.classCode}/newsfeed`);
-      revalidatePath(`/student/class/${post.classCode}/newsfeed`);
-    }
-
-    return { success: true, error: false };
-  } catch (err) {
-    console.log(err);
-    return { success: false, error: "Failed to delete post" };
-  }
-};
-
-// update post
-export const updatePost = async (
-  prevState: { success: boolean; error: boolean },
-  formData: FormData
-) => {
-  const user = await getCurrentUser();
-  if (!user) return { success: false, error: true };
-
-  const postId = parseInt(formData.get("postId") as string);
-  const desc = formData.get("desc") as string;
-  const file = formData.get("file") as File;
-  const removeMedia = formData.get("removeMedia") === "true";
-
-  try {
-    // Tìm post để kiểm tra quyền sở hữu
-    const post = await prisma.post.findUnique({
-      where: { id: postId },
-      select: { userId: true, classCode: true, img: true, video: true },
-    });
-
-    if (!post) {
-      return { success: false, error: true };
-    }
-
-    // Kiểm tra quyền sửa: chỉ người tạo post mới được sửa
-    if (post.userId !== user.id) {
-      return { success: false, error: true };
-    }
-
-    let updateData: any = { desc };
-
-    // Xử lý media
-    if (removeMedia) {
-      // Xóa media hiện tại
-      updateData.img = null;
-      updateData.imgHeight = null;
-      updateData.video = null;
-    } else if (file && file.size > 0) {
-      // Upload media mới
-      if (!imagekit) {
-        throw new Error("ImageKit is not configured. Please check your environment variables.");
-      }
-
-      const uploadFile = async (file: File): Promise<UploadResponse> => {
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-
-        return new Promise((resolve, reject) => {
-          imagekit.upload(
-            {
-              file: buffer,
-              fileName: file.name,
-              folder: "/posts",
-            },
-            function (error, result) {
-              if (error) reject(error);
-              else resolve(result as UploadResponse);
-            }
-          );
-        });
-      };
-
-      try {
-        const result: UploadResponse = await uploadFile(file);
-        if (result.fileType === "image") {
-          updateData.img = result.filePath;
-          updateData.imgHeight = result.height || 0;
-          updateData.video = null; // Clear video if uploading image
-        } else {
-          updateData.video = result.filePath;
-          updateData.img = null; // Clear image if uploading video
-          updateData.imgHeight = null;
-        }
-      } catch (error) {
-        console.log("Upload error:", error);
-        return { success: false, error: true };
-      }
-    }
-
-    // Cập nhật post
-    await prisma.post.update({
-      where: { id: postId },
-      data: updateData,
-    });
-
-    // Revalidate các trang liên quan
-    if (post.classCode) {
-      revalidatePath(`/teacher/class/${post.classCode}/newsfeed`);
-      revalidatePath(`/student/class/${post.classCode}/newsfeed`);
-    }
-
-    return { success: true, error: false };
-  } catch (err) {
-    console.log(err);
+    console.error("Error removing student from class:", err);
     return { success: false, error: true };
   }
 };

@@ -10,7 +10,7 @@ export type SubjectSchema = z.infer<typeof subjectSchema>;
 
 export const classSchema = z.object({
   id: z.coerce.number().optional(),
-  name: z.string().min(1, { message: "Subject name is required!" }),
+  name: z.string().min(1, { message: "name is required!" }),
   capacity: z.coerce.number().min(1, { message: "Capacity name is required!" }),
   gradeId: z.coerce.number().min(1, { message: "Grade name is required!" }),
   supervisorId: z.coerce.string().optional(),
@@ -46,6 +46,18 @@ export const teacherSchema = z.object({
 });
 
 export type TeacherSchema = z.infer<typeof teacherSchema>;
+
+export const scheduleSchema = z.object({
+  id: z.coerce.number().optional(),
+  title: z.string().min(1, { message: "Tên buổi học là bắt buộc!" }),
+  description: z.string().optional(),
+  classId: z.coerce.number().min(1, { message: "Vui lòng chọn lớp học!" }),
+  date: z.string().min(1, { message: "Vui lòng chọn ngày học!" }),
+  startTime: z.string().min(1, { message: "Vui lòng chọn thời gian bắt đầu!" }),
+  endTime: z.string().min(1, { message: "Vui lòng chọn thời gian kết thúc!" }),
+});
+
+export type ScheduleSchema = z.infer<typeof scheduleSchema>;
 
 export const studentSchema = z.object({
   id: z.string().optional(),
@@ -90,16 +102,59 @@ export type ExamSchema = z.infer<typeof examSchema>;
 
 
 export const homeworkSchema = z.object({
-  title: z.string().min(1, "Yêu cầu nhập tiêu đề"),
+  title: z.string().min(1, "Tên bài tập là bắt buộc"),
   description: z.string().optional(),
   content: z.string().optional(),
-  startTime: z.string().min(1, "Yêu cầu chọn thời gian bắt đầu"),
-  endTime: z.string().min(1, "Yêu cầu chọn hạn chót nộp bài"),
-  duration: z.number().min(1, "Thời lượng tối thiểu 1 phút"),
-  maxAttempts: z.number().min(1).optional().or(z.literal('')),
-  points: z.number().min(0).max(1000).optional(),
+  startTime: z.string().min(1, "Thời gian bắt đầu là bắt buộc"),
+  endTime: z.string().min(1, "Hạn chót nộp bài là bắt buộc"),
+  duration: z.number()
+    .min(1, "Thời lượng làm bài phải ít nhất 1 phút")
+    .max(600, "Thời lượng làm bài không được vượt quá 600 phút"),
+  maxAttempts: z.number()
+    .min(1, "Số lần làm bài phải ít nhất 1 lần")
+    .max(10, "Số lần làm bài không được vượt quá 10 lần")
+    .optional().or(z.literal('')),
+  points: z.number()
+    .min(1, "Tổng điểm phải ít nhất 1 điểm")
+    .max(1000, "Tổng điểm không được vượt quá 1000 điểm")
+    .optional(),
+  numQuestions: z.number()
+    .min(1, "Số lượng câu hỏi phải ít nhất 1 câu")
+    .optional(),
   subjectId: z.string().optional(),
   classCode: z.string().min(1, "Yêu cầu chọn lớp học"),
+}).refine((data) => {
+  const startDate = new Date(data.startTime);
+  const endDate = new Date(data.endTime);
+  const now = new Date();
+  
+  // Kiểm tra thời gian bắt đầu phải lớn hơn thời gian hiện tại
+  if (startDate <= now) {
+    return false;
+  }
+  
+  // Kiểm tra thời gian bắt đầu phải nhỏ hơn thời gian kết thúc
+  if (startDate >= endDate) {
+    return false;
+  }
+  
+  return true;
+}, {
+  message: "Thời gian bắt đầu phải sau thời điểm hiện tại và trước thời gian kết thúc",
+  path: ["startTime"],
+}).refine((data) => {
+  const startDate = new Date(data.startTime);
+  const endDate = new Date(data.endTime);
+  
+  // Kiểm tra thời gian kết thúc phải lớn hơn thời gian bắt đầu
+  if (endDate <= startDate) {
+    return false;
+  }
+  
+  return true;
+}, {
+  message: "Hạn chót nộp bài phải sau thời gian bắt đầu",
+  path: ["endTime"],
 });
 
 export type HomeworkSchema = z.infer<typeof homeworkSchema>;
@@ -129,3 +184,31 @@ export const signupSchema = z.object({
 });
 
 export type SignupSchema = z.infer<typeof signupSchema>;
+
+// Course Schema  
+export const courseSchema = z.object({
+  id: z.string().optional(),
+  title: z.string().min(1, { message: "Tiêu đề khóa học là bắt buộc!" }),
+  description: z.string().optional().default(""),
+  thumbnailUrl: z.string().optional().default(""), // Tự động tạo từ video YouTube
+  folderId: z.string().optional().nullable(),
+  classCode: z.string().min(1, { message: "Mã lớp học là bắt buộc!" }),
+  chapters: z.string().optional().default("[]"),
+  // Fields cho folder mới (tùy chọn)
+  newFolderName: z.string().optional().default(""),
+  newFolderDescription: z.string().optional().default(""),
+  newFolderColor: z.string().optional().default("#3B82F6"),
+});
+
+export type CourseSchema = z.infer<typeof courseSchema>;
+
+// Folder Schema
+export const folderSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().min(1, "Tên thư mục không được để trống"),
+  description: z.string().nullable().optional(),
+  color: z.string().optional(),
+  classCode: z.string().min(1),
+});
+
+export type FolderSchema = z.infer<typeof folderSchema>;

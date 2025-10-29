@@ -3,7 +3,7 @@
 import { Inbox, Loader2 } from "lucide-react";
 import React from "react";
 import { useDropzone } from "react-dropzone";
-import { toast } from "react-hot-toast";
+import { toast } from "react-toastify";
 import { useParams } from "next/navigation";
 
 interface FileUploadProps {

@@ -11,7 +11,7 @@ export default function SelectHomeworkTypePage({ params }: { params: { id: strin
 
   return (
     
-    <div className="container mx-auto h-full ">
+    <div className=" w-full mx-auto h-full ">
       <div className="flex flex-col items-center h-full "> 
         <div className="w-full bg-white p-4 rounded-lg flex  items-center ">
         <Breadcrumb

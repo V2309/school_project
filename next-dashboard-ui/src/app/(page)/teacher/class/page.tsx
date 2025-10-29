@@ -4,9 +4,9 @@ import { ITEM_PER_PAGE } from "@/lib/setting";
 import { getCurrentUser } from "@/hooks/auth";
 import ClassListPageCommon from "@/components/ClassListPageCommon";
 import FormContainer from "@/components/FormContainer";
-import Image from "next/image";
+
 import Link from "next/link";
-import { currentUser } from "@clerk/nextjs/server";
+
 
 type ClassList = Class & {
   supervisor: Teacher;

@@ -8,7 +8,7 @@ import InputField from "@/components/InputField";
 import TableSearch from "@/components/TableSearch";
 import Pagination from "@/components/Pagination";
 import React, { useState, useRef, useEffect } from 'react';
-import { joinClassAction , getStudentClasses } from "@/lib/actions/actions";
+import { joinClassAction , getStudentClasses } from "@/lib/actions/class.action";
 
 
 interface ClassType {

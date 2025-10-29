@@ -48,6 +48,10 @@ model User {
   likes Like[]
 
   saves SavedPosts[]
+
+  fileViews FileView[]
+  courseViews CourseView[]
+  videoViews VideoView[]
 }
 
 model Student {
@@ -96,6 +100,12 @@ model Teacher {
 
   homeworks Homework[] // Mối quan hệ nhiều nhiều với Homework
   files     File[]     // Mối quan hệ với tài liệu đã upload
+  
+  // Course system relations
+  folders   Folder[]   // Các thư mục do giáo viên tạo
+  courses   Course[]   // Các khóa học do giáo viên tạo
+  chapters  Chapter[]  // Các chương do giáo viên tạo
+  videos    Video[]    // Các video do giáo viên tạo
 }
 
 model Grade {
@@ -136,6 +146,10 @@ model Class {
   files     File[]     // Mối quan hệ với tài liệu của lớp học
 
   posts     Post[]     // Thêm dòng này
+  
+  // Course system relations
+  folders   Folder[]   // Các thư mục trong lớp học
+  courses   Course[]   // Các khóa học trong lớp học
 }
 
 model Subject {
@@ -363,6 +377,158 @@ model File {
   // Liên kết với lớp học thông qua class code
   classCode   String?  @map("class_code")
   class       Class?   @relation(fields: [classCode], references: [class_code])
+
+  // Liên kết với lượt xem
+  views       FileView[]
+}
+
+model FileView {
+  id        String   @id @default(uuid())
+  viewedAt  DateTime @default(now())
+
+  // Liên kết với file
+  fileId    String
+  file      File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  // Liên kết với user xem
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  // Đảm bảo một user chỉ có một record view cho một file
+  @@unique([fileId, userId])
+}
+
+// Course system models
+model Folder {
+  id          String   @id @default(uuid())
+  name        String              // Tên thư mục (ví dụ: "Machine Learning", "Web Development")
+  description String?             // Mô tả thư mục
+  color       String?             // Màu sắc thư mục (hex code)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Liên kết với giáo viên tạo thư mục
+  createdBy   String
+  teacher     Teacher  @relation(fields: [createdBy], references: [id])
+
+  // Liên kết với lớp học thông qua class code
+  classCode   String?  @map("class_code")
+  class       Class?   @relation(fields: [classCode], references: [class_code])
+
+  // Liên kết với các khóa học
+  courses     Course[]
+}
+
+model Course {
+  id          String   @id @default(uuid())
+  title       String              // Tên khóa học
+  description String?             // Mô tả khóa học
+  thumbnailUrl String?            // Ảnh thumbnail
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isActive    Boolean  @default(true) // Trạng thái kích hoạt
+
+  // Liên kết với thư mục
+  folderId    String?
+  folder      Folder?  @relation(fields: [folderId], references: [id], onDelete: SetNull)
+
+  // Liên kết với giáo viên tạo khóa học
+  createdBy   String
+  teacher     Teacher  @relation(fields: [createdBy], references: [id])
+
+  // Liên kết với lớp học thông qua class code
+  classCode   String?  @map("class_code")
+  class       Class?   @relation(fields: [classCode], references: [class_code])
+
+  // Liên kết với các chương, video và lượt xem
+  chapters    Chapter[]  // Các chương trong khóa học
+  videos      Video[]    // Các video trong khóa học (có thể không thuộc chương nào)
+  views       CourseView[]
+}
+
+model Chapter {
+  id          String   @id @default(uuid())
+  title       String              // Tên chương (ví dụ: "Chương 1: Giới thiệu")
+  description String?             // Mô tả chương
+  orderIndex  Int      @default(0) // Thứ tự sắp xếp trong khóa học
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isActive    Boolean  @default(true) // Trạng thái kích hoạt
+
+  // Liên kết với khóa học
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  // Liên kết với giáo viên tạo chương
+  createdBy   String
+  teacher     Teacher  @relation(fields: [createdBy], references: [id])
+
+  // Liên kết với các video
+  videos      Video[]
+}
+
+model Video {
+  id          String   @id @default(uuid())
+  title       String              // Tên video
+  description String?             // Mô tả video
+  slug        String  @unique
+  url         String              // URL video (YouTube, Vimeo, hoặc file upload)
+  type        String   @default("youtube") // Loại video: youtube, vimeo, upload
+  duration    String?             // Thời lượng video (ví dụ: "10:30")
+  thumbnailUrl String?            // Ảnh thumbnail riêng cho video
+  orderIndex  Int      @default(0) // Thứ tự sắp xếp trong chương
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isActive    Boolean  @default(true) // Trạng thái kích hoạt
+
+  // Liên kết với chương
+  chapterId   String?
+  chapter     Chapter? @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+
+  // Liên kết với khóa học (có thể trực tiếp hoặc qua chapter)
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  // Liên kết với giáo viên tạo video
+  createdBy   String
+  teacher     Teacher  @relation(fields: [createdBy], references: [id])
+
+  // Liên kết với lượt xem video
+  views       VideoView[]
+}
+
+model CourseView {
+  id        String   @id @default(uuid())
+  viewedAt  DateTime @default(now())
+
+  // Liên kết với khóa học
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  // Liên kết với user xem
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  // Đảm bảo một user chỉ có một record view cho một khóa học
+  @@unique([courseId, userId])
+}
+
+model VideoView {
+  id        String   @id @default(uuid())
+  viewedAt  DateTime @default(now())
+  watchTime Int?               // Thời gian đã xem (giây)
+  completed Boolean  @default(false) // Đã xem hết video chưa
+
+  // Liên kết với video
+  videoId   String
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  // Liên kết với user xem
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+
+  // Đảm bảo một user chỉ có một record view cho một video
+  @@unique([videoId, userId])
 }
 
 

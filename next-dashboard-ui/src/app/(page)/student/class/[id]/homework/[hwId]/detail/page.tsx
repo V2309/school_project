@@ -4,10 +4,26 @@ import { getCurrentUser } from "@/hooks/auth";
 import prisma from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import PDFViewer from "@/components/PDFViewer";
+import DocxViewer from "@/components/DocxViewer";
 
 interface PageProps {
   params: { id: string; hwId: string };
   searchParams: { utid?: string; homeworkId?: string; getBest?: string };
+}
+
+// Helper functions để kiểm tra loại file
+function isPDF(fileType: string | null, fileName?: string | null) {
+  if (!fileType) return false;
+  return fileType === "application/pdf" || fileName?.toLowerCase().endsWith(".pdf");
+}
+
+function isWord(fileType: string | null, fileName?: string | null) {
+  if (!fileType) return false;
+  const lowerFileName = fileName?.toLowerCase();
+  return fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+         fileType === "application/msword" ||
+         lowerFileName?.endsWith(".doc") ||
+         lowerFileName?.endsWith(".docx");
 }
 
 export default async function HomeworkDetail({ params, searchParams }: PageProps) {
@@ -94,8 +110,10 @@ export default async function HomeworkDetail({ params, searchParams }: PageProps
           // Với bài tập extracted, hiển thị file gốc
           submission.homework.originalFileUrl ? (
             <div className="mb-4">
-              {submission.homework.originalFileType === "application/pdf" ? (
+              {isPDF(submission.homework.originalFileType, submission.homework.originalFileName) ? (
                 <PDFViewer fileUrl={submission.homework.originalFileUrl} />
+              ) : isWord(submission.homework.originalFileType, submission.homework.originalFileName) ? (
+                <DocxViewer fileUrl={submission.homework.originalFileUrl} />
               ) : (
                 <a
                   href={submission.homework.originalFileUrl}
@@ -115,8 +133,10 @@ export default async function HomeworkDetail({ params, searchParams }: PageProps
           submission.homework.attachments.length > 0 ? (
             submission.homework.attachments.map((attachment: any) => (
               <div key={attachment.id} className="mb-4">
-                {attachment.type === "application/pdf" ? (
+                {isPDF(attachment.type, attachment.name) ? (
                   <PDFViewer fileUrl={attachment.url} />
+                ) : isWord(attachment.type, attachment.name) ? (
+                  <DocxViewer fileUrl={attachment.url} />
                 ) : (
                   <a
                     href={attachment.url}
@@ -140,7 +160,7 @@ export default async function HomeworkDetail({ params, searchParams }: PageProps
         <h2 className="text-xl font-bold mb-4">Kết quả bài làm</h2>
         {/* table thông tin chi tiết */}
         <div className="mb-4">
-          <p className="text-lg font-semibold">Tổng điểm: {submission.grade}</p>
+          <p className="text-lg font-semibold">Tổng điểm: {submission.grade ? Math.round(submission.grade * 100) / 100 : 0}</p>
           <p><strong>Thời gian làm bài:</strong> {
             submission.timeSpent 
               ? `${Math.floor(submission.timeSpent / 60)} phút ${submission.timeSpent % 60} giây`

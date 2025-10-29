@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createHomeworkFromExtractedQuestions } from '@/lib/actions/actions';
+import { homeworkSchema } from '@/lib/formValidationSchema';
 import Breadcrumb from "@/components/Breadcrumb";
 
 interface QuizQuestion {
@@ -40,6 +41,10 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
   // Thêm step state giống original
   const [step, setStep] = useState(1);
   
+  // State cho chức năng đảo câu hỏi và đáp án
+  const [isShuffleQuestionsEnabled, setIsShuffleQuestionsEnabled] = useState(false);
+  const [isShuffleAnswersEnabled, setIsShuffleAnswersEnabled] = useState(false);
+  
   // State giống như trang original
   const [numQuestions, setNumQuestions] = useState<number>(0);
   const [answers, setAnswers] = useState<string[]>(Array(1).fill(''));
@@ -53,6 +58,9 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
   const [deadline, setDeadline] = useState<string>("");
   const [attempts, setAttempts] = useState<number>(1);
   const [error, setError] = useState<string>("");
+  
+  // State cho validation errors
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (type === 'extracted') {
@@ -120,8 +128,8 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
   const selectAllQuestions = () => {
     if (!quizData) return;
     const allQuestions = quizData.quiz_data
-      .filter(item => typeof item.question_number === 'number')
-      .map(item => item.question_number);
+      .filter((item: any) => typeof item.question_number === 'number')
+      .map((item: any) => item.question_number);
     setSelectedQuestions(allQuestions);
   };
 
@@ -159,16 +167,84 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
 
   const handlePointsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPoints(parseInt(e.target.value) || 0);
+    // Clear validation error
+    if (validationErrors.points) {
+      setValidationErrors(prev => ({ ...prev, points: '' }));
+    }
+  };
+
+  // Validation handlers
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTitle(e.target.value);
+    if (validationErrors.title) {
+      setValidationErrors(prev => ({ ...prev, title: '' }));
+    }
+  };
+
+  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDuration(Number(e.target.value));
+    if (validationErrors.duration) {
+      setValidationErrors(prev => ({ ...prev, duration: '' }));
+    }
+  };
+
+  const handleStartTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setStartTime(e.target.value);
+    if (validationErrors.startTime) {
+      setValidationErrors(prev => ({ ...prev, startTime: '' }));
+    }
+  };
+
+  const handleDeadlineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setDeadline(e.target.value);
+    if (validationErrors.endTime) {
+      setValidationErrors(prev => ({ ...prev, endTime: '' }));
+    }
+  };
+
+  const handleAttemptsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAttempts(Number(e.target.value));
+    if (validationErrors.maxAttempts) {
+      setValidationErrors(prev => ({ ...prev, maxAttempts: '' }));
+    }
   };
 
   const handleCreateHomework = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsCreating(true);
     setError('');
+    setValidationErrors({});
     
     try {
       if (!quizData) throw new Error('Vui lòng chọn file bài tập');
-      if (!startTime || !deadline) throw new Error('Vui lòng nhập thời gian bắt đầu và hạn chót');
+      
+      // Validation với homeworkSchema - sử dụng điểm gốc thay vì tính lại
+      const totalPoints = points;
+      const formData = {
+        title,
+        startTime,
+        endTime: deadline,
+        duration,
+        maxAttempts: attempts,
+        points: totalPoints,
+        numQuestions,
+        classCode: classId,
+      };
+      
+      const validationResult = homeworkSchema.safeParse(formData);
+      
+      if (!validationResult.success) {
+        const errors: Record<string, string> = {};
+        validationResult.error.errors.forEach((error) => {
+          const path = error.path[0];
+          if (path && typeof path === 'string') {
+            errors[path] = error.message;
+          }
+        });
+        setValidationErrors(errors);
+        setError('Vui lòng kiểm tra lại thông tin đã nhập');
+        return;
+      }
       
       let originalFileUrl = quizData.originalFile?.url;
       
@@ -191,16 +267,56 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
         originalFileUrl = uploadResult.fileUrl;
       }
       
-      // Chuẩn bị dữ liệu cho homework dạng extracted
+      // Chuẩn bị dữ liệu từ quiz_data gốc
+      let processedQuizData = [...quizData.quiz_data];
+
+      // Nếu có bật đảo, gọi API Flask để xử lý
+      if (isShuffleQuestionsEnabled || isShuffleAnswersEnabled) {
+        const shuffleResponse = await fetch('http://localhost:5000/api/shuffle-quiz', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            quiz_data: processedQuizData,
+            shuffle_questions: isShuffleQuestionsEnabled,
+            shuffle_answers: isShuffleAnswersEnabled,
+          }),
+        });
+
+        if (!shuffleResponse.ok) {
+          throw new Error('Không thể đảo đề thi');
+        }
+
+        const shuffleResult = await shuffleResponse.json();
+        if (shuffleResult.success) {
+          processedQuizData = shuffleResult.quiz_data;
+        }
+      }
+
+      // Chuẩn bị dữ liệu cho homework dạng extracted với điểm chính xác
+      const basePointPerQuestion = Number((points / numQuestions).toFixed(2));
+      let totalAssigned = 0;
+
       const extractedQuestions = answers.map((answer, index) => {
-        const originalQuestion = quizData.quiz_data[index];
+        const originalQuestion = processedQuizData[index];
+        
+        let pointForThis;
+        if (index === numQuestions - 1) {
+          // Câu cuối cùng: gán phần còn lại để đảm bảo tổng = points
+          pointForThis = Math.round((points - totalAssigned) * 100) / 100;
+        } else {
+          pointForThis = basePointPerQuestion;
+          totalAssigned = Math.round((totalAssigned + pointForThis) * 100) / 100;
+        }
+
         return {
           question_number: index + 1,
           question_text: originalQuestion?.question_text || `Câu ${index + 1}`,
           options: originalQuestion?.options || [],
-          correct_answer_char: answer,
+          correct_answer_char: originalQuestion?.correct_answer_char || answer,
           correct_answer_index: originalQuestion?.correct_answer_index || 0,
-          point: numQuestions > 0 ? points / numQuestions : 0,
+          point: pointForThis,
         };
       });
 
@@ -233,7 +349,7 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
 
   if (!quizData) {
     return (
-      <div className="container mx-auto h-full">
+      <div className="w-full mx-auto h-full">
         <div className="flex flex-col items-center justify-center h-full">
           <p className="text-lg text-gray-600">Không có dữ liệu bài tập</p>
           <button 
@@ -248,8 +364,8 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
   }
 
   return (
-    <div className="container mx-auto">
-      <div className="w-full bg-white p-4 rounded-lg mb-4">
+    <div className="w-full mx-auto overflow-x-hidden">
+      <div className=" bg-white p-4 rounded-lg mb-4">
         <Breadcrumb
           items={[
             { label: "Bài tập", href: `/teacher/class/${classId}/homework/list` },
@@ -260,19 +376,47 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
         />
       </div>
 
-      <h1 className="text-2xl font-bold mb-6">Tạo Bài Tập Từ Câu Hỏi Đã Tách</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-4">
         {/* Bên trái: Danh sách câu hỏi đã tách */}
         <div className="border rounded-lg p-4">
-          <h2 className="text-lg font-semibold mb-4">
-            Câu Hỏi Đã Tách ({quizData.total_questions} câu)
-          </h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold">
+              Câu Hỏi Đã Tách ({quizData.total_questions} câu)
+            </h2>
+            
+            {/* Các nút đảo câu hỏi và đáp án */}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setIsShuffleQuestionsEnabled(!isShuffleQuestionsEnabled)}
+                className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isShuffleQuestionsEnabled
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                {isShuffleQuestionsEnabled ? '✓ Đảo câu' : 'Đảo câu'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsShuffleAnswersEnabled(!isShuffleAnswersEnabled)}
+                className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
+                  isShuffleAnswersEnabled
+                    ? 'bg-green-500 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                {isShuffleAnswersEnabled ? '✓ Đảo đáp án' : 'Đảo đáp án'}
+              </button>
+            </div>
+          </div>
+          
           <div className="border rounded p-4 min-h-[600px] h-[80vh] overflow-auto">
             <div className="space-y-4">
               {quizData.quiz_data
-                .filter(item => typeof item.question_number === 'number')
-                .map((question, index) => (
+                .filter((item: any) => typeof item.question_number === 'number')
+                .map((question: any, index: number) => (
                   <div 
                     key={index}
                     className={`border rounded-lg p-4 ${
@@ -290,10 +434,10 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
                       />
                       <div className="flex-1">
                         <h4 className="font-bold text-lg mb-3">
-                          Câu {question.question_number}: {question.question_text}
+                        {question.question_text}
                         </h4>
                         <div className="grid grid-cols-1 gap-2">
-                          {question.options.map((option, optIndex) => (
+                          {question.options.map((option: string, optIndex: number) => (
                             <div 
                               key={optIndex}
                               className={`p-2 rounded text-sm ${
@@ -318,32 +462,51 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
         </div>
 
         {/* Bên phải: Logic 2 step giống original */}
-        <div className="border rounded-lg p-4">
+        <div className="border rounded-lg p-4 ">
           {step === 1 ? (
             <>
               <h2 className="text-lg font-semibold mb-4">Câu Hỏi</h2>
               
               {/* Số lượng câu hỏi và tổng điểm */}
-              <div className="mb-4 flex gap-4 items-end">
+              <div className="mb-4 flex gap-4 items-end overflow-x-auto">
                 <div>
                   <label className="block mb-2">Số lượng câu hỏi:</label>
                   <input
                     type="number"
-                    min="0"
+                    min="1"
                     value={numQuestions}
-                    onChange={handleNumQuestionsChange}
-                    className="border rounded px-3 py-2 w-20"
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      setNumQuestions(value);
+                      setAnswers((prev) => {
+                        const newArr = [...prev];
+                        newArr.length = value;
+                        return newArr.fill('', prev.length, value);
+                      });
+                      // Clear validation error
+                      if (validationErrors.numQuestions) {
+                        setValidationErrors(prev => ({ ...prev, numQuestions: '' }));
+                      }
+                    }}
+                    className={`border rounded px-3 py-2 w-20 ${validationErrors.numQuestions ? 'border-red-500' : ''}`}
                   />
+                  {validationErrors.numQuestions && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.numQuestions}</p>
+                  )}
                 </div>
                 <div>
                   <label className="block mb-2">Tổng điểm:</label>
                   <input
                     type="number"
                     min="1"
+                    max="1000"
                     value={points}
                     onChange={handlePointsChange}
-                    className="border rounded px-3 py-2 w-24"
+                    className={`border rounded px-3 py-2 w-24 ${validationErrors.points ? 'border-red-500' : ''}`}
                   />
+                  {validationErrors.points && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.points}</p>
+                  )}
                 </div>
               </div>
               
@@ -385,7 +548,13 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
                       <label className="block text-sm mb-1">Điểm</label>
                       <input
                         type="number"
-                        value={numQuestions > 0 ? (points / numQuestions).toString() : '0'}
+                        value={
+                          numQuestions > 0 
+                            ? index === numQuestions - 1 
+                              ? (points - (Number((points / numQuestions).toFixed(2)) * (numQuestions - 1))).toFixed(2)
+                              : (Number((points / numQuestions).toFixed(2))).toFixed(2)
+                            : '0'
+                        }
                         readOnly
                         className="w-full border rounded px-3 py-2 bg-gray-100 text-gray-700"
                       />
@@ -416,16 +585,31 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
           ) : (
             <>
               <h2 className="text-lg font-semibold mb-4">Thiết lập bài tập</h2>
+              
+              {/* Thông báo trạng thái đảo */}
+              {(isShuffleQuestionsEnabled || isShuffleAnswersEnabled) && (
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800 font-medium mb-1">⚠️ Chế độ đảo đề đã được bật:</p>
+                  <ul className="text-sm text-yellow-700 space-y-1">
+                    {isShuffleQuestionsEnabled && <li>• Câu hỏi sẽ được đảo thứ tự ngẫu nhiên</li>}
+                    {isShuffleAnswersEnabled && <li>• Đáp án trong mỗi câu sẽ được đảo thứ tự ngẫu nhiên</li>}
+                  </ul>
+                </div>
+              )}
+              
               <form onSubmit={handleCreateHomework}>
                 <div className="mb-4">
                   <label className="block mb-2">Tên bài tập</label>
                   <input
                     type="text"
                     value={title}
-                    onChange={e => setTitle(e.target.value)}
-                    className="border rounded px-3 py-2 w-full"
+                    onChange={handleTitleChange}
+                    className={`border rounded px-3 py-2 w-full ${validationErrors.title ? 'border-red-500' : ''}`}
                     required
                   />
+                  {validationErrors.title && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.title}</p>
+                  )}
                 </div>
                 
                 <div className="mb-4">
@@ -433,10 +617,14 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
                   <input
                     type="number"
                     min="1"
+                    max="600"
                     value={duration}
-                    onChange={e => setDuration(Number(e.target.value))}
-                    className="border rounded px-3 py-2 w-32"
+                    onChange={handleDurationChange}
+                    className={`border rounded px-3 py-2 w-32 ${validationErrors.duration ? 'border-red-500' : ''}`}
                   />
+                  {validationErrors.duration && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.duration}</p>
+                  )}
                 </div>
                 
                 <div className="mb-4">
@@ -444,9 +632,13 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
                   <input
                     type="datetime-local"
                     value={startTime}
-                    onChange={e => setStartTime(e.target.value)}
-                    className="border rounded px-3 py-2 w-64"
+                    onChange={handleStartTimeChange}
+                    className={`border rounded px-3 py-2 w-64 ${validationErrors.startTime ? 'border-red-500' : ''}`}
                   />
+                  {validationErrors.startTime && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.startTime}</p>
+                  )}
+                  <p className="text-gray-500 text-xs mt-1">Thời gian bắt đầu phải sau thời điểm hiện tại</p>
                 </div>
                 
                 <div className="mb-4">
@@ -454,9 +646,13 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
                   <input
                     type="datetime-local"
                     value={deadline}
-                    onChange={e => setDeadline(e.target.value)}
-                    className="border rounded px-3 py-2 w-64"
+                    onChange={handleDeadlineChange}
+                    className={`border rounded px-3 py-2 w-64 ${validationErrors.endTime ? 'border-red-500' : ''}`}
                   />
+                  {validationErrors.endTime && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.endTime}</p>
+                  )}
+                  <p className="text-gray-500 text-xs mt-1">Hạn chót phải sau thời gian bắt đầu</p>
                 </div>
                 
                 <div className="mb-4">
@@ -464,10 +660,14 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
                   <input
                     type="number"
                     min="1"
+                    max="10"
                     value={attempts}
-                    onChange={e => setAttempts(Number(e.target.value))}
-                    className="border rounded px-3 py-2 w-32"
+                    onChange={handleAttemptsChange}
+                    className={`border rounded px-3 py-2 w-32 ${validationErrors.maxAttempts ? 'border-red-500' : ''}`}
                   />
+                  {validationErrors.maxAttempts && (
+                    <p className="text-red-500 text-sm mt-1">{validationErrors.maxAttempts}</p>
+                  )}
                 </div>
 
                 {/* Nút hành động Step 2 */}

@@ -120,7 +120,7 @@ export default function AutoExtractPage({ params }: { params: { id: string } }) 
   };
 
   return (
-    <div className="container mx-auto h-full">
+    <div className="w-full mx-auto h-full">
       <div className="flex flex-col h-full">
         <div className="w-full bg-white p-4 rounded-lg mb-4">
           <Breadcrumb
