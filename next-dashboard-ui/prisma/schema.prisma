@@ -224,15 +224,59 @@ model Attendance {
   lesson    Lesson  @relation(fields: [lessonId], references: [id])
 }
 
+
 model Event {
   id          Int      @id @default(autoincrement())
   title       String
-  description String
+  description String?
   startTime   DateTime
   endTime     DateTime
 
+  // === RECURRING EVENTS FIELDS ===
+  
+  // Loại lặp lại
+  recurrenceType RecurrenceType @default(NONE)
+  
+  // Khoảng cách lặp lại (ví dụ: cứ 2 tuần, cứ 3 ngày)
+  interval       Int            @default(1)
+  
+  // Ngày kết thúc chuỗi lặp lại (null = lặp vô hạn)
+  recurrenceEnd  DateTime?
+  
+  // Số lần lặp tối đa (null = không giới hạn)
+  maxOccurrences Int?
+  
+  // ID của sự kiện gốc (nếu đây là sự kiện được tạo từ recurring)
+  parentEventId  Int?
+  parentEvent    Event?  @relation("EventRecurrence", fields: [parentEventId], references: [id])
+  childEvents    Event[] @relation("EventRecurrence")
+  
+  // Các ngày trong tuần áp dụng (cho weekly recurrence)
+  // Lưu dạng JSON: [1,3,5] = Thứ 2, 4, 6 (0=CN, 1=T2, ..., 6=T7)
+  weekDays       Json?
+  
+  // Ngày trong tháng (cho monthly recurrence)
+  monthDay       Int?
+  
+  // Tuần trong tháng (cho monthly recurrence)  
+  // Ví dụ: 1 = tuần đầu, -1 = tuần cuối
+  weekOfMonth    Int?
+
+  // === RELATIONS ===
   classId Int?
   class   Class? @relation(fields: [classId], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
+}
+
+// Enum cho loại lặp lại
+enum RecurrenceType {
+  NONE              // Không lặp
+  DAILY             // Hàng ngày
+  WEEKLY            // Hàng tuần vào thứ năm  
+  MONTHLY_BY_DATE   // Hàng tháng vào thứ năm cuối cùng
+  CUSTOM            // Tùy chỉnh
 }
 
 model Announcement {

@@ -188,7 +188,7 @@ export default function ClassListPageCommon({
             data.map((item) => (
               <div key={item.id} className="group relative">
                 <div className="relative overflow-hidden rounded-xl bg-white shadow-md hover:shadow-xl transition-all duration-300">
-                  <Link href={`/${role}/class/${item.class_code || item.id}/newsfeed`}>
+                  <Link href={`/class/${item.class_code || item.id}/newsfeed`}>
                     <div className="relative h-40 w-full overflow-hidden">
                       <Image
                         src={item.img || "/school.jpg"}
@@ -229,13 +229,13 @@ export default function ClassListPageCommon({
                         transition
                       >
                         <MenuItem>
-                          <Link href={`/${role}/class/${item.class_code || item.id}/newsfeed`} className="flex items-center gap-2 text-sm">
+                          <Link href={`/class/${item.class_code || item.id}/newsfeed`} className="flex items-center gap-2 text-sm">
                             <FiLogIn /> Vào lớp
                           </Link>
                         </MenuItem>
                         {role === "teacher" && (
                           <MenuItem>
-                            <Link href={`/${role}/class/${item.class_code || item.id}/edit`} className="flex items-center gap-2 text-sm">
+                            <Link href={`/class/${item.class_code || item.id}/edit`} className="flex items-center gap-2 text-sm">
                               <FiEdit /> Chỉnh sửa
                             </Link>
                           </MenuItem>
@@ -256,7 +256,7 @@ export default function ClassListPageCommon({
                   </div>
 
                   <div className="p-4">
-                    <Link href={`/${role}/class/${item.class_code || item.id}/newsfeed`}>
+                    <Link href={`/class/${item.class_code || item.id}/newsfeed`}>
                       <h3 className="text-lg font-semibold line-clamp-2 group-hover:text-blue-600 transition-colors duration-200">
                         {item.name}
                       </h3>

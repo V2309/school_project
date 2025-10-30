@@ -134,7 +134,7 @@ export default function HomeworkListClient({
               {role === "teacher" && (
                 <div className="sm:order-3 justify-self-end">
                   <Link
-                    href={`/teacher/class/${class_code}/homework/add`}
+                    href={`/class/${class_code}/homework/add`}
                     className="px-4 py-2 rounded-md font-bold text-white bg-blue-500 hover:bg-blue-600"
                   >
                     + Tạo bài tập

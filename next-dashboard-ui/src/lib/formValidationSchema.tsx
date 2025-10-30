@@ -55,6 +55,12 @@ export const scheduleSchema = z.object({
   date: z.string().min(1, { message: "Vui lòng chọn ngày học!" }),
   startTime: z.string().min(1, { message: "Vui lòng chọn thời gian bắt đầu!" }),
   endTime: z.string().min(1, { message: "Vui lòng chọn thời gian kết thúc!" }),
+  // Recurrence options - không dùng optional() để tránh lỗi TypeScript
+  recurrenceType: z.enum(["NONE", "DAILY", "WEEKLY", "MONTHLY_BY_DATE", "CUSTOM"]).default("NONE"),
+  interval: z.coerce.number().min(1).default(1),
+  recurrenceEnd: z.string().nullable().optional(),
+  weekDays: z.array(z.coerce.number()).default([]),
+  maxOccurrences: z.coerce.number().nullable().optional(),
 });
 
 export type ScheduleSchema = z.infer<typeof scheduleSchema>;

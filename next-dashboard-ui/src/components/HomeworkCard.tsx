@@ -64,8 +64,7 @@ export function HomeworkCard({ homework, role }: HomeworkCardProps) {
 
 // Kiểm tra loại file
   const attachmentType = homework.attachments?.[0]?.type || "Not found "; // Lấy loại file từ attachment đầu tiên
-  console.log("Attachments:", homework.attachments);
-  console.log("Attachment Type:", attachmentType); // In ra loại file để kiểm tra
+
   const attachmentImage =
     attachmentType === "application/pdf"
       ? "/pdf_red.png" // Nếu là PDF, hiển thị ảnh PDF

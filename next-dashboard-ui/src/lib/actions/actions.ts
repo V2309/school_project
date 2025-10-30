@@ -288,7 +288,7 @@ export const removeStudentFromClass = async (
       },
     });
 
-    revalidatePath(`/teacher/class/${classCode}/member`);
+    revalidatePath(`/class/${classCode}/member`);
     return { success: true, error: false };
   } catch (err) {
     console.error("Error removing student from class:", err);

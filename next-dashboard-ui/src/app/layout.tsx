@@ -31,7 +31,7 @@ import "./globals.css";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
 import "react-datepicker/dist/react-datepicker.css";
 import { ToastContainer } from "react-toastify";
-import { UserProvider } from "@/providers/UserProvider";
+
 const inter = Inter({ subsets: ["latin"] });
 import "react-toastify/dist/ReactToastify.css";
 
@@ -48,9 +48,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <UserProvider>
+ 
           {children}
-        </UserProvider>
+      
         <ToastContainer 
           position="bottom-right" 
           autoClose={3000}

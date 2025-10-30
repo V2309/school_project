@@ -2,9 +2,37 @@
 import { useFormState } from "react-dom";
 import { loginAction } from "@/lib/actions/auth.action"; // Adjust the import path as necessary
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+type LoginState = {
+  error?: string;
+  success?: boolean;
+  role?: string;
+};
 
 export default function SignInPage () {
-  const [state, formAction] = useFormState(loginAction, { error: "" });
+  const [state, formAction] = useFormState(loginAction, { error: "" } as LoginState);
+  const router = useRouter();
+
+  // Xử lý redirect sau khi đăng nhập thành công
+  useEffect(() => {
+    if (state?.success && state?.role) {
+      // Trigger custom event để notify các component khác
+      window.dispatchEvent(new CustomEvent('user-logged-in'));
+      
+      // Redirect theo role
+      setTimeout(() => {
+        if (state.role === "teacher") {
+          window.location.href = "/class";
+        } else if (state.role === "student") {
+          window.location.href = "/overview";
+        } else {
+          window.location.href = "/";
+        }
+      }, 100);
+    }
+  }, [state]);
   
 
   return (
@@ -124,5 +152,7 @@ export default function SignInPage () {
     </div>
   );
 }
+
+
 
 

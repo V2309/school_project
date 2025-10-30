@@ -141,12 +141,7 @@ const FileList = ({ refreshTrigger, role }: FileListProps) => {
   // Hàm render từng dòng của bảng
   const renderRow = (file: FileData) => {
     // Tạo link chi tiết tài liệu dựa trên role
-    let detailLink = "#";
-    if (role === "teacher") {
-      detailLink = `/teacher/class/${file.class?.class_code || classCode}/documents/${file.id}`;
-    } else if (role === "student") {
-      detailLink = `/student/class/${file.class?.class_code || classCode}/documents/${file.id}`;
-    }
+   let detailLink = `/class/${classCode}/documents/${file.id}`;
 
     return (
       <tr key={file.id} className="border-b border-gray-200 hover:bg-slate-50">

@@ -47,18 +47,110 @@ export const createSchedule = async (
       return { success: false, error: true, message: "Thời gian kết thúc phải sau thời gian bắt đầu" };
     }
 
-    // Tạo event
-    await prisma.event.create({
-      data: {
-        title: data.title,
-        description: data.description || "",
-        startTime: startDateTime,
-        endTime: endDateTime,
-        classId: data.classId,
-      },
-    });
+    // Handle recurrence options: if recurrenceType is NONE -> create single event
+    const recurrenceType = (data as any).recurrenceType || 'NONE';
+    const interval = Number((data as any).interval || 1);
+    const recurrenceEndRaw = (data as any).recurrenceEnd;
+    const weekDays: number[] = Array.isArray((data as any).weekDays) ? (data as any).weekDays.map(Number) : [];
+    const maxOccurrences = (data as any).maxOccurrences ? Number((data as any).maxOccurrences) : null;
 
-    revalidatePath("/teacher/schedule");
+    if (!recurrenceType || recurrenceType === 'NONE') {
+      // Single event
+      await prisma.event.create({
+        data: {
+          title: data.title,
+          description: data.description || "",
+          startTime: startDateTime,
+          endTime: endDateTime,
+          classId: data.classId,
+        },
+      });
+    } else {
+      // Generate occurrences (simple generator supporting DAILY, WEEKLY (with weekDays), MONTHLY_BY_DATE)
+      const occurrences: Array<{ start: Date; end: Date }> = [];
+
+      const recurrenceEnd = recurrenceEndRaw ? new Date(recurrenceEndRaw) : null;
+
+      // Safety cap
+      const CAP = 200;
+
+      // Helper to push occurrence if within limits
+      const pushIfValid = (s: Date, e: Date) => {
+        if (recurrenceEnd && s > recurrenceEnd) return false;
+        occurrences.push({ start: new Date(s), end: new Date(e) });
+        if (maxOccurrences && occurrences.length >= maxOccurrences) return false;
+        if (occurrences.length >= CAP) return false;
+        return true;
+      };
+
+      if (recurrenceType === 'DAILY') {
+        let s = new Date(startDateTime);
+        let e = new Date(endDateTime);
+        while (pushIfValid(s, e)) {
+          // advance
+          s = new Date(s.getTime() + interval * 24 * 60 * 60 * 1000);
+          e = new Date(e.getTime() + interval * 24 * 60 * 60 * 1000);
+        }
+      } else if (recurrenceType === 'WEEKLY' || recurrenceType === 'CUSTOM') {
+        // weekDays array expected (0=Sun..6=Sat). If empty, use original day
+        const daysSet = new Set(weekDays.length ? weekDays : [startDateTime.getUTCDay()]);
+        let s = new Date(startDateTime);
+        let e = new Date(endDateTime);
+        // iterate day-by-day, but count weeks to respect interval
+        const startBase = new Date(startDateTime);
+        let dayCursor = new Date(startBase);
+        let iterations = 0;
+        while (true) {
+          const dayOfWeek = dayCursor.getUTCDay();
+          const daysSinceStart = Math.floor((dayCursor.getTime() - startBase.getTime()) / (24 * 60 * 60 * 1000));
+          const weekIndex = Math.floor(daysSinceStart / 7);
+          const shouldInclude = daysSet.has(dayOfWeek) && (weekIndex % interval === 0);
+          if (shouldInclude) {
+            // compute corresponding times for this day
+            const sOcc = new Date(dayCursor);
+            sOcc.setUTCHours(startDateTime.getUTCHours(), startDateTime.getUTCMinutes(), 0, 0);
+            const eOcc = new Date(sOcc.getTime() + (endDateTime.getTime() - startDateTime.getTime()));
+            if (!pushIfValid(sOcc, eOcc)) break;
+          }
+          // advance one day
+          dayCursor = new Date(dayCursor.getTime() + 24 * 60 * 60 * 1000);
+          iterations++;
+          if (recurrenceEnd && dayCursor > recurrenceEnd) break;
+          if (maxOccurrences && occurrences.length >= maxOccurrences) break;
+          if (iterations > CAP * 7) break; // safety
+        }
+      } else if (recurrenceType === 'MONTHLY_BY_DATE') {
+        // repeat same day-of-month
+        let s = new Date(startDateTime);
+        let e = new Date(endDateTime);
+        while (pushIfValid(s, e)) {
+          const next = new Date(s);
+          next.setUTCMonth(next.getUTCMonth() + interval);
+          const nextE = new Date(e);
+          nextE.setUTCMonth(nextE.getUTCMonth() + interval);
+          s = next;
+          e = nextE;
+        }
+      } else {
+        // fallback: create single
+        occurrences.push({ start: startDateTime, end: endDateTime });
+      }
+
+      // bulk insert occurrences
+      if (occurrences.length > 0) {
+        const createData = occurrences.map(o => ({
+          title: data.title,
+          description: data.description || "",
+          startTime: o.start,
+          endTime: o.end,
+          classId: data.classId,
+        }));
+        // use createMany for speed
+        await prisma.event.createMany({ data: createData });
+      }
+    }
+
+    revalidatePath("/schedule");
     return { success: true, error: false, message: "Tạo lịch học thành công!" };
   } catch (err) {
     console.error("Create schedule error:", err);
@@ -120,7 +212,7 @@ export const updateSchedule = async (
       },
     });
 
-    revalidatePath("/teacher/schedule");
+    revalidatePath("/schedule");
     return { success: true, error: false, message: "Cập nhật lịch học thành công!" };
   } catch (err) {
     console.error("Update schedule error:", err);
@@ -166,7 +258,7 @@ export const deleteSchedule = async (
       where: { id: data.id },
     });
 
-    revalidatePath("/teacher/schedule");
+    revalidatePath("/schedule");
     return { success: true, error: false, message: "Xóa lịch học thành công!" };
   } catch (err) {
     console.error("Delete schedule error:", err);

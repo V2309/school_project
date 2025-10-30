@@ -164,12 +164,12 @@ export function TestHomeWork({ homework, questions, duration, userId, classCode,
     if (result.success && role === "student") {
       toast.success("Đã nộp bài!");
       sessionData?.clearSession(); // Xóa trạng thái sau khi nộp bài
-      router.push(`/student/class/${classCode}/homework/${homework.id}/detail?utid=${result.submission.id}`);
+      router.push(`/class/${classCode}/homework/${homework.id}/detail?utid=${result.submission.id}`);
     } else {
       if (role === "teacher") {
         toast.success("Đã nộp bài!");
         // Giáo viên không cần clear session
-        router.push(`/teacher/class/${classCode}/homework/list`);
+        router.push(`/class/${classCode}/homework/list`);
       }
       else {
         toast.error(result.error || "Có lỗi xảy ra khi nộp bài.");

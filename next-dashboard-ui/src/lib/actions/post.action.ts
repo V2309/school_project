@@ -117,8 +117,7 @@ import { imagekit } from "../utils";
        },
      });
      
-     revalidatePath(`/teacher/class/${classCode}/newsfeed`);
-     revalidatePath(`/student/class/${classCode}/newsfeed`);
+     revalidatePath(`/class/${classCode}/newsfeed`);
      return { success: true, error: false };
    } catch (err) {
      console.log(err);
@@ -310,8 +309,7 @@ export const deletePost = async (postId: number) => {
 
     // Revalidate các trang liên quan
     if (post.classCode) {
-      revalidatePath(`/teacher/class/${post.classCode}/newsfeed`);
-      revalidatePath(`/student/class/${post.classCode}/newsfeed`);
+      revalidatePath(`/class/${post.classCode}/newsfeed`);
     }
 
     return { success: true, error: false };
@@ -408,8 +406,7 @@ export const updatePost = async (
 
     // Revalidate các trang liên quan
     if (post.classCode) {
-      revalidatePath(`/teacher/class/${post.classCode}/newsfeed`);
-      revalidatePath(`/student/class/${post.classCode}/newsfeed`);
+      revalidatePath(`/class/${post.classCode}/newsfeed`);
     }
 
     return { success: true, error: false };

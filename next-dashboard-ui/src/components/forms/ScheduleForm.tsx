@@ -8,11 +8,21 @@ import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { X, Search, Clock, Calendar, Users } from "lucide-react";
 import moment from "moment";
-import { getTeacherClasses } from "@/lib/actions/class.action";
+// import { getTeacherClasses } from "@/lib/actions/class.action"; // <-- ĐÃ XÓA
 import { createSchedule, updateSchedule } from "@/lib/actions/schedule.action";
 import { scheduleSchema, ScheduleSchema } from "@/lib/formValidationSchema";
 
-type FormData = ScheduleSchema;
+// Sử dụng trực tiếp ScheduleSchema
+
+// Định nghĩa kiểu dữ liệu cho rõ ràng
+interface ClassData {
+  id: string;
+  name: string;
+  img: string;
+  class_code: string;
+  studentCount: number;
+  color: string;
+}
 
 interface ScheduleFormProps {
   type: "create" | "update";
@@ -24,19 +34,49 @@ interface ScheduleFormProps {
     date: string;
     startTime: string;
     endTime: string;
+    // Thêm recurrence fields để khớp với schema
+    recurrenceType?: "NONE" | "DAILY" | "WEEKLY" | "MONTHLY_BY_DATE" | "CUSTOM";
+    interval?: number;
+    recurrenceEnd?: string | null;
+    weekDays?: number[];
+    maxOccurrences?: number | null;
   };
-  selectedDate?: Date; // Ngày được chọn từ calendar
+  selectedDate?: Date;
+  classId?: number; // ID lớp học được chọn trước (khi đang ở trang lớp cụ thể)
   setOpen: Dispatch<SetStateAction<boolean>>;
   onSuccess?: () => void;
+  
+  // TỐI ƯU: Nhận danh sách lớp làm prop thay vì tự fetch
+  teacherClasses: any[]; 
 }
 
-const ScheduleForm = ({ type, data, selectedDate, setOpen, onSuccess }: ScheduleFormProps) => {
+const ScheduleForm = ({ 
+  type, 
+  data, 
+  selectedDate, 
+  classId, 
+  setOpen, 
+  onSuccess, 
+  teacherClasses // <-- Nhận prop
+}: ScheduleFormProps) => {
+
   const [isLoading, setIsLoading] = useState(false);
-  const [currentStep, setCurrentStep] = useState(1); // 1: Chọn lớp, 2: Nhập thông tin
-  const [selectedClass, setSelectedClass] = useState<any>(null);
+  const [currentStep, setCurrentStep] = useState(classId ? 2 : 1); // 1: Chọn lớp, 2: Nhập thông tin
+  const [selectedClass, setSelectedClass] = useState<ClassData | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [classes, setClasses] = useState<any[]>([]);
-  const [loadingClasses, setLoadingClasses] = useState(true);
+
+  // TỐI ƯU: Khởi tạo `classes` từ prop, chỉ chạy 1 lần
+  // Dữ liệu đã có sẵn, không cần `loadingClasses`
+  const [classes] = useState<ClassData[]>(() => 
+    teacherClasses.map((cls: any) => ({
+      id: cls.id.toString(), // Giả định ID từ DB có thể là số, chuyển sang string
+      name: cls.name,
+      img: cls.img, 
+      class_code: cls.class_code || "",
+      studentCount: cls._count?.students || 0,
+      color: cls.img || "#3B82F6", // Lấy img làm màu (theo code cũ), nếu không có thì default
+    }))
+  );
   
   const {
     register,
@@ -44,54 +84,74 @@ const ScheduleForm = ({ type, data, selectedDate, setOpen, onSuccess }: Schedule
     formState: { errors },
     setValue,
     watch,
-  } = useForm<FormData>({
-    resolver: zodResolver(scheduleSchema),
+    setError,
+    clearErrors,
+  } = useForm<ScheduleSchema>({
+    // Tạm thời bỏ resolver để tránh type conflict
+    // resolver: zodResolver(scheduleSchema), 
     defaultValues: {
       title: data?.title || "",
       description: data?.description || "",
-      classId: data?.classId || 0,
+      classId: data?.classId || classId || 0, // Ưu tiên data?.classId, sau đó là classId prop
       date: selectedDate ? moment(selectedDate).format("YYYY-MM-DD") : data?.date || "",
       startTime: data?.startTime || "07:00",
       endTime: data?.endTime || "08:30",
+      // recurrence defaults - bây giờ không cần cast as any
+      recurrenceType: data?.recurrenceType || "NONE",
+      interval: data?.interval || 1,
+      recurrenceEnd: data?.recurrenceEnd || null,
+      weekDays: data?.weekDays || [],
+      maxOccurrences: data?.maxOccurrences || null,
     },
   });
 
-  // Load teacher classes on component mount
-  useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        setLoadingClasses(true);
-        const teacherClasses = await getTeacherClasses();
-        const formattedClasses = teacherClasses.map((cls: any) => ({
-          id: cls.id.toString(),
-          name: cls.name,
-          img: cls.img, 
-          class_code: cls.class_code || "",
-          studentCount: cls._count?.students || 0,
-          color: cls.img || "#3B82F6", 
-        // Dùng img field làm color hoặc default
-        }));
-        setClasses(formattedClasses);
-      } catch (error) {
-        console.error("Error fetching classes:", error);
-        toast.error("Không thể tải danh sách lớp học");
-      } finally {
-        setLoadingClasses(false);
+  // Custom validation function using Zod schema
+  const validateForm = (data: ScheduleSchema): boolean => {
+    try {
+      scheduleSchema.parse(data);
+      clearErrors();
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        error.errors.forEach((err) => {
+          const path = err.path.join('.') as keyof ScheduleSchema;
+          setError(path, {
+            type: 'validation',
+            message: err.message
+          });
+        });
       }
-    };
+      return false;
+    }
+  };
 
-    fetchClasses();
-  }, []);
+  // TỐI ƯU: Đã xóa useEffect fetchClasses
 
-  // Filter classes based on search term
+  // Giữ lại useEffect này để tự động chọn lớp nếu `classId` được truyền vào
+  useEffect(() => {
+    if (classId) {
+      // Tìm lớp trong danh sách đã có
+      const preSelectedClass = classes.find(cls => cls.id === classId.toString());
+      if (preSelectedClass) {
+        setSelectedClass(preSelectedClass);
+        setValue("classId", classId);
+      }
+    }
+  }, [classId, classes, setValue]); // Chạy khi `classes` có sẵn
+
+  // Lọc danh sách lớp (JavaScript thuần, rất nhanh)
   const filteredClasses = classes.filter(cls =>
     cls.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cls.class_code.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleClassSelect = (classItem: any) => {
+  // Watch recurrence fields
+  const recurrenceType = watch("recurrenceType");
+  const weekDaysValue: number[] = watch("weekDays") || [];
+
+  const handleClassSelect = (classItem: ClassData) => {
     setSelectedClass(classItem);
-    setValue("classId", parseInt(classItem.id));
+    setValue("classId", parseInt(classItem.id)); // Giả định classId trong schema là number
   };
 
   const handleNextStep = () => {
@@ -103,27 +163,36 @@ const ScheduleForm = ({ type, data, selectedDate, setOpen, onSuccess }: Schedule
   };
 
   const handleBackStep = () => {
-    setCurrentStep(1);
+    // Chỉ cho phép quay lại nếu form không bị ép buộc 1 lớp
+    if (!classId) {
+      setCurrentStep(1);
+    }
   };
 
   const onSubmit = handleSubmit(async (formData) => {
+    // Validate form data using custom validation
+    if (!validateForm(formData)) {
+      toast.error("Vui lòng kiểm tra lại thông tin form");
+      return;
+    }
+
     setIsLoading(true);
     try {
       let result;
       
       if (type === "create") {
-        result = await createSchedule({ success: false, error: false }, formData);
+        result = await createSchedule({ success: false, error: false }, formData as ScheduleSchema);
       } else if (type === "update" && data?.id) {
         result = await updateSchedule(
           { success: false, error: false },
-          { ...formData, id: data.id }
+          { ...formData, id: data.id } as ScheduleSchema & { id: number }
         );
       }
 
       if (result?.success) {
         toast.success(result.message || (type === "create" ? "Tạo lịch học thành công!" : "Cập nhật lịch học thành công!"));
         setOpen(false);
-        onSuccess?.();
+        onSuccess?.(); // Gọi callback để refresh lịch
       } else {
         toast.error(result?.message || "Có lỗi xảy ra, vui lòng thử lại!");
       }
@@ -148,12 +217,13 @@ const ScheduleForm = ({ type, data, selectedDate, setOpen, onSuccess }: Schedule
         initial="hidden"
         animate="visible"
         exit="exit"
-        className="bg-white rounded-lg shadow-xl max-w-lg  w-full max-h-[90vh] overflow-y-auto"
+        className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto"
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <div className="flex items-center gap-3">
-            {currentStep === 2 && (
+            {/* Chỉ hiện nút back nếu đang ở bước 2 VÀ không bị ép buộc lớp (classId prop) */}
+            {currentStep === 2 && !classId && (
               <button
                 onClick={handleBackStep}
                 className="p-1 hover:bg-gray-100 rounded transition-colors"
@@ -165,7 +235,8 @@ const ScheduleForm = ({ type, data, selectedDate, setOpen, onSuccess }: Schedule
             )}
             <h2 className="text-xl font-semibold text-gray-900">
               {type === "create" ? "Tạo lịch học" : "Chỉnh sửa lịch học"}
-              {currentStep === 1 ? " - Chọn lớp" : " - Thông tin buổi học"}
+              {/* Ẩn text "Chọn lớp" nếu đã có classId */}
+              {!classId && (currentStep === 1 ? " - Chọn lớp" : " - Thông tin")}
             </h2>
           </div>
           <button
@@ -176,26 +247,28 @@ const ScheduleForm = ({ type, data, selectedDate, setOpen, onSuccess }: Schedule
           </button>
         </div>
 
-        {/* Progress indicator */}
-        <div className="px-6 py-3 border-b bg-gray-50">
-          <div className="flex items-center justify-center gap-4">
-            <div className={`flex items-center gap-2 ${currentStep >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
-              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-medium
-                ${currentStep >= 1 ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300'}`}>
-                1
+        {/* Progress indicator (chỉ hiển thị nếu không bị ép buộc lớp) */}
+        {!classId && (
+          <div className="px-6 py-3 border-b bg-gray-50">
+            <div className="flex items-center justify-center gap-4">
+              <div className={`flex items-center gap-2 ${currentStep >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-medium
+                  ${currentStep >= 1 ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300'}`}>
+                  1
+                </div>
+                <span className="text-sm font-medium">Chọn lớp</span>
               </div>
-              <span className="text-sm font-medium">Chọn lớp</span>
-            </div>
-            <div className="w-8 h-px bg-gray-300"></div>
-            <div className={`flex items-center gap-2 ${currentStep >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
-              <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-medium
-                ${currentStep >= 2 ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300'}`}>
-                2
+              <div className="w-8 h-px bg-gray-300"></div>
+              <div className={`flex items-center gap-2 ${currentStep >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-medium
+                  ${currentStep >= 2 ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-300'}`}>
+                  2
+                </div>
+                <span className="text-sm font-medium">Thông tin</span>
               </div>
-              <span className="text-sm font-medium">Thông tin</span>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Form Content */}
         <div className="p-6">
@@ -210,57 +283,51 @@ const ScheduleForm = ({ type, data, selectedDate, setOpen, onSuccess }: Schedule
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm
-                           focus:border-blue-500 focus:ring-blue-500 transition duration-200"
+                            focus:border-blue-500 focus:ring-blue-500 transition duration-200"
                 />
               </div>
 
-        
-
               {/* Class list */}
               <div className="space-y-3 max-h-64 overflow-y-auto">
-                {loadingClasses ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                  </div>
-                ) : filteredClasses.length > 0 ? (
+                {/* TỐI ƯU: Đã xóa spinner loading */}
+                {filteredClasses.length > 0 ? (
                   filteredClasses.map((classItem) => (
-                  <div
-                    key={classItem.id}
-                    onClick={() => handleClassSelect(classItem)}
-                    className={`p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md
-                      ${selectedClass?.id === classItem.id 
-                        ? 'border-blue-500 bg-blue-50' 
-                        : 'border-gray-200 hover:border-gray-300'
-                      }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      {/* Class avatar */}
-                      <div 
-                        className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold"
-                        style={{ backgroundColor: classItem.color }}
-                      >
-                        <img src={classItem.img} alt={classItem.name} className="w-12 h-12 rounded-lg object-cover" />
-                      </div>
-                      
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900">{classItem.name}</h3>
-                        <p className="text-sm text-gray-500">Mã lớp: {classItem.class_code}</p>
-                        <div className="flex items-center gap-1 mt-1">
-                          <Users className="w-3 h-3 text-gray-400" />
-                          <span className="text-xs text-gray-600">{classItem.studentCount} học sinh</span>
+                    <div
+                      key={classItem.id}
+                      onClick={() => handleClassSelect(classItem)}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md
+                        ${selectedClass?.id === classItem.id 
+                          ? 'border-blue-500 bg-blue-50' 
+                          : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        {/* Class avatar */}
+                        <div 
+                          className="w-12 h-12 rounded-lg flex-shrink-0"
+                        >
+                          <img src={classItem.img} alt={classItem.name} className="w-12 h-12 rounded-lg object-cover" />
                         </div>
-                      </div>
+                        
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900">{classItem.name}</h3>
+                          <p className="text-sm text-gray-500">Mã lớp: {classItem.class_code}</p>
+                          <div className="flex items-center gap-1 mt-1">
+                            <Users className="w-3 h-3 text-gray-400" />
+                            <span className="text-xs text-gray-600">{classItem.studentCount} học sinh</span>
+                          </div>
+                        </div>
 
-                      {/* Selection indicator */}
-                      {selectedClass?.id === classItem.id && (
-                        <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center">
-                          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                      )}
+                        {/* Selection indicator */}
+                        {selectedClass?.id === classItem.id && (
+                          <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center">
+                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
                   ))
                 ) : (
                   <div className="text-center py-8 text-gray-500">
@@ -276,7 +343,7 @@ const ScheduleForm = ({ type, data, selectedDate, setOpen, onSuccess }: Schedule
                   type="button"
                   onClick={() => setOpen(false)}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg 
-                           hover:bg-gray-200 transition-colors"
+                            hover:bg-gray-200 transition-colors"
                 >
                   Hủy
                 </button>
@@ -285,7 +352,7 @@ const ScheduleForm = ({ type, data, selectedDate, setOpen, onSuccess }: Schedule
                   onClick={handleNextStep}
                   disabled={!selectedClass}
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg 
-                           hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
+                            hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
                 >
                   Tiếp theo
                 </button>
@@ -295,15 +362,14 @@ const ScheduleForm = ({ type, data, selectedDate, setOpen, onSuccess }: Schedule
 
           {currentStep === 2 && (
             <form onSubmit={onSubmit} className="space-y-5">
-              {/* Selected class info */}
+              {/* Selected class info (nếu có) */}
               {selectedClass && (
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div 
-                      className="w-8 h-8 rounded flex items-center justify-center text-white font-bold text-sm"
-                      style={{ backgroundColor: selectedClass.color }}
+                      className="w-8 h-8 rounded flex-shrink-0"
                     >
-                      {selectedClass.name.substring(0, 2).toUpperCase()}
+                      <img src={selectedClass.img} alt={selectedClass.name} className="w-8 h-8 rounded object-cover" />
                     </div>
                     <div>
                       <p className="font-medium text-blue-900">{selectedClass.name}</p>
@@ -323,8 +389,8 @@ const ScheduleForm = ({ type, data, selectedDate, setOpen, onSuccess }: Schedule
                   id="title"
                   {...register("title")}
                   className="block w-full rounded-lg border border-gray-300 shadow-sm p-3 text-sm
-                           focus:border-blue-500 focus:ring-blue-500 transition duration-200
-                           hover:border-gray-400"
+                            focus:border-blue-500 focus:ring-blue-500 transition duration-200
+                            hover:border-gray-400"
                   placeholder="Ví dụ: Môn Toán - Chương 1"
                 />
                 {errors.title && (
@@ -342,8 +408,8 @@ const ScheduleForm = ({ type, data, selectedDate, setOpen, onSuccess }: Schedule
                   {...register("description")}
                   rows={2}
                   className="block w-full rounded-lg border border-gray-300 shadow-sm p-3 text-sm
-                           focus:border-blue-500 focus:ring-blue-500 transition duration-200
-                           hover:border-gray-400 resize-none"
+                            focus:border-blue-500 focus:ring-blue-500 transition duration-200
+                            hover:border-gray-400 resize-none"
                   placeholder="Mô tả nội dung buổi học..."
                 />
               </div>
@@ -361,8 +427,8 @@ const ScheduleForm = ({ type, data, selectedDate, setOpen, onSuccess }: Schedule
                     id="date"
                     {...register("date")}
                     className="block w-full rounded-lg border border-gray-300 shadow-sm p-3 text-sm
-                             focus:border-blue-500 focus:ring-blue-500 transition duration-200
-                             hover:border-gray-400"
+                                 focus:border-blue-500 focus:ring-blue-500 transition duration-200
+                                 hover:border-gray-400"
                   />
                   {errors.date && (
                     <p className="text-xs text-red-500">{errors.date.message}</p>
@@ -381,8 +447,8 @@ const ScheduleForm = ({ type, data, selectedDate, setOpen, onSuccess }: Schedule
                       id="startTime"
                       {...register("startTime")}
                       className="block w-full rounded-lg border border-gray-300 shadow-sm p-3 text-sm
-                               focus:border-blue-500 focus:ring-blue-500 transition duration-200
-                               hover:border-gray-400"
+                                  focus:border-blue-500 focus:ring-blue-500 transition duration-200
+                                  hover:border-gray-400"
                     />
                     {errors.startTime && (
                       <p className="text-xs text-red-500">{errors.startTime.message}</p>
@@ -398,8 +464,8 @@ const ScheduleForm = ({ type, data, selectedDate, setOpen, onSuccess }: Schedule
                       id="endTime"
                       {...register("endTime")}
                       className="block w-full rounded-lg border border-gray-300 shadow-sm p-3 text-sm
-                               focus:border-blue-500 focus:ring-blue-500 transition duration-200
-                               hover:border-gray-400"
+                                  focus:border-blue-500 focus:ring-blue-500 transition duration-200
+                                  hover:border-gray-400"
                     />
                     {errors.endTime && (
                       <p className="text-xs text-red-500">{errors.endTime.message}</p>
@@ -408,24 +474,101 @@ const ScheduleForm = ({ type, data, selectedDate, setOpen, onSuccess }: Schedule
                 </div>
               </div>
 
+              {/* Recurrence options */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Lặp lại</label>
+                <select
+                  {...register("recurrenceType")}
+                  className="block w-full rounded-lg border border-gray-300 shadow-sm p-3 text-sm"
+                >
+                  <option value="NONE">Không lặp</option>
+                  <option value="DAILY">Hàng ngày</option>
+                  <option value="WEEKLY">Hàng tuần</option>
+                  <option value="MONTHLY_BY_DATE">Hàng tháng (ngày)</option>
+                  <option value="CUSTOM">Tùy chỉnh</option>
+                </select>
+              </div>
+
+              {recurrenceType && recurrenceType !== "NONE" && (
+                <div className="grid grid-cols-1 gap-3">
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700">Khoảng cách (interval)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      {...register("interval", { valueAsNumber: true })}
+                      className="block w-32 rounded-lg border border-gray-300 shadow-sm p-2 text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700">Kết thúc lặp lại (tùy chọn)</label>
+                    <input
+                      type="date"
+                      {...register("recurrenceEnd")}
+                      className="block w-full rounded-lg border border-gray-300 shadow-sm p-3 text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-sm font-medium text-gray-700">Số lần tối đa (tùy chọn)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      {...register("maxOccurrences", { valueAsNumber: true })}
+                      className="block w-32 rounded-lg border border-gray-300 shadow-sm p-2 text-sm"
+                    />
+                  </div>
+
+                  {(recurrenceType === "WEEKLY" || recurrenceType === "CUSTOM") && (
+                    <div className="space-y-1">
+                      <label className="block text-sm font-medium text-gray-700">Ngày trong tuần</label>
+                      <div className="flex flex-wrap gap-2">
+                        {['CN','T2','T3','T4','T5','T6','T7'].map((label, idx) => {
+                          const checked = weekDaysValue.includes(idx);
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => {
+                                const copy = new Set(weekDaysValue);
+                                if (copy.has(idx)) copy.delete(idx);
+                                else copy.add(idx);
+                                setValue('weekDays', Array.from(copy));
+                              }}
+                              className={`px-2 py-1 rounded-md border ${checked ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'}`}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Hidden fields */}
               <input type="hidden" {...register("classId")} />
 
               {/* Action buttons */}
               <div className="flex items-center justify-end gap-3 pt-5 border-t">
-                <button
-                  type="button"
-                  onClick={handleBackStep}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg 
-                           hover:bg-gray-200 transition-colors"
-                >
-                  Quay lại
-                </button>
+                {/* Chỉ hiện nút back nếu không bị ép buộc lớp */}
+                {!classId && (
+                  <button
+                    type="button"
+                    onClick={handleBackStep}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg 
+                              hover:bg-gray-200 transition-colors"
+                  >
+                    Quay lại
+                  </button>
+                )}
                 <button
                   type="submit"
                   disabled={isLoading}
                   className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg 
-                           hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
+                            hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
                 >
                   {isLoading 
                     ? (type === "create" ? "Đang tạo..." : "Đang cập nhật...") 

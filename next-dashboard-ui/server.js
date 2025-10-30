@@ -6,67 +6,92 @@ import { v4 as uuidv4 } from "uuid";
 const dev = process.env.NODE_ENV !== "production";
 const hostname = "localhost";
 const port = 3000;
-// when using middleware `hostname` and `port` must be provided below
+
 const app = next({ dev, hostname, port });
 const handler = app.getRequestHandler();
 
-let onlineUsers = [];
+// Tối ưu: Sử dụng Map thay vì Array cho tìm kiếm nhanh hơn
+const onlineUsers = new Map();
 
 const addUser = (username, socketId) => {
-  const isExist = onlineUsers.find((user) => user.socketId === socketId);
-
-  if (!isExist) {
-    onlineUsers.push({ username, socketId });
-    console.log(username + " added!");
+  if (!onlineUsers.has(socketId)) {
+    onlineUsers.set(socketId, { username, socketId });
+    if (dev) console.log(`${username} connected`);
   }
 };
 
 const removeUser = (socketId) => {
-  onlineUsers = onlineUsers.filter((user) => user.socketId !== socketId);
-  console.log("user removed!");
+  const user = onlineUsers.get(socketId);
+  if (user) {
+    onlineUsers.delete(socketId);
+    if (dev) console.log(`${user.username} disconnected`);
+  }
 };
 
-const getUser = (username) => {
-  return onlineUsers.find((user) => user.username === username);
+const getUserByUsername = (username) => {
+  for (const [, user] of onlineUsers) {
+    if (user.username === username) return user;
+  }
+  return null;
 };
 
 app.prepare().then(() => {
   const httpServer = createServer(handler);
 
-  const io = new Server(httpServer);
+  const io = new Server(httpServer, {
+    // Tối ưu Socket.IO
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    cors: {
+      origin: dev ? "http://localhost:3000" : false,
+      methods: ["GET", "POST"]
+    }
+  });
 
   io.on("connection", (socket) => {
-    socket.on("newUser", (username) => {
-      addUser(username, socket.id);
-    });
+    if (dev) console.log(`Socket connected: ${socket.id}`);
 
-    socket.on("sendNotification", ({ receiverUsername, data }) => {
-      console.log(`Sending notification to: ${receiverUsername}`, data);
-      const receiver = getUser(receiverUsername);
-      
-      if (receiver) {
-        console.log(`Found receiver socket: ${receiver.socketId}`);
-        io.to(receiver.socketId).emit("getNotification", {
-          id: uuidv4(),
-          ...data,
-        });
-      } else {
-        console.log(`User ${receiverUsername} not found in online users`);
-        console.log("Current online users:", onlineUsers);
+    socket.on("newUser", (username) => {
+      if (username) {
+        addUser(username, socket.id);
       }
     });
 
-    socket.on("disconnect", () => {
+    socket.on("sendNotification", ({ receiverUsername, data }) => {
+      if (!receiverUsername || !data) return;
+      
+      const receiver = getUserByUsername(receiverUsername);
+      
+      if (receiver) {
+        io.to(receiver.socketId).emit("getNotification", {
+          id: uuidv4(),
+          timestamp: Date.now(),
+          ...data,
+        });
+        if (dev) console.log(`Notification sent to: ${receiverUsername}`);
+      } else {
+        if (dev) console.log(`User ${receiverUsername} not online`);
+      }
+    });
+
+    socket.on("disconnect", (reason) => {
       removeUser(socket.id);
+      if (dev) console.log(`Socket disconnected: ${reason}`);
+    });
+
+    // Tối ưu: Handle errors
+    socket.on("error", (error) => {
+      console.error("Socket error:", error);
     });
   });
 
   httpServer
     .once("error", (err) => {
-      console.error(err);
+      console.error("Server error:", err);
       process.exit(1);
     })
     .listen(port, () => {
-      console.log(`> Ready on http://${hostname}:${port}`);
+      console.log(` Server ready on http://${hostname}:${port}`);
+      console.log(` Environment: ${dev ? 'development' : 'production'}`);
     });
 });

@@ -12,6 +12,7 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 import fitz
 import tempfile
 
+
 # --- CẤU HÌNH FLASK ---
 app = Flask(__name__)
 app.secret_key = '1ae05550c898138fc632e4e6c0fba3f14cc10104e5697f19eb6fde9467b8d0cd19ab1faaa659f982a4c479d7f3d8827f815043d5064bec6b0c1d6e45842b77a'  # Thay đổi thành secret key thực tế
@@ -31,6 +32,54 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # --- HÀM HELPER ---
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def shuffle_questions(quiz_data):
+    """Đảo thứ tự câu hỏi ngẫu nhiên"""
+    import random
+    # Lọc ra các câu hỏi thực sự (có question_number là int)
+    questions = [q for q in quiz_data if isinstance(q.get('question_number'), int)]
+    other_items = [q for q in quiz_data if not isinstance(q.get('question_number'), int)]
+    
+    # Đảo câu hỏi
+    random.shuffle(questions)
+    
+    # Cập nhật lại question_number
+    for i, question in enumerate(questions):
+        question['question_number'] = i + 1
+    
+    # Kết hợp lại với các items khác
+    return questions + other_items
+
+def shuffle_answers_in_question(question):
+    """Đảo thứ tự đáp án trong một câu hỏi và cập nhật đáp án đúng"""
+    import random
+    
+    if not question.get('options') or not question['options']:
+        return question
+    
+    # Tạo mapping từ vị trí cũ sang vị trí mới
+    options = question['options'][:]
+    original_indices = list(range(len(options)))
+    random.shuffle(original_indices)
+    
+    # Đảo options
+    shuffled_options = [options[i] for i in original_indices]
+    
+    # Tìm vị trí mới của đáp án đúng
+    old_correct_index = question.get('correct_answer_index', 0)
+    if old_correct_index < len(original_indices):
+        new_correct_index = original_indices.index(old_correct_index)
+        new_correct_char = chr(65 + new_correct_index)  # A, B, C, D
+        
+        question['options'] = shuffled_options
+        question['correct_answer_index'] = new_correct_index
+        question['correct_answer_char'] = new_correct_char
+    
+    return question
+
+def shuffle_answers(quiz_data):
+    """Đảo đáp án cho tất cả câu hỏi"""
+    return [shuffle_answers_in_question(q) if isinstance(q.get('question_number'), int) else q for q in quiz_data]
 
 # --- LOGIC XỬ LÝ DOCX (PHIÊN BẢN CUỐI CÙNG, HOÀN CHỈNH) ---
 def extract_docx_data(file_path):
@@ -260,6 +309,36 @@ def extract_quiz_api():
     except Exception as e:
         print(f"Error in extract_quiz_api: {str(e)}")
         return jsonify({'error': f'Lỗi khi xử lý file: {str(e)}'}), 500
+
+@app.route('/api/shuffle-quiz', methods=['POST'])
+def shuffle_quiz_api():
+    """API endpoint để áp dụng đảo câu hỏi và đáp án"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'quiz_data' not in data:
+            return jsonify({'error': 'Dữ liệu không hợp lệ'}), 400
+        
+        quiz_data = data['quiz_data']
+        shuffle_questions_enabled = data.get('shuffle_questions', False)
+        shuffle_answers_enabled = data.get('shuffle_answers', False)
+        
+        # Áp dụng đảo nếu được yêu cầu
+        if shuffle_answers_enabled:
+            quiz_data = shuffle_answers(quiz_data)
+        
+        if shuffle_questions_enabled:
+            quiz_data = shuffle_questions(quiz_data)
+        
+        return jsonify({
+            'success': True,
+            'quiz_data': quiz_data,
+            'total_questions': len([q for q in quiz_data if isinstance(q.get('question_number'), int)])
+        })
+        
+    except Exception as e:
+        print(f"Error in shuffle_quiz_api: {str(e)}")
+        return jsonify({'error': f'Lỗi khi đảo đề: {str(e)}'}), 500
 
 @app.route('/download/<format>', methods=['POST'])
 def download_quiz(format):

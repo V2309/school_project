@@ -370,7 +370,7 @@ async function generateUniqueVideoSlug(title: string) {
        return course;
      });
  
-     revalidatePath(`/teacher/class/${classCode}/video`);
+     revalidatePath(`/class/${classCode}/video`);
      return { success: true, error: false };
      
    } catch (err) {
@@ -563,7 +563,7 @@ async function generateUniqueVideoSlug(title: string) {
        return { success: true };
      });
  
-     revalidatePath(`/teacher/class/${classCode}/video`);
+     revalidatePath(`/class/${classCode}/video`);
      return { success: true, error: false };
  
    } catch (err) {
@@ -611,7 +611,7 @@ async function generateUniqueVideoSlug(title: string) {
        where: { id: id },
      });
  
-     revalidatePath(`/teacher/class/${classCode}/video`);
+     revalidatePath(`/class/${classCode}/video`);
      return { success: true, error: false };
  
    } catch (err) {
@@ -673,7 +673,7 @@ async function generateUniqueVideoSlug(title: string) {
        });
      });
  
-     revalidatePath(`/teacher/class/${classCode}/video`);
+     revalidatePath(`/class/${classCode}/video`);
      return { 
        success: true, 
        error: false, 

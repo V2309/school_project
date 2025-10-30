@@ -2,7 +2,7 @@
 import Navigation from "@/components/Navigation";
 import { usePathname } from "next/navigation";
 import StreamVideoProvider from "@/providers/StreamClientProvider";
-
+import {UserProvider} from "@/providers/UserProvider";
 export default function DashboardLayout({
   children,
 }: Readonly<{
@@ -22,23 +22,23 @@ export default function DashboardLayout({
   } 
 
   return (  
-    <div className="h-screen w-screen flex flex-col overflow-x-hidden">
-      {/* Cấp 1: Navigation trên cùng */}
-      {!isAddPage && !isTestPage && !isFindPage && !isResultPage && (
-        <div className="w-full flex-shrink-0 border-2 border-gray-200">
-          <Navigation />
-        </div>
-      )}
-      {/* Cấp 2: Nội dung chính */}
-      <div className={
-        isAddPage || isTestPage || isFindPage || isResultPage || isEditClassPage
-          ? "flex-grow flex flex-col bg-gray-100"
-          : "flex-grow  flex flex-col bg-gray-100 overflow-y-auto"
-      }>
-       
+    <UserProvider>
+      <div className="h-screen w-screen flex flex-col overflow-x-hidden">
+        {/* Cấp 1: Navigation trên cùng */}
+        {!isAddPage && !isTestPage && !isFindPage && !isResultPage && (
+          <div className="w-full flex-shrink-0 border-2 border-gray-200">
+            <Navigation />
+          </div>
+        )}
+        {/* Cấp 2: Nội dung chính */}
+        <div className={
+          isAddPage || isTestPage || isFindPage || isResultPage || isEditClassPage
+            ? "flex-grow flex flex-col bg-gray-100"
+            : "flex-grow  flex flex-col bg-gray-100 overflow-y-auto"
+        }>
           {children}
-    
+        </div>
       </div>
-    </div>
+    </UserProvider>
   );
 }

@@ -13,19 +13,17 @@ import Notification from "./Notification";
    ========================= */
 export type Role =  "teacher" | "student" ;
 
-  // - Teacher: class / materials / schedule
-// - Student: overview / class / schedule
 export const topNavItems = [
   // Teacher
-  { label: "Lớp học", href: "/teacher/class", visible: ["teacher"] as Role[] },
-  { label: "Học liệu", href: "/teacher/materials", visible: ["teacher"] as Role[] },
-  { label: "Lịch học", href: "/teacher/schedule", visible: ["teacher"] as Role[] },
+  { label: "Lớp học", href: "/class", visible: ["teacher"] as Role[] },
+  { label: "Lịch học", href: "/schedule", visible: ["teacher"] as Role[] },
   { label: "Phòng họp", href: "/room", visible: ["teacher"] as Role[] },
 
   // Student
-  { label: "Tổng quan", href: "/student/overview", visible: ["student"] as Role[] },
-  { label: "Lớp học", href: "/student/class", visible: ["student"] as Role[] },
-  { label: "Lịch học", href: "/student/schedule", visible: ["student"] as Role[] },
+  { label: "Tổng quan", href: "/overview", visible: ["student"] as Role[] },
+  { label: "Lớp học", href: "/class", visible: ["student"] as Role[] },
+  { label: "Lịch học", href: "/schedule", visible: ["student"] as Role[] },
+  { label: "Chat bot", href: "/chat", visible: ["student"] as Role[] }
 ] as const;
 
 const Navigation: React.FC = () => {
@@ -35,11 +33,19 @@ const Navigation: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      await logoutAction();
-      router.push("/");
-      router.refresh();
+      const result = await logoutAction();
+      if (result.success) {
+        // Chuyển hướng về trang chủ và reload để clear cache
+        window.location.href = "/";
+      } else {
+        console.error("Logout failed:", result.error);
+        // Fallback: vẫn chuyển về trang chủ
+        window.location.href = "/";
+      }
     } catch (err) {
       console.error("Logout failed:", err);
+      // Fallback: vẫn chuyển về trang chủ
+      window.location.href = "/";
     }
   };
 
@@ -161,7 +167,7 @@ const Navigation: React.FC = () => {
           {openMenu && (
             <div className="absolute right-0 mt-2 w-72 bg-white rounded shadow border z-50 transform transition-all duration-300 ease-in-out">
               <Link
-                href={`/${role ?? "student"}/profile`}
+                href="/profile"
                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 onClick={() => setOpenMenu(false)}
               >

@@ -10,6 +10,10 @@ const JWT_SECRET = new TextEncoder().encode(
     "default_secret_key_change_this_in_production"
 );
 
+
+
+// lib/actions/auth.action.ts
+
 export async function loginAction(prevState: any, formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
@@ -44,20 +48,19 @@ export async function loginAction(prevState: any, formData: FormData) {
     httpOnly: true,
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24,
+    maxAge: 60 * 60 * 24, // 1 ngày
     secure: process.env.NODE_ENV === "production",
   });
-
-  if (user.role === "teacher") {
-    redirect("/teacher/class");
-  } else if (user.role === "student") {
-    redirect("/student/overview");
-  }
 
   return { success: true, role: user.role };
 }
 
 export async function logoutAction() {
-  cookies().delete("session");
-  redirect("/");
+  try {
+    cookies().delete("session");
+    return { success: true };
+  } catch (error) {
+    console.error("Logout error:", error);
+    return { error: "Đăng xuất thất bại" };
+  }
 }

@@ -36,14 +36,14 @@ export default function MenuClass({ classDetail, role }: MenuClassProps) {
   const class_code = classDetail.class_code;
 
   const links = [
-    { href: `/${role}/class/${class_code}/newsfeed`, label: "Bảng tin", icon: menuIcons.newsfeed },
-    { href: `/${role}/class/${class_code}/schedule`, label: "Lịch học", icon: menuIcons.schedule },
-    { href: `/${role}/class/${class_code}/member`, label: "Thành viên", icon: menuIcons.members },
-    // { href: `/${role}/class/${class_code}/groups`, label: "Nhóm học tập", icon: menuIcons.groups },
-    { href: `/${role}/class/${class_code}/homework/list`, label: "Bài tập", icon: menuIcons.homework },
-    { href: `/${role}/class/${class_code}/scoretable`, label: "Bảng điểm", icon: menuIcons.scoretable },
-    { href: `/${role}/class/${class_code}/video`, label: "Bài giảng", icon: menuIcons.lectures },
-    { href: `/${role}/class/${class_code}/documents`, label: "Tài liệu", icon: menuIcons.documents },
+    { href: `/class/${class_code}/newsfeed`, label: "Bảng tin", icon: menuIcons.newsfeed },
+    { href: `/class/${class_code}/schedule`, label: "Lịch học", icon: menuIcons.schedule },
+    { href: `/class/${class_code}/member`, label: "Thành viên", icon: menuIcons.members },
+    // { href: `/class/${class_code}/groups`, label: "Nhóm học tập", icon: menuIcons.groups },
+    { href: `/class/${class_code}/homework/list`, label: "Bài tập", icon: menuIcons.homework },
+    { href: `/class/${class_code}/scoretable`, label: "Bảng điểm", icon: menuIcons.scoretable },
+    { href: `/class/${class_code}/video`, label: "Bài giảng", icon: menuIcons.lectures },
+    { href: `/class/${class_code}/documents`, label: "Tài liệu", icon: menuIcons.documents },
 
   ];
 
@@ -111,7 +111,7 @@ export default function MenuClass({ classDetail, role }: MenuClassProps) {
               height={24}
             />
           </span>
-         <Link href={role=="student" ? `/${role}/class/${class_code}/leave` : `/${role}/class/${class_code}/edit`}>
+         <Link href={role=="student" ? `/${role}/class/${class_code}/leave` : `/class/${class_code}/edit`}>
             {role=="student" ? "Rời khỏi lớp học" : "Cài đặt lớp"}
          </Link>
       

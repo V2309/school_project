@@ -95,7 +95,7 @@ export function HomeWorkInfo({
   const handlePractice = () => {
     const classCode = getClassCode();
     if (classCode) {
-      router.push(`/${role}/class/${classCode}/homework/${homework.id}/test`);
+      router.push(`/class/${classCode}/homework/${homework.id}/test`);
     } else {
       toast.error("Không tìm thấy mã lớp!");
     }
@@ -106,11 +106,11 @@ export function HomeWorkInfo({
     if (!classCode) return toast.error("Không tìm thấy mã lớp!");
     if (bestSubmissionId) {
       router.push(
-        `/student/class/${classCode}/homework/${homework.id}/detail?utid=${bestSubmissionId}`
+        `/class/${classCode}/homework/${homework.id}/detail?utid=${bestSubmissionId}`
       );
     } else {
       router.push(
-        `/student/class/${classCode}/homework/${homework.id}/detail?homeworkId=${homework.id}&getBest=true`
+        `/class/${classCode}/homework/${homework.id}/detail?homeworkId=${homework.id}&getBest=true`
       );
     }
   };
@@ -241,7 +241,7 @@ export function HomeWorkInfo({
             <>
               <MenuItem icon={<MonitorPlay size={18} />} onClick={handlePractice} label="Làm thử" />
               <MenuItem icon={<Info size={18} />} label="Chi tiết" active />
-              <MenuItem icon={<Folder size={18} />} label="Di chuyển" />
+             
               <MenuItem icon={<Pencil size={18} />} label="Chỉnh sửa" />
               <MenuItem
                 icon={<Printer size={18} />}
