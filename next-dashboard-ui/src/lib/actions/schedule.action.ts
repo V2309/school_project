@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/hooks/auth";
 import prisma from "@/lib/prisma";
 import { ScheduleSchema } from "@/lib/formValidationSchema";
-
+import moment from "moment";
 type CurrentState = { success: boolean; error: boolean; message?: string };
 
 // Tạo lịch học mới (Event)
@@ -39,8 +39,8 @@ export const createSchedule = async (
     }
 
     // Kết hợp ngày và thời gian để tạo DateTime
-    const startDateTime = new Date(`${data.date}T${data.startTime}:00.000Z`);
-    const endDateTime = new Date(`${data.date}T${data.endTime}:00.000Z`);
+    const startDateTime = moment(`${data.date} ${data.startTime}`, "YYYY-MM-DD HH:mm").toDate();
+    const endDateTime = moment(`${data.date} ${data.endTime}`, "YYYY-MM-DD HH:mm").toDate();
 
     // Validate thời gian
     if (endDateTime <= startDateTime) {
@@ -158,7 +158,7 @@ export const createSchedule = async (
   }
 };
 
-// Cập nhật lịch học
+// Cập nhật lịch học (chỉ cho phép cập nhật title và description)
 export const updateSchedule = async (
   currentState: CurrentState,
   data: ScheduleSchema & { id: number }
@@ -191,24 +191,19 @@ export const updateSchedule = async (
       return { success: false, error: true, message: "Event not found or access denied" };
     }
 
-    // Kết hợp ngày và thời gian để tạo DateTime
-    const startDateTime = new Date(`${data.date}T${data.startTime}:00.000Z`);
-    const endDateTime = new Date(`${data.date}T${data.endTime}:00.000Z`);
-
-    // Validate thời gian
-    if (endDateTime <= startDateTime) {
-      return { success: false, error: true, message: "Thời gian kết thúc phải sau thời gian bắt đầu" };
+    // Validate input - chỉ title là bắt buộc
+    if (!data.title || data.title.trim() === "") {
+      return { success: false, error: true, message: "Tên buổi học không được để trống" };
     }
 
-    // Cập nhật event
+    // Cập nhật event - CHỈ CẬP NHẬT title và description
+    // Không cho phép thay đổi thời gian, ngày, lớp học, hoặc các cài đặt lặp lại
     await prisma.event.update({
       where: { id: data.id },
       data: {
-        title: data.title,
-        description: data.description || "",
-        startTime: startDateTime,
-        endTime: endDateTime,
-        classId: data.classId,
+        title: data.title.trim(),
+        description: data.description?.trim() || "",
+        // BỎ CÁC TRƯỜNG KHÁC: startTime, endTime, classId
       },
     });
 
@@ -384,3 +379,291 @@ export async function getStudentSchedules() {
     return [];
   }
 }
+
+// Kiểm tra xem event có phải là phần của chuỗi lặp lại không
+export const checkRecurrenceGroup = async (eventId: number) => {
+  try {
+    // Optimized: Lấy event và related events trong 1 transaction
+    const [event, relatedEvents] = await Promise.all([
+      prisma.event.findUnique({
+        where: { id: eventId },
+        select: { id: true, classId: true, title: true, startTime: true }
+      }),
+      prisma.event.findFirst({
+        where: { id: eventId },
+        select: { classId: true, title: true, startTime: true }
+      }).then(async (currentEvent) => {
+        if (!currentEvent) return [];
+        
+        return prisma.event.findMany({
+          where: {
+            classId: currentEvent.classId,
+            title: currentEvent.title,
+            id: { not: eventId },
+            startTime: {
+              gte: new Date(currentEvent.startTime.getTime() - 90 * 24 * 60 * 60 * 1000), // 90 days before
+              lte: new Date(currentEvent.startTime.getTime() + 90 * 24 * 60 * 60 * 1000), // 90 days after
+            }
+          },
+          select: { id: true, title: true, startTime: true, endTime: true },
+          orderBy: { startTime: 'asc' }
+        });
+      })
+    ]);
+    
+    if (!event) return null;
+
+    if (relatedEvents.length > 0) {
+      return {
+        currentEvent: event,
+        relatedEvents: relatedEvents,
+        totalEvents: relatedEvents.length + 1
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Check recurrence group error:", error);
+    return null;
+  }
+};
+
+// Cập nhật chỉ event hiện tại
+export const updateSingleEvent = async (
+  currentState: CurrentState,
+  data: { id: number; title: string; description?: string }
+): Promise<CurrentState> => {
+  try {
+    const user = await getCurrentUser();
+    if (!user || user.role !== "teacher") {
+      return { success: false, error: true, message: "Unauthorized" };
+    }
+
+    const teacher = await prisma.teacher.findUnique({
+      where: { userId: user.id as string },
+    });
+    if (!teacher) {
+      return { success: false, error: true, message: "Teacher not found" };
+    }
+
+    // Kiểm tra quyền truy cập
+    const existingEvent = await prisma.event.findFirst({
+      where: {
+        id: data.id,
+        class: {
+          supervisorId: teacher.id,
+          deleted: false,
+        },
+      },
+    });
+
+    if (!existingEvent) {
+      return { success: false, error: true, message: "Event not found or access denied" };
+    }
+
+    // Validate input
+    if (!data.title || data.title.trim() === "") {
+      return { success: false, error: true, message: "Tên buổi học không được để trống" };
+    }
+
+    // Cập nhật chỉ event hiện tại
+    await prisma.event.update({
+      where: { id: data.id },
+      data: {
+        title: data.title.trim(),
+        description: data.description?.trim() || "",
+      },
+    });
+
+    revalidatePath("/schedule");
+    return { success: true, error: false, message: "Cập nhật lịch học thành công!" };
+  } catch (err) {
+    console.error("Update single event error:", err);
+    return { success: false, error: true, message: "Có lỗi xảy ra khi cập nhật lịch học" };
+  }
+};
+
+// Cập nhật tất cả events trong chuỗi lặp lại
+export const updateAllRecurrenceEvents = async (
+  currentState: CurrentState,
+  data: { id: number; title: string; description?: string }
+): Promise<CurrentState> => {
+  try {
+    const user = await getCurrentUser();
+    if (!user || user.role !== "teacher") {
+      return { success: false, error: true, message: "Unauthorized" };
+    }
+
+    const teacher = await prisma.teacher.findUnique({
+      where: { userId: user.id as string },
+    });
+    if (!teacher) {
+      return { success: false, error: true, message: "Teacher not found" };
+    }
+
+    // Lấy thông tin recurrence group
+    const recurrenceGroup = await checkRecurrenceGroup(data.id);
+    if (!recurrenceGroup) {
+      // Không có recurrence group, chỉ update event hiện tại
+      return updateSingleEvent(currentState, data);
+    }
+
+    // Validate input
+    if (!data.title || data.title.trim() === "") {
+      return { success: false, error: true, message: "Tên buổi học không được để trống" };
+    }
+
+    // Kiểm tra quyền truy cập cho event chính
+    const hasAccess = await prisma.event.findFirst({
+      where: {
+        id: data.id,
+        class: {
+          supervisorId: teacher.id,
+          deleted: false,
+        },
+      },
+    });
+
+    if (!hasAccess) {
+      return { success: false, error: true, message: "Event not found or access denied" };
+    }
+
+    // Cập nhật tất cả events trong group
+    const allEventIds = [data.id, ...recurrenceGroup.relatedEvents.map(e => e.id)];
+    
+    await prisma.event.updateMany({
+      where: {
+        id: { in: allEventIds },
+        class: {
+          supervisorId: teacher.id,
+          deleted: false,
+        },
+      },
+      data: {
+        title: data.title.trim(),
+        description: data.description?.trim() || "",
+      },
+    });
+
+    revalidatePath("/schedule");
+    return { 
+      success: true, 
+      error: false, 
+      message: `Cập nhật thành công ${recurrenceGroup.totalEvents} lịch học!` 
+    };
+  } catch (err) {
+    console.error("Update all recurrence events error:", err);
+    return { success: false, error: true, message: "Có lỗi xảy ra khi cập nhật lịch học" };
+  }
+};
+
+// Xóa chỉ event hiện tại
+export const deleteSingleEvent = async (
+  currentState: CurrentState,
+  data: { id: number }
+): Promise<CurrentState> => {
+  try {
+    const user = await getCurrentUser();
+    if (!user || user.role !== "teacher") {
+      return { success: false, error: true, message: "Unauthorized" };
+    }
+
+    const teacher = await prisma.teacher.findUnique({
+      where: { userId: user.id as string },
+    });
+    if (!teacher) {
+      return { success: false, error: true, message: "Teacher not found" };
+    }
+
+    // Kiểm tra quyền truy cập
+    const existingEvent = await prisma.event.findFirst({
+      where: {
+        id: data.id,
+        class: {
+          supervisorId: teacher.id,
+          deleted: false,
+        },
+      },
+    });
+
+    if (!existingEvent) {
+      return { success: false, error: true, message: "Event not found or access denied" };
+    }
+
+    // Xóa chỉ event hiện tại
+    await prisma.event.delete({
+      where: { id: data.id },
+    });
+
+    revalidatePath("/schedule");
+    return { success: true, error: false, message: "Xóa lịch học thành công!" };
+  } catch (err) {
+    console.error("Delete single event error:", err);
+    return { success: false, error: true, message: "Có lỗi xảy ra khi xóa lịch học" };
+  }
+};
+
+// Xóa tất cả events trong chuỗi lặp lại
+export const deleteAllRecurrenceEvents = async (
+  currentState: CurrentState,
+  data: { id: number }
+): Promise<CurrentState> => {
+  try {
+    const user = await getCurrentUser();
+    if (!user || user.role !== "teacher") {
+      return { success: false, error: true, message: "Unauthorized" };
+    }
+
+    const teacher = await prisma.teacher.findUnique({
+      where: { userId: user.id as string },
+    });
+    if (!teacher) {
+      return { success: false, error: true, message: "Teacher not found" };
+    }
+
+    // Lấy thông tin recurrence group
+    const recurrenceGroup = await checkRecurrenceGroup(data.id);
+    if (!recurrenceGroup) {
+      // Không có recurrence group, chỉ xóa event hiện tại
+      return deleteSingleEvent(currentState, data);
+    }
+
+    // Kiểm tra quyền truy cập cho event chính
+    const hasAccess = await prisma.event.findFirst({
+      where: {
+        id: data.id,
+        class: {
+          supervisorId: teacher.id,
+          deleted: false,
+        },
+      },
+    });
+
+    if (!hasAccess) {
+      return { success: false, error: true, message: "Event not found or access denied" };
+    }
+
+    // Xóa tất cả events trong group
+    const allEventIds = [data.id, ...recurrenceGroup.relatedEvents.map(e => e.id)];
+    
+    await prisma.event.deleteMany({
+      where: {
+        id: { in: allEventIds },
+        class: {
+          supervisorId: teacher.id,
+          deleted: false,
+        },
+      },
+    });
+
+    revalidatePath("/schedule");
+    return { 
+      success: true, 
+      error: false, 
+      message: `Xóa thành công ${recurrenceGroup.totalEvents} lịch học!` 
+    };
+  } catch (err) {
+    console.error("Delete all recurrence events error:", err);
+    return { success: false, error: true, message: "Có lỗi xảy ra khi xóa lịch học" };
+  }
+};

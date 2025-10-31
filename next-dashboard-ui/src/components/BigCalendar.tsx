@@ -1,10 +1,16 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react"; // 1. Import useRef
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import moment from "moment";
 import "moment/locale/vi"; // Import Tiếng Việt
 import ScheduleForm from "@/components/forms/ScheduleForm";
+import DayColumn from "@/components/calendar/DayColumn";
+import RecurrenceUpdateDialog from "@/components/calendar/RecurrenceUpdateDialog";
+import RecurrenceDeleteDialog from "@/components/calendar/RecurrenceDeleteDialog";
+import type { ScheduleEvent } from "@/components/calendar/EventItem";
+import { checkRecurrenceGroup, updateSingleEvent, updateAllRecurrenceEvents, deleteSingleEvent, deleteAllRecurrenceEvents } from "@/lib/actions/schedule.action";
+import { toast } from "react-toastify";
 
 // Cấu hình moment: Locale VI + tuần bắt đầu từ Thứ 2
 moment.locale("vi");
@@ -13,27 +19,12 @@ moment.updateLocale("vi", { week: { dow: 1, doy: 4 } });
 // --- 1. ĐỊNH NGHĨA TYPESCRIPT ---
 type EventColor = "blue" | "green" | "yellow";
 
-type ScheduleEvent = {
-  id: number;
-  title: string;
-  description?: string;
-  date: Date;
-  startTime: Date;
-  endTime: Date;
-  color: EventColor;
-  classInfo?: {
-    id: number;
-    name: string;
-    class_code: string | null;
-  };
-};
-
 // Interface cho props component
 interface BigCalendarProps {
   schedules?: Array<{
     id: number;
     title: string;
-    description: string;
+    description: string | null; // Sửa: cho phép null
     startTime: Date;
     endTime: Date;
     class: {
@@ -47,12 +38,7 @@ interface BigCalendarProps {
   teacherClasses?: any[]; // ** NHẬN PROP NÀY TỪ SERVER COMPONENT **
 }
 
-// 3. Tách hằng số colorClasses ra ngoài và định nghĩa type cho nó
-const colorClasses: Record<EventColor, string> = {
-  blue: "bg-blue-50 text-blue-700 border-l-4 border-blue-500",
-  green: "bg-green-50 text-green-700 border-l-4 border-green-500",
-  yellow: "bg-yellow-50 text-yellow-700 border-l-4 border-yellow-500",
-};
+
 
 // --- Helper Functions ---
 const buildSevenDayRangeFrom = (anyDate: Date) => {
@@ -76,13 +62,27 @@ const AllDaySchedule = ({ schedules = [], role, classId, teacherClasses = [] }: 
   const [activeView, setActiveView] = useState<"week" | "month">("week");
   const [showScheduleForm, setShowScheduleForm] = useState(false);
   const [selectedDateForForm, setSelectedDateForForm] = useState<Date | undefined>();
+  const [editingEvent, setEditingEvent] = useState<ScheduleEvent | null>(null);
+  const [showRecurrenceDialog, setShowRecurrenceDialog] = useState(false);
+  const [recurrenceData, setRecurrenceData] = useState<{
+    eventId: number;
+    title: string;
+    description?: string;
+    totalEvents: number;
+  } | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteData, setDeleteData] = useState<{
+    eventId: number;
+    title: string;
+    totalEvents: number;
+  } | null>(null);
 
   // Chuyển đổi dữ liệu schedules thành format phù hợp
   const allDayEvents = useMemo(() => {
     return schedules.map((schedule, index) => ({
       id: schedule.id,
       title: schedule.title,
-      description: schedule.description,
+      description: schedule.description || "", // Handle null case
       date: new Date(schedule.startTime),
       startTime: new Date(schedule.startTime),
       endTime: new Date(schedule.endTime),
@@ -101,24 +101,151 @@ const AllDaySchedule = ({ schedules = [], role, classId, teacherClasses = [] }: 
     [currentDate]
   );
 
-  // --- Handlers ---
-  const handlePrevWeek = () =>
-    setCurrentDate(moment(currentDate).subtract(1, "week").toDate());
-  const handleNextWeek = () =>
-    setCurrentDate(moment(currentDate).add(1, "week").toDate());
+  // --- Handlers (Optimized with useCallback) ---
+  const handlePrevWeek = useCallback(() =>
+    setCurrentDate(moment(currentDate).subtract(1, "week").toDate()),
+    [currentDate]
+  );
+  
+  const handleNextWeek = useCallback(() =>
+    setCurrentDate(moment(currentDate).add(1, "week").toDate()),
+    [currentDate]
+  );
 
-  const handleViewChange = (view: "week" | "month") => {
+  const handleViewChange = useCallback((view: "week" | "month") => {
     setActiveView(view);
-  };
+  }, []);
 
-  const handleAddEvent = (date: moment.Moment) => {
+  const handleAddEvent = useCallback((date: moment.Moment) => {
     setSelectedDateForForm(date.toDate());
+    setEditingEvent(null); // Reset editing event
     setShowScheduleForm(true);
-  };
+  }, []);
 
-  const handleScheduleSuccess = () => {
+  const handleEditEvent = useCallback((event: ScheduleEvent) => {
+    // Luôn mở ScheduleForm trước, sẽ handle recurrence logic trong form submit
+    setEditingEvent(event);
+    setSelectedDateForForm(event.date);
+    setShowScheduleForm(true);
+  }, []);
+
+  const handleDeleteEvent = useCallback(async (event: ScheduleEvent) => {
+    // Kiểm tra recurrence trước khi hiển thị dialog
+    const recurrenceGroup = await checkRecurrenceGroup(event.id);
+    
+    setDeleteData({
+      eventId: event.id,
+      title: event.title,
+      totalEvents: recurrenceGroup ? recurrenceGroup.totalEvents : 1
+    });
+    setShowDeleteDialog(true);
+  }, []);
+
+  const handleScheduleSuccess = useCallback(() => {
     // TỐI ƯU: Dùng router.refresh() để lấy lại dữ liệu mới (từ Server)
     router.refresh(); 
+  }, [router]);
+
+  const handleRecurrenceClose = useCallback(() => {
+    setShowRecurrenceDialog(false);
+    setRecurrenceData(null);
+  }, []);
+
+  const handleDeleteClose = useCallback(() => {
+    setShowDeleteDialog(false);
+    setDeleteData(null);
+  }, []);
+
+  const handleEditSingleEvent = async () => {
+    if (!recurrenceData) return;
+    
+    try {
+      const result = await updateSingleEvent(
+        { success: false, error: false },
+        {
+          id: recurrenceData.eventId,
+          title: recurrenceData.title,
+          description: recurrenceData.description || ""
+        }
+      );
+      
+      if (result.success) {
+        setShowRecurrenceDialog(false);
+        setRecurrenceData(null);
+        router.refresh();
+      }
+    } catch (error) {
+      console.error("Error updating single event:", error);
+    }
+  };
+
+  const handleEditAllEvents = async () => {
+    if (!recurrenceData) return;
+    
+    try {
+      const result = await updateAllRecurrenceEvents(
+        { success: false, error: false },
+        {
+          id: recurrenceData.eventId,
+          title: recurrenceData.title,
+          description: recurrenceData.description || ""
+        }
+      );
+      
+      if (result.success) {
+        setShowRecurrenceDialog(false);
+        setRecurrenceData(null);
+        router.refresh();
+      }
+    } catch (error) {
+      console.error("Error updating all events:", error);
+    }
+  };
+
+  const handleDeleteSingleEvent = async () => {
+    if (!deleteData) return;
+    
+    try {
+      const result = await deleteSingleEvent(
+        { success: false, error: false },
+        { id: deleteData.eventId }
+      );
+      
+      if (result.success) {
+        toast.success('Xóa lịch học thành công!');
+        setShowDeleteDialog(false);
+        setDeleteData(null);
+        router.refresh();
+      } else {
+        toast.error(result.message || 'Có lỗi xảy ra khi xóa lịch học');
+      }
+    } catch (error) {
+      console.error("Error deleting single event:", error);
+      toast.error('Có lỗi xảy ra khi xóa lịch học');
+    }
+  };
+
+  const handleDeleteAllEvents = async () => {
+    if (!deleteData) return;
+    
+    try {
+      const result = await deleteAllRecurrenceEvents(
+        { success: false, error: false },
+        { id: deleteData.eventId }
+      );
+      
+      if (result.success) {
+        toast.success(result.message || 'Xóa lịch học thành công!');
+        setShowDeleteDialog(false);
+        setDeleteData(null);
+        router.refresh();
+      } else {
+        toast.error(result.message || 'Có lỗi xảy ra khi xóa lịch học');
+      }
+    } catch (error) {
+      console.error("Error deleting all events:", error);
+      toast.error('Có lỗi xảy ra khi xóa lịch học');
+    }
   };
 
   return (
@@ -193,6 +320,8 @@ const AllDaySchedule = ({ schedules = [], role, classId, teacherClasses = [] }: 
               isToday={isToday}
               events={eventsForDay}
               onAdd={() => handleAddEvent(day)}
+              onEdit={handleEditEvent}
+              onDelete={handleDeleteEvent}
               role={role}
             />
           );
@@ -202,238 +331,72 @@ const AllDaySchedule = ({ schedules = [], role, classId, teacherClasses = [] }: 
       {/* Schedule Form Modal */}
       {showScheduleForm && role === "teacher" && (
         <ScheduleForm
-          type="create"
+          type={editingEvent ? "update" : "create"}
+          data={editingEvent ? {
+            id: editingEvent.id,
+            title: editingEvent.title,
+            description: editingEvent.description || "",
+            classId: editingEvent.classInfo?.id || classId || 0,
+            date: moment(editingEvent.date).format("YYYY-MM-DD"),
+            startTime: moment(editingEvent.startTime).format("HH:mm"),
+            endTime: moment(editingEvent.endTime).format("HH:mm"),
+          } : undefined}
           selectedDate={selectedDateForForm}
           classId={classId} 
-          setOpen={setShowScheduleForm}
+          setOpen={(open) => {
+            setShowScheduleForm(open);
+            if (!open) setEditingEvent(null); // Reset editing event when closing
+          }}
           onSuccess={handleScheduleSuccess}
+          // Callback đặc biệt cho update với recurrence check
+          onUpdateSubmit={async (formData): Promise<boolean> => {
+            if (!editingEvent) return false;
+            
+            // Kiểm tra recurrence trước khi submit
+            const recurrenceGroup = await checkRecurrenceGroup(editingEvent.id);
+            
+            // Luôn hiển thị dialog bước 2, bất kể có recurrence hay không
+            setRecurrenceData({
+              eventId: editingEvent.id,
+              title: formData.title,
+              description: formData.description,
+              totalEvents: recurrenceGroup ? recurrenceGroup.totalEvents : 1
+            });
+            setShowRecurrenceDialog(true);
+            setShowScheduleForm(false); // Đóng form chính
+            return false; // Ngăn submit thông thường, chờ user chọn trong dialog
+          }}
           // TỐI ƯU: Truyền danh sách lớp đã tải sẵn xuống form
           teacherClasses={teacherClasses} 
+        />
+      )}
+
+      {/* Recurrence Update Dialog */}
+      {showRecurrenceDialog && recurrenceData && (
+        <RecurrenceUpdateDialog
+          isOpen={showRecurrenceDialog}
+          onClose={handleRecurrenceClose}
+          onSelectSingle={handleEditSingleEvent}
+          onSelectAll={handleEditAllEvents}
+          totalEvents={recurrenceData.totalEvents}
+        />
+      )}
+
+      {/* Recurrence Delete Dialog */}
+      {showDeleteDialog && deleteData && (
+        <RecurrenceDeleteDialog
+          isOpen={showDeleteDialog}
+          onClose={handleDeleteClose}
+          onSelectSingle={handleDeleteSingleEvent}
+          onSelectAll={handleDeleteAllEvents}
+          totalEvents={deleteData.totalEvents}
+          eventTitle={deleteData.title}
         />
       )}
     </div>
   );
 };
 
-// --- Component Cột Ngày ---
-type DayColumnProps = {
-  day: moment.Moment;
-  isToday: boolean;
-  events: ScheduleEvent[];
-  onAdd: () => void;
-  role?: string;
-};
 
-const DayColumn = ({ day, isToday, events, onAdd, role }: DayColumnProps) => {
-  return (
-    <div className="flex flex-col border-r border-t border-gray-200 h-[calc(100vh-200px)] min-h-[600px] bg-white">
-      {/* Header của Cột */}
-      <div className={` border-b p-3 ${isToday ? "bg-blue-50" : ""}`}>
-        <div className="flex justify-between items-center">
-          <span
-            className={`text-xs font-semibold ${
-              isToday ? "text-gray-900" : "text-gray-500"
-            }`}
-          >
-            {day.format("dddd")}
-            {isToday && " - Hôm nay"}
-          </span>
-          {role === "teacher" && (
-            <button
-              onClick={onAdd}
-              className="h-6 w-6 rounded-md text-gray-500 hover:bg-gray-200 hover:text-gray-800
-                       flex items-center justify-center text-lg font-medium transition-colors"
-              aria-label="Thêm lịch học"
-            >
-              +
-            </button>
-          )}
-        </div>
-        <div
-          className={`text-2xl font-bold mt-0.5 ${
-            isToday ? "text-blue-600" : "text-gray-900"
-          }`}
-        >
-          {day.format("DD/MM")}
-        </div>
-      </div>
-
-      {/* Body của Cột */}
-      <div className="flex-1 p-2 overflow-y-auto">
-        {events.length === 0 ? (
-          <div className="text-center text-gray-500 text-sm mt-4">
-            Không có lịch học
-          </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {events.map((event) => (
-              <EventItem key={event.id} event={event} />
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// --- Component Sự Kiện Nhỏ (ĐÃ SỬA LỖI TOOLTIP) ---
-const EventItem = ({ event }: { event: ScheduleEvent }) => {
-  const [showTooltip, setShowTooltip] = useState(false);
-  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0, side: 'right' as 'right' | 'left' });
-  const hideTooltipTimer = useRef<NodeJS.Timeout | null>(null); // Ref cho timer
-  const colorClass = colorClasses[event.color];
-
-  const handleEventMouseEnter = (e: React.MouseEvent) => {
-    // Xóa timer ẩn tooltip (nếu có)
-    if (hideTooltipTimer.current) {
-      clearTimeout(hideTooltipTimer.current);
-    }
-    
-    // Tính toán vị trí
-    const rect = e.currentTarget.getBoundingClientRect();
-    const spaceOnRight = window.innerWidth - rect.right;
-    const preferRight = spaceOnRight > 320; // 320px là chiều rộng ước tính của tooltip
-    
-    setTooltipPosition({
-      x: preferRight ? rect.right + 8 : rect.left - 328, // 320 (width) + 8 (gap)
-      y: rect.top,
-      side: preferRight ? 'right' : 'left'
-    });
-
-    // Hiển thị tooltip
-    setShowTooltip(true);
-  };
-
-  const handleEventMouseLeave = () => {
-    // Đặt timer để ẩn tooltip, cho phép người dùng di chuột vào tooltip
-    hideTooltipTimer.current = setTimeout(() => {
-      setShowTooltip(false);
-    }, 100); // 100ms delay
-  };
-
-  const handleTooltipMouseEnter = () => {
-    // Nếu chuột vào tooltip, hủy timer ẩn
-    if (hideTooltipTimer.current) {
-      clearTimeout(hideTooltipTimer.current);
-    }
-  };
-  
-  const handleTooltipMouseLeave = () => {
-    // Nếu chuột rời tooltip, ẩn ngay
-    setShowTooltip(false);
-  };
-
-  return (
-    <div className="relative">
-      {/* Event Item */}
-      <div
-        className={`p-2 rounded-r-md cursor-pointer hover:opacity-80 transition-all duration-200 hover:shadow-lg ${colorClass} mb-1`}
-        onMouseEnter={handleEventMouseEnter}
-        onMouseLeave={handleEventMouseLeave}
-      >
-        <div className="text-sm font-semibold">{event.title}</div>
-        {event.startTime && event.endTime && (
-          <div className="text-xs opacity-75 mt-1">
-            {moment(event.startTime).format("HH:mm")} - {moment(event.endTime).format("HH:mm")}
-          </div>
-        )}
-        {event.classInfo && (
-          <div className="text-xs opacity-75 mt-1">
-            {event.classInfo.name} {event.classInfo.class_code && `(${event.classInfo.class_code})`}
-          </div>
-        )}
-        {event.description && (
-          <div className="text-xs opacity-75 mt-1 line-clamp-2">
-            {event.description}
-          </div>
-        )}
-      </div>
-
-      {/* Tooltip */}
-      {showTooltip && (
-        <div 
-          // SỬA LỖI: Xóa `pointer-events-none`
-          className="fixed z-[9999] bg-white border border-gray-200 rounded-lg shadow-xl p-4 min-w-[280px] max-w-[400px]"
-          style={{
-            left: `${tooltipPosition.x}px`,
-            top: `${tooltipPosition.y}px`
-          }}
-          // SỬA LỖI: Thêm 2 event handlers
-          onMouseEnter={handleTooltipMouseEnter}
-          onMouseLeave={handleTooltipMouseLeave}
-        >
-          {/* Mũi tên (Arrow) */}
-          {tooltipPosition.side === 'right' ? (
-            <div className="absolute -left-2 top-4 w-0 h-0 border-t-8 border-t-transparent border-b-8 border-b-transparent border-r-8 border-r-white"></div>
-          ) : (
-            <div className="absolute -right-2 top-4 w-0 h-0 border-t-8 border-t-transparent border-b-8 border-b-transparent border-l-8 border-l-white"></div>
-          )}
-          
-          <div className="space-y-3">
-            {/* Title */}
-            <div className="flex items-start justify-between">
-              <h3 className="font-semibold text-gray-900 text-base leading-tight pr-2">
-                {event.title}
-              </h3>
-              <div className={`w-3 h-3 rounded-full flex-shrink-0 mt-1 ${event.color === 'blue' ? 'bg-blue-500' : event.color === 'green' ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-            </div>
-
-            {/* Time */}
-            {event.startTime && event.endTime && (
-              <div className="flex items-center gap-2 text-gray-600">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="text-sm">
-                  {moment(event.startTime).format("HH:mm")} - {moment(event.endTime).format("HH:mm")}
-                </span>
-              </div>
-            )}
-
-            {/* Date */}
-            <div className="flex items-center gap-2 text-gray-600">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span className="text-sm">
-                {moment(event.date).format("dddd, DD/MM/YYYY")}
-              </span>
-            </div>
-
-            {/* Class Info */}
-            {event.classInfo && (
-              <div className="flex items-center gap-2 text-gray-600">
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
-                <span className="text-sm">
-                  {event.classInfo.name}
-                  {event.classInfo.class_code && (
-                    <span className="text-gray-500 ml-1">({event.classInfo.class_code})</span>
-                  )}
-                </span>
-              </div>
-            )}
-
-            {/* Description */}
-            {event.description && (
-              <div className="border-t border-gray-100 pt-3">
-                <div className="flex items-start gap-2 text-gray-600">
-                  <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-                  </svg>
-                  <div>
-                    <p className="text-sm font-medium text-gray-700 mb-1">Mô tả:</p>
-                    <p className="text-sm text-gray-600 leading-relaxed">{event.description}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
 export default AllDaySchedule;

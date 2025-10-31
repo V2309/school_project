@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { z } from "zod";
-import { Dispatch, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import { X, Search, Clock, Calendar, Users } from "lucide-react";
 import moment from "moment";
@@ -45,6 +45,7 @@ interface ScheduleFormProps {
   classId?: number; // ID lớp học được chọn trước (khi đang ở trang lớp cụ thể)
   setOpen: Dispatch<SetStateAction<boolean>>;
   onSuccess?: () => void;
+  onUpdateSubmit?: (formData: { title: string; description?: string }) => Promise<boolean>;
   
   // TỐI ƯU: Nhận danh sách lớp làm prop thay vì tự fetch
   teacherClasses: any[]; 
@@ -56,7 +57,8 @@ const ScheduleForm = ({
   selectedDate, 
   classId, 
   setOpen, 
-  onSuccess, 
+  onSuccess,
+  onUpdateSubmit,
   teacherClasses // <-- Nhận prop
 }: ScheduleFormProps) => {
 
@@ -105,8 +107,8 @@ const ScheduleForm = ({
     },
   });
 
-  // Custom validation function using Zod schema
-  const validateForm = (data: ScheduleSchema): boolean => {
+  // Custom validation function using Zod schema (Optimized)
+  const validateForm = useCallback((data: ScheduleSchema): boolean => {
     try {
       scheduleSchema.parse(data);
       clearErrors();
@@ -123,7 +125,7 @@ const ScheduleForm = ({
       }
       return false;
     }
-  };
+  }, [clearErrors, setError]);
 
   // TỐI ƯU: Đã xóa useEffect fetchClasses
 
@@ -139,41 +141,57 @@ const ScheduleForm = ({
     }
   }, [classId, classes, setValue]); // Chạy khi `classes` có sẵn
 
-  // Lọc danh sách lớp (JavaScript thuần, rất nhanh)
-  const filteredClasses = classes.filter(cls =>
-    cls.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cls.class_code.toLowerCase().includes(searchTerm.toLowerCase())
+  // Lọc danh sách lớp (Optimized với useMemo)
+  const filteredClasses = useMemo(() => 
+    classes.filter(cls =>
+      cls.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      cls.class_code.toLowerCase().includes(searchTerm.toLowerCase())
+    ),
+    [classes, searchTerm]
   );
 
   // Watch recurrence fields
   const recurrenceType = watch("recurrenceType");
   const weekDaysValue: number[] = watch("weekDays") || [];
 
-  const handleClassSelect = (classItem: ClassData) => {
+  const handleClassSelect = useCallback((classItem: ClassData) => {
     setSelectedClass(classItem);
     setValue("classId", parseInt(classItem.id)); // Giả định classId trong schema là number
-  };
+  }, [setValue]);
 
-  const handleNextStep = () => {
+  const handleNextStep = useCallback(() => {
     if (!selectedClass) {
       toast.error("Vui lòng chọn lớp học");
       return;
     }
     setCurrentStep(2);
-  };
+  }, [selectedClass]);
 
-  const handleBackStep = () => {
+  const handleBackStep = useCallback(() => {
     // Chỉ cho phép quay lại nếu form không bị ép buộc 1 lớp
     if (!classId) {
       setCurrentStep(1);
     }
-  };
+  }, [classId]);
 
   const onSubmit = handleSubmit(async (formData) => {
     // Validate form data using custom validation
     if (!validateForm(formData)) {
       toast.error("Vui lòng kiểm tra lại thông tin form");
       return;
+    }
+
+    // Kiểm tra nếu là update và có onUpdateSubmit callback
+    if (type === "update" && onUpdateSubmit) {
+      const shouldContinue = await onUpdateSubmit({
+        title: formData.title,
+        description: formData.description
+      });
+      
+      if (!shouldContinue) {
+        // Callback đã handle việc submit, không cần tiếp tục
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -222,8 +240,8 @@ const ScheduleForm = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <div className="flex items-center gap-3">
-            {/* Chỉ hiện nút back nếu đang ở bước 2 VÀ không bị ép buộc lớp (classId prop) */}
-            {currentStep === 2 && !classId && (
+            {/* Chỉ hiện nút back nếu đang ở bước 2 VÀ không bị ép buộc lớp (classId prop) VÀ không phải chế độ update */}
+            {currentStep === 2 && !classId && type !== "update" && (
               <button
                 onClick={handleBackStep}
                 className="p-1 hover:bg-gray-100 rounded transition-colors"
@@ -247,8 +265,8 @@ const ScheduleForm = ({
           </button>
         </div>
 
-        {/* Progress indicator (chỉ hiển thị nếu không bị ép buộc lớp) */}
-        {!classId && (
+        {/* Progress indicator (chỉ hiển thị nếu không bị ép buộc lớp và không phải chế độ update) */}
+        {!classId && type !== "update" && (
           <div className="px-6 py-3 border-b bg-gray-50">
             <div className="flex items-center justify-center gap-4">
               <div className={`flex items-center gap-2 ${currentStep >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
@@ -362,6 +380,8 @@ const ScheduleForm = ({
 
           {currentStep === 2 && (
             <form onSubmit={onSubmit} className="space-y-5">
+          
+
               {/* Selected class info (nếu có) */}
               {selectedClass && (
                 <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -426,9 +446,12 @@ const ScheduleForm = ({
                     type="date"
                     id="date"
                     {...register("date")}
-                    className="block w-full rounded-lg border border-gray-300 shadow-sm p-3 text-sm
-                                 focus:border-blue-500 focus:ring-blue-500 transition duration-200
-                                 hover:border-gray-400"
+                    disabled={type === "update"}
+                    className={`block w-full rounded-lg border shadow-sm p-3 text-sm transition duration-200 ${
+                      type === "update"
+                        ? "border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
+                        : "border-gray-300 focus:border-blue-500 focus:ring-blue-500 hover:border-gray-400"
+                    }`}
                   />
                   {errors.date && (
                     <p className="text-xs text-red-500">{errors.date.message}</p>
@@ -446,9 +469,12 @@ const ScheduleForm = ({
                       type="time"
                       id="startTime"
                       {...register("startTime")}
-                      className="block w-full rounded-lg border border-gray-300 shadow-sm p-3 text-sm
-                                  focus:border-blue-500 focus:ring-blue-500 transition duration-200
-                                  hover:border-gray-400"
+                      disabled={type === "update"}
+                      className={`block w-full rounded-lg border shadow-sm p-3 text-sm transition duration-200 ${
+                        type === "update"
+                          ? "border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
+                          : "border-gray-300 focus:border-blue-500 focus:ring-blue-500 hover:border-gray-400"
+                      }`}
                     />
                     {errors.startTime && (
                       <p className="text-xs text-red-500">{errors.startTime.message}</p>
@@ -463,9 +489,12 @@ const ScheduleForm = ({
                       type="time"
                       id="endTime"
                       {...register("endTime")}
-                      className="block w-full rounded-lg border border-gray-300 shadow-sm p-3 text-sm
-                                  focus:border-blue-500 focus:ring-blue-500 transition duration-200
-                                  hover:border-gray-400"
+                      disabled={type === "update"}
+                      className={`block w-full rounded-lg border shadow-sm p-3 text-sm transition duration-200 ${
+                        type === "update"
+                          ? "border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
+                          : "border-gray-300 focus:border-blue-500 focus:ring-blue-500 hover:border-gray-400"
+                      }`}
                     />
                     {errors.endTime && (
                       <p className="text-xs text-red-500">{errors.endTime.message}</p>
@@ -479,7 +508,12 @@ const ScheduleForm = ({
                 <label className="block text-sm font-medium text-gray-700">Lặp lại</label>
                 <select
                   {...register("recurrenceType")}
-                  className="block w-full rounded-lg border border-gray-300 shadow-sm p-3 text-sm"
+                  disabled={type === "update"}
+                  className={`block w-full rounded-lg border shadow-sm p-3 text-sm ${
+                    type === "update"
+                      ? "border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
+                      : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  }`}
                 >
                   <option value="NONE">Không lặp</option>
                   <option value="DAILY">Hàng ngày</option>
@@ -487,6 +521,11 @@ const ScheduleForm = ({
                   <option value="MONTHLY_BY_DATE">Hàng tháng (ngày)</option>
                   <option value="CUSTOM">Tùy chỉnh</option>
                 </select>
+                {type === "update" && (
+                  <p className="text-xs text-gray-500 italic">
+                    Không thể thay đổi cài đặt lặp lại khi chỉnh sửa sự kiện
+                  </p>
+                )}
               </div>
 
               {recurrenceType && recurrenceType !== "NONE" && (
@@ -497,7 +536,12 @@ const ScheduleForm = ({
                       type="number"
                       min={1}
                       {...register("interval", { valueAsNumber: true })}
-                      className="block w-32 rounded-lg border border-gray-300 shadow-sm p-2 text-sm"
+                      disabled={type === "update"}
+                      className={`block w-32 rounded-lg border shadow-sm p-2 text-sm ${
+                        type === "update"
+                          ? "border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
+                          : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      }`}
                     />
                   </div>
 
@@ -506,7 +550,12 @@ const ScheduleForm = ({
                     <input
                       type="date"
                       {...register("recurrenceEnd")}
-                      className="block w-full rounded-lg border border-gray-300 shadow-sm p-3 text-sm"
+                      disabled={type === "update"}
+                      className={`block w-full rounded-lg border shadow-sm p-3 text-sm ${
+                        type === "update"
+                          ? "border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
+                          : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      }`}
                     />
                   </div>
 
@@ -516,7 +565,12 @@ const ScheduleForm = ({
                       type="number"
                       min={1}
                       {...register("maxOccurrences", { valueAsNumber: true })}
-                      className="block w-32 rounded-lg border border-gray-300 shadow-sm p-2 text-sm"
+                      disabled={type === "update"}
+                      className={`block w-32 rounded-lg border shadow-sm p-2 text-sm ${
+                        type === "update"
+                          ? "border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
+                          : "border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      }`}
                     />
                   </div>
 
@@ -531,12 +585,22 @@ const ScheduleForm = ({
                               key={idx}
                               type="button"
                               onClick={() => {
+                                if (type === "update") return; // Không cho phép thay đổi khi update
                                 const copy = new Set(weekDaysValue);
                                 if (copy.has(idx)) copy.delete(idx);
                                 else copy.add(idx);
                                 setValue('weekDays', Array.from(copy));
                               }}
-                              className={`px-2 py-1 rounded-md border ${checked ? 'bg-blue-600 text-white' : 'bg-white text-gray-700'}`}
+                              disabled={type === "update"}
+                              className={`px-2 py-1 rounded-md border transition-colors ${
+                                type === "update"
+                                  ? "cursor-not-allowed opacity-50"
+                                  : "cursor-pointer"
+                              } ${
+                                checked 
+                                  ? 'bg-blue-600 text-white border-blue-600' 
+                                  : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                              }`}
                             >
                               {label}
                             </button>
@@ -553,8 +617,8 @@ const ScheduleForm = ({
 
               {/* Action buttons */}
               <div className="flex items-center justify-end gap-3 pt-5 border-t">
-                {/* Chỉ hiện nút back nếu không bị ép buộc lớp */}
-                {!classId && (
+                {/* Chỉ hiện nút back nếu không bị ép buộc lớp và không phải chế độ update */}
+                {!classId && type !== "update" && (
                   <button
                     type="button"
                     onClick={handleBackStep}

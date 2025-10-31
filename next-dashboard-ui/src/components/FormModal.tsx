@@ -23,9 +23,9 @@ const deleteActionMap = {
 const ClassForm = dynamic(() => import("./forms/ClassForm"), {
   loading: () => <h1>Loading...</h1>,
 });
-const FolderForm = dynamic(() => import("./FolderForm"), {
-  loading: () => <h1>Loading...</h1>,
-});
+// const FolderForm = dynamic(() => import("./forms/FolderForm"), {
+//   loading: () => <h1>Loading...</h1>,
+// });
 
 // TODO: OTHER FORMS
 
@@ -45,17 +45,17 @@ const forms: {
       relatedData={relatedData}
     />
   ),
-  folder: (setOpen, type, data, relatedData) => (
-    <FolderForm
-      type={type}
-      data={data}
-      setOpen={setOpen}
-      onSuccess={() => {
-        // Refresh trang sau khi thành công
-        window.location.reload();
-      }}
-    />
-  ),
+  // folder: (setOpen, type, data, relatedData) => (
+  //   <FolderForm
+  //     type={type}
+  //     data={data}
+  //     setOpen={setOpen}
+  //     onSuccess={() => {
+  //       // Refresh trang sau khi thành công
+  //       window.location.reload();
+  //     }}
+  //   />
+  // ),
 
   // TODO OTHER LIST ITEMS
 };
