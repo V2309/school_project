@@ -1,4 +1,5 @@
 "use server";
+import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/hooks/auth";
 import {  ClassSchema} from "../formValidationSchema";
@@ -330,7 +331,37 @@ export const joinClassAction = async (classCode: string) => {
       return { success: false, error: "Bạn đã tham gia lớp học này rồi nhé" };
     }
 
-    // Thêm học sinh vào lớp
+    // Nếu lớp yêu cầu phê duyệt, tạo một yêu cầu tham gia thay vì nối trực tiếp
+    if (classToJoin.requiresApproval) {
+      // Kiểm tra đã có request đang chờ chưa
+      const existingRequest = await prisma.classJoinRequest.findUnique({
+        where: {
+          studentId_classCode: {
+            studentId: student.id,
+            classCode: classToJoin.class_code as string,
+          }
+        }
+      });
+
+      if (existingRequest) {
+        return { success: false, error: "Yêu cầu tham gia đã được gửi trước đó. Vui lòng chờ phê duyệt." };
+      }
+
+      await prisma.classJoinRequest.create({
+        data: {
+          studentId: student.id,
+          classCode: classToJoin.class_code as string,
+          status: 'PENDING',
+        }
+      });
+
+      // Optionally revalidate teacher/class pages if needed
+      revalidatePath("/class");
+
+      return { success: true, message: "Yêu cầu tham gia đã được gửi. Chờ giáo viên phê duyệt." };
+    }
+
+    // Thêm học sinh vào lớp (không cần phê duyệt)
     await prisma.student.update({
       where: { userId: user.id as string },
       data: {
@@ -340,7 +371,11 @@ export const joinClassAction = async (classCode: string) => {
       },
     });
 
+    // Revalidate trang class để cập nhật danh sách lớp
+    revalidatePath("/class");
+
     return { success: true };
+   
   } catch (err) {
     console.error(err);
     return { success: false, error: "Đã xảy ra lỗi khi tham gia lớp" };
@@ -432,4 +467,124 @@ export async function getDeletedClasses() {
   });
 
   return deletedClasses;
+}
+
+// Rời lớp học
+export const leaveClassAction = async (classId: number) => {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "student") {
+    return { success: false, error: "Unauthorized" };
+  }
+
+  try {
+    // Lấy thông tin student và kiểm tra xem có trong lớp không
+    const student = await prisma.student.findUnique({
+      where: { userId: user.id as string },
+      include: { classes: true },
+    });
+    if (!student) {
+      return { success: false, error: "Không tìm thấy thông tin học sinh." };
+    }
+
+    // Kiểm tra xem học sinh có trong lớp này không
+    const isInClass = student.classes.some(cls => cls.id === classId);
+    if (!isInClass) {
+      return { success: false, error: "Bạn chưa tham gia lớp học này." };
+    }
+
+    // Kiểm tra xem lớp có chặn việc rời lớp không
+    const classToLeave = await prisma.class.findUnique({
+      where: { id: classId },
+      select: { blockLeave: true, name: true }
+    });
+    
+    if (classToLeave?.blockLeave) {
+      return { success: false, error: "Lớp học này không cho phép rời lớp." };
+    }
+
+    // Rời lớp học
+    await prisma.student.update({
+      where: { userId: user.id as string },
+      data: {
+        classes: {
+          disconnect: { id: classId },
+        },
+      },
+    });
+
+    // Revalidate trang class để cập nhật danh sách lớp
+    revalidatePath("/class");
+
+    return { success: true, message: `Đã rời lớp ${classToLeave?.name || ""} thành công.` };
+   
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: "Đã xảy ra lỗi khi rời lớp học." };
+  }
+};
+
+
+
+// --- HÀM MỚI ĐỂ PHÊ DUYỆT ---
+export async function approveJoinRequest(requestId: number, studentId: string, classCode: string) {
+  try {
+    const user = await getCurrentUser();
+    if (!user || user.role !== "teacher") {
+      return { success: false, error: "Unauthorized" };
+    }
+    
+    // (Bạn có thể thêm bước kiểm tra teacher có phải chủ lớp không)
+
+    // Dùng transaction để đảm bảo 2 bước cùng thành công
+    await prisma.$transaction(async (tx) => {
+      // 1. Thêm học sinh vào lớp
+      await tx.student.update({
+        where: { id: studentId },
+        data: {
+          classes: {
+            connect: { class_code: classCode },
+          },
+        },
+      });
+
+      // 2. Xóa yêu cầu tham gia
+      await tx.classJoinRequest.delete({
+        where: { id: requestId },
+      });
+    });
+
+    revalidatePath(`/class/${classCode}/member`);
+    return { success: true };
+
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: "Lỗi khi phê duyệt." };
+  }
+}
+
+// --- HÀM MỚI ĐỂ TỪ CHỐI ---
+export async function rejectJoinRequest(requestId: number) {
+  try {
+    const user = await getCurrentUser();
+    if (!user || user.role !== "teacher") {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    // (Tương tự, có thể kiểm tra quyền sở hữu)
+
+    // Chỉ cần xóa yêu cầu
+    await prisma.classJoinRequest.delete({
+      where: { id: requestId },
+    });
+
+    // (Không cần revalidatePath vì `page.tsx` sẽ tự động fetch lại)
+    // Tốt hơn là nên revalidate để đảm bảo
+    revalidatePath("/class/.*", "layout"); // Revalidate tất cả các trang con của class
+
+    return { success: true };
+
+  } catch (err) {
+    console.error(err);
+    return { success: false, error: "Lỗi khi từ chối." };
+  }
 }

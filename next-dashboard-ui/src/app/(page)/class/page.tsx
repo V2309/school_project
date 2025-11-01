@@ -4,9 +4,7 @@ import { ITEM_PER_PAGE } from "@/lib/setting";
 import { getCurrentUser } from "@/hooks/auth";
 import ClassListPageCommon from "@/components/ClassListPageCommon";
 import FormContainer from "@/components/FormContainer";
-
 import Link from "next/link";
-
 
 type ClassList = Class & {
   supervisor: Teacher;
@@ -19,12 +17,12 @@ const ClassListPage = async ({
 }) => {
   // Lấy user hiện tại
   const user = await getCurrentUser();
-  console.log("Current user:", user);
+  console.log("Current user in class:", user);
   if (!user || (user.role !== "teacher" && user.role !== "student")) {
     return <div>Bạn không có quyền truy cập.</div>;
   }
 
-  const { page, ...queryParams } = searchParams;
+  const { page, type, ...queryParams } = searchParams;
   const p = page ? parseInt(page) : 1;
 
   let query: Prisma.ClassWhereInput = {
@@ -51,12 +49,23 @@ const ClassListPage = async ({
       return <div>Không tìm thấy thông tin học sinh.</div>;
     }
     
-    // Lọc các lớp mà student đã tham gia
-    query.students = {
-      some: {
-        id: student.id
-      }
-    };
+    // Kiểm tra nếu type=pending thì hiển thị lớp đang chờ phê duyệt
+    if (type === "pending") {
+      // Hiển thị lớp có yêu cầu tham gia đang chờ
+      query.joinRequests = {
+        some: {
+          studentId: student.id,
+          status: "PENDING"
+        }
+      };
+    } else {
+      // Lọc các lớp mà student đã tham gia
+      query.students = {
+        some: {
+          id: student.id
+        }
+      };
+    }
   }
   
   if (queryParams) {
@@ -79,6 +88,14 @@ const ClassListPage = async ({
       where: query,
       include: {
         supervisor: true,
+        joinRequests: user.role === "student" && type === "pending" ? {
+          where: {
+            status: "PENDING"
+          },
+          include: {
+            student: true
+          }
+        } : false,
         _count: {
           select: {
             students: true,
@@ -93,7 +110,7 @@ const ClassListPage = async ({
     }),
   ]);
 
-  // Truyền thêm các phần tử đặc thù cho role teacher (nút tạo lớp, sort) qua props
+  // Truyền thêm các phần tử đặc thù cho từng role qua props
   const extraHeader = user.role === "teacher" ? (
     <>
       <Link
@@ -108,6 +125,18 @@ const ClassListPage = async ({
 
       <FormContainer table="class" type="create" />
     </>
+  ) : user.role === "student" ? (
+    <>
+      <Link
+        href="/class?type=pending"
+        className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-orange-700 bg-orange-50 border border-orange-300 rounded-lg hover:bg-orange-100 transition-colors"
+      >
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Lớp đang chờ
+      </Link>
+    </>
   ) : null;
 
   return (
@@ -117,6 +146,7 @@ const ClassListPage = async ({
       page={p}
       role={user?.role as "teacher" | "student"}
       extraHeader={extraHeader}
+      viewType={type === "pending" ? "pending" : "joined"}
     />
   );
 };

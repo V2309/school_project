@@ -69,7 +69,13 @@ export default function VideoList({
                 <Link href={`/class/${classCode}/video/${course.id}`} className="flex items-center gap-4 group">
                     <div className="relative w-20 h-12 overflow-hidden rounded-lg bg-slate-200 flex-shrink-0">
                         {course.thumbnailUrl ? (
-                            <Image src={course.thumbnailUrl} alt={course.title} layout="fill" objectFit="cover" />
+                            <Image 
+                              src={course.thumbnailUrl} 
+                              alt={course.title} 
+                              fill
+                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                              className="object-cover" 
+                            />
                         ) : (
                             <div className="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
                                 <Play className="w-6 h-6 text-white" />

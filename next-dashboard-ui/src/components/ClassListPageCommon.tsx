@@ -3,9 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import Pagination from "@/components/Pagination";
 import TableSearch from "@/components/TableSearch";
-import FormContainer from "@/components/FormContainer";
 import Table from "@/components/Table";
-
 import { Menu, MenuItem } from "@szhsin/react-menu";
 import "@szhsin/react-menu/dist/index.css";
 import { FiMoreVertical, FiEdit, FiLogIn, FiTrash, FiGrid, FiList } from "react-icons/fi";
@@ -30,6 +28,7 @@ interface ClassListPageCommonProps {
   page: number;
   role: "teacher" | "student";
   extraHeader?: ReactNode;
+  viewType?: "joined" | "pending";
 }
 
 export default function ClassListPageCommon({
@@ -38,6 +37,7 @@ export default function ClassListPageCommon({
   page,
   role,
   extraHeader,
+  viewType = "joined",
 }: ClassListPageCommonProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
@@ -114,14 +114,14 @@ export default function ClassListPageCommon({
             />
           ) : (
             <>
-              <Link href={`/${role}/class/${item.class_code || item.id}/newsfeed`}>
+              <Link href={`/class/${item.class_code || item.id}/newsfeed`}>
                 <button className="w-7 h-7 flex items-center justify-center rounded-full bg-blue-100 hover:bg-blue-200 transition-colors">
                   <FiLogIn className="w-4 h-4 text-blue-600" />
                 </button>
               </Link>
               {role === "teacher" && (
                 <>
-                  <Link href={`/${role}/class/${item.class_code || item.id}/edit`}>
+                  <Link href={`/class/${item.class_code || item.id}/edit`}>
                     <button className="w-7 h-7 flex items-center justify-center rounded-full bg-green-100 hover:bg-green-200 transition-colors">
                       <FiEdit className="w-4 h-4 text-green-600" />
                     </button>
@@ -142,13 +142,27 @@ export default function ClassListPageCommon({
     <div className="min-h-screen w-full flex justify-center items-start px-4 sm:px-6 lg:px-8 py-8 ">
       <div className="w-full max-w-6xl">
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
-            {role === "teacher" ? "Danh sách lớp học" : "Danh sách lớp học của tôi"}
-          </h2>
+          <div className="flex items-center gap-4">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">
+     
+         
+              <Link
+                href="/class"
+                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-300 rounded-lg hover:bg-blue-100 transition-colors"
+              >
+           
+                Lớp học của bạn
+              </Link>
+        </h2>
+          
+              {extraHeader}
+          </div>
           <div className="flex w-full md:w-auto items-center gap-3 md:gap-4">
+            {/* search */}
             <div className="flex-1 md:flex-none md:w-80">
               <TableSearch />
             </div>
+         
             <div className="flex items-center gap-2 flex-wrap justify-end">
               {/* Toggle View Mode */}
               <div className="flex items-center bg-gray-100 rounded-lg p-1">
@@ -175,8 +189,15 @@ export default function ClassListPageCommon({
                   <FiList className="w-4 h-4" />
                 </button>
               </div>
-              {extraHeader}
+       
             </div>
+            {role === "student" && (
+               <Link href="/join">
+              <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-200">
+               + Tham gia lớp học
+              </button>
+            </Link>
+            )}
           </div>
         </div>
 
@@ -194,6 +215,7 @@ export default function ClassListPageCommon({
                         src={item.img || "/school.jpg"}
                         alt={item.name || "Class cover"}
                         fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />

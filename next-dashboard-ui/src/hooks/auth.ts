@@ -15,7 +15,7 @@ export async function getCurrentUser() {
   } catch {
     return null;
   }
-  console.log("Current user:", session);
+  console.log("Current user in:", session);
 }
 
 // import prisma from "@/lib/prisma";

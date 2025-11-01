@@ -1,9 +1,10 @@
 'use client';
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
-
 import Link from "next/link";
+import { useState } from "react";
+import LeaveClassDialog from "./LeaveClassDialog";
 interface MenuClassProps {
   classDetail: {
     id: number | string;
@@ -19,6 +20,8 @@ interface MenuClassProps {
 
 export default function MenuClass({ classDetail, role }: MenuClassProps) {
   const pathname = usePathname();
+  const router = useRouter();
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
 
   // Icon mapping for each menu item
   const menuIcons = {
@@ -102,22 +105,54 @@ export default function MenuClass({ classDetail, role }: MenuClassProps) {
 
       </div>
       <div className="text-xs text-gray-400 italic mt-5">
-        <button className="flex items-center text-xs text-gray-400 italic mt-5 hover:text-gray-600">
-         <span className="ml-1 mr-2">
-            <Image
-              src={role=="student" ? "/exit.png" : "/setting.png"}
-              alt={role=="student" ? "Rời khỏi lớp học" : "Cài đặt lớp"}
-              width={24}
-              height={24}
-            />
-          </span>
-         <Link href={role=="student" ? `/${role}/class/${class_code}/leave` : `/class/${class_code}/edit`}>
-            {role=="student" ? "Rời khỏi lớp học" : "Cài đặt lớp"}
-         </Link>
-      
-     
-        </button>
+        {role === "student" ? (
+          <button 
+            onClick={() => setShowLeaveDialog(true)}
+            className="flex items-center text-xs text-gray-400 italic mt-5 hover:text-gray-600 hover:text-red-500 transition-colors"
+          >
+            <span className="ml-1 mr-2">
+              <Image
+                src="/exit.png"
+                alt="Rời khỏi lớp học"
+                width={24}
+                height={24}
+              />
+            </span>
+            Rời khỏi lớp học
+          </button>
+        ) : (
+          <Link 
+            href={`/class/${class_code}/edit`}
+            className="flex items-center text-xs text-gray-400 italic mt-5 hover:text-gray-600 transition-colors"
+          >
+            <span className="ml-1 mr-2">
+              <Image
+                src="/setting.png"
+                alt="Cài đặt lớp"
+                width={24}
+                height={24}
+              />
+            </span>
+            Cài đặt lớp
+          </Link>
+        )}
       </div>
+
+      {/* Leave Class Dialog */}
+      {role === "student" && (
+        <LeaveClassDialog
+          isOpen={showLeaveDialog}
+          onClose={() => setShowLeaveDialog(false)}
+          classData={{
+            id: Number(classDetail.id),
+            name: classDetail.name,
+            class_code: classDetail.class_code
+          }}
+          onSuccess={() => {
+            router.push('/class'); // Redirect to class list after leaving
+          }}
+        />
+      )}
     </div>
   );
 }

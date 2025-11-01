@@ -75,7 +75,8 @@ model Student {
   attendances Attendance[]
   results     Result[]
 
-  homeworkSubmissions HomeworkSubmission[] 
+  homeworkSubmissions HomeworkSubmission[]
+  joinRequests ClassJoinRequest[] 
 }
 
 model Teacher {
@@ -150,6 +151,9 @@ model Class {
   // Course system relations
   folders   Folder[]   // Các thư mục trong lớp học
   courses   Course[]   // Các khóa học trong lớp học
+  
+  // Join requests relation
+  joinRequests ClassJoinRequest[]
 }
 
 model Subject {
@@ -634,4 +638,26 @@ model SavedPosts {
 
   user User @relation(fields: [userId], references: [id])
   post Post @relation(fields: [postId], references: [id])
+}
+
+// Model cho yêu cầu tham gia lớp học
+model ClassJoinRequest {
+  id        Int      @id @default(autoincrement())
+  studentId String
+  classCode String?  @map("class_code")
+  status    RequestStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  student   Student @relation(fields: [studentId], references: [id])
+  class     Class?  @relation(fields: [classCode], references: [class_code])
+
+  @@unique([studentId, classCode])
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

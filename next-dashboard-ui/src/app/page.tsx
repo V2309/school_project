@@ -1,6 +1,17 @@
-import Head from "next/head"
 import Link from "next/link"
 import Image from "next/image"
+import { Metadata } from "next"
+import dynamic from "next/dynamic"
+
+// 2. TẢI LAZY COMPONENT (với 1 skeleton loading)
+const LazyYouTube = dynamic(() => import('@/components/LazyYoutube'), { 
+  ssr: false,
+  loading: () => <div className="aspect-video w-full bg-muted animate-pulse" />
+});
+export const metadata: Metadata = {
+  title: "DoCus - Nền tảng quản lý lớp học toàn diện",
+  description: "DoCus giúp đơn giản hóa việc dạy và học trực tuyến. Quản lý lớp học, bài tập và giao tiếp ở cùng một nơi.",
+}
 
 // --- MODERN COMPONENT REDESIGNS ---
 
@@ -85,15 +96,6 @@ export default function Home() {
 
   return (
     <div className="bg-background text-foreground font-sans">
-      <Head>
-        <title>DoCus - Nền tảng quản lý lớp học toàn diện</title>
-        <meta
-          name="description"
-          content="DoCus giúp đơn giản hóa việc dạy và học trực tuyến. Quản lý lớp học, bài tập và giao tiếp ở cùng một nơi."
-        />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-
       <header className="sticky top-0 glass-effect z-50 border-b border-border/50">
         <nav className="flex items-center justify-between p-4 max-w-7xl mx-auto">
           <Link href="/" className="flex items-center space-x-3 group">
@@ -267,16 +269,7 @@ export default function Home() {
             <div className="relative group">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl blur-2xl group-hover:blur-3xl transition-all duration-300"></div>
               <div className="relative aspect-video w-full rounded-2xl shadow-2xl border border-border/50 overflow-hidden">
-                <iframe
-                  width="100%"
-                  height="100%"
-                  src="https://www.youtube.com/embed/4sXMsteYA5k"
-                  title="YouTube video player"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="w-full h-full"
-                ></iframe>
+                <LazyYouTube videoId="4sXMsteYA5k" />
               </div>
             </div>
             <div className="space-y-6">
@@ -324,6 +317,7 @@ export default function Home() {
                   className="object-fit h-full w-full"
                   width={500}
                   height={300}
+                  priority
                 />
               </div>
             </div>
@@ -336,6 +330,7 @@ export default function Home() {
                   className="object-fit h-full w-full"
                   width={500}
                   height={300}
+                  priority
                 />
               </div>
               <div>

@@ -16,7 +16,7 @@ const onlineUsers = new Map();
 const addUser = (username, socketId) => {
   if (!onlineUsers.has(socketId)) {
     onlineUsers.set(socketId, { username, socketId });
-    if (dev) console.log(`${username} connected`);
+    if (dev) console.log(`${username} added`);
   }
 };
 
