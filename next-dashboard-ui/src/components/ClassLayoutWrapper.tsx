@@ -12,9 +12,7 @@ interface ClassLayoutWrapperProps {
 export default function ClassLayoutWrapper({ children, classDetail, role }: ClassLayoutWrapperProps) {
   const pathname = usePathname();
   
-  console.log("test pathname", pathname);
-
-  // Kiểm tra nếu pathname chứa "/homework/add" thì không render layout
+  // (Logic ẩn layout của bạn giữ nguyên)
   if (pathname.includes("/homework/add") || pathname.includes("/homework/") && pathname.endsWith("/test") || pathname.includes("/homework/") && pathname.endsWith("/detail") || pathname.includes("/class/") && pathname.endsWith("/edit")) {
     return <>{children}</>;
   }
@@ -22,7 +20,8 @@ export default function ClassLayoutWrapper({ children, classDetail, role }: Clas
   return (
     <div className="h-screen w-screen flex overflow-hidden">
       {/* Menu bên trái */}
-      <div className="fixed left-0 h-full w-[25%] md:w-[20%] lg:w-[18%] bg-white shadow-md p-4 border-r border-gray-400">
+      {/* TỐI ƯU: ĐÃ XÓA p-4 khỏi class này */}
+      <div className="fixed left-0 h-full w-[25%] md:w-[20%] lg:w-[18%] bg-white shadow-md border-r border-gray-400 z-40">
         <MenuClass classDetail={classDetail} role={role as "teacher" | "student"}/>
       </div>
 
@@ -32,4 +31,4 @@ export default function ClassLayoutWrapper({ children, classDetail, role }: Clas
       </div>
     </div>
   );
-} 
+}

@@ -51,6 +51,7 @@ export async function GET(request: NextRequest) {
 
     // Chuẩn hóa dữ liệu trả về cho Profile
     const userData = {
+      id: user.id,
       username: user.username,
       phone: user.phone,
       email: user.email,
@@ -58,6 +59,7 @@ export async function GET(request: NextRequest) {
       address: user.address,
       schoolname: user.schoolname,
       role: user.role,
+      img: user.img, // Thêm field img
       name: user.student?.username || user.teacher?.username || user.username,
       isPhoneVerified: false,
       isEmailVerified: false,

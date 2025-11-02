@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useState, useRef, useEffect } from "react";
 import { logoutAction } from "@/lib/actions/auth.action";
-import Image from "next/image";
+import Image from "@/components/Image";
 import Socket from "./Socket";
 import Notification from "./Notification";
 /* =========================
@@ -27,9 +27,11 @@ export const topNavItems = [
 ] as const;
 
 const Navigation: React.FC = () => {
-  const router = useRouter();
   const { user } = useUser();
   const role = user?.role as Role | undefined;
+  
+  // Debug: kiểm tra dữ liệu user
+  console.log("Navigation - User data:", user);
 
   const handleLogout = async () => {
     try {
@@ -154,10 +156,10 @@ const Navigation: React.FC = () => {
             onClick={() => setOpenMenu((prev) => !prev)}
           >
             <Image
-              src="/avatar.png"
+              path={user?.img || "/avatar.png"}
               alt="Avatar"
-              width={40}
-              height={40}
+              w={40}
+              h={40}
               className="rounded-full"
             />
             <span className="text-xs font-medium mt-1">
@@ -248,10 +250,10 @@ const Navigation: React.FC = () => {
             {/* User Info & Avatar */}
             <div className="flex items-center space-x-4 w-full p-2 bg-gray-50 rounded-lg">
               <Image
-                src="/avatar.png"
+                path={user?.img || "/avatar.png"}
                 alt="Avatar"
-                width={50}
-                height={50}
+                w={50}
+                h={50}
                 className="rounded-full"
               />
               <span className="text-lg font-bold">{user?.username as string}</span>
@@ -260,7 +262,7 @@ const Navigation: React.FC = () => {
             {/* User Dropdown inside mobile menu */}
             <div className="w-full">
               <Link
-                href={`/${role ?? "student"}/profile`}
+                href={`/profile`}
                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                 onClick={() => setOpenMenu(false)}
               >

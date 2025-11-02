@@ -38,7 +38,8 @@ export default async function StudentProfilePage() {
     dateOfBirthValue: birthday ? birthday.toISOString().split('T')[0] : '',
     province: user.address || '',
     school: user.schoolname || '',
-    role: user.role || 'student'
+    role: user.role || 'student',
+    avatar: user.img || undefined // Thêm avatar
   };
 
   return <Profile user={profileData} type={user.role} />;

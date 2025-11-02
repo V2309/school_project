@@ -4,7 +4,20 @@ import { getCurrentUser } from "@/hooks/auth";
 
 
 const Feed = async ({ userProfileId, classCode }: { userProfileId?: string, classCode?: string }) => {
-  const user = await getCurrentUser();
+  const userSession = await getCurrentUser();
+
+  if (!userSession) return;
+
+  // Lấy thông tin user đầy đủ từ database (để có avatar)
+  const user = await prisma.user.findUnique({
+    where: { id: userSession.id as string },
+    select: { 
+      id: true, 
+      username: true, 
+      img: true,
+      role: true 
+    }
+  });
 
   if (!user) return;
 

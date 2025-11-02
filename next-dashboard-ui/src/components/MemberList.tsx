@@ -1,6 +1,6 @@
 'use client';
 import TableSearch from "@/components/TableSearch";
-import Image from "next/image";
+import Image from "@/components/Image";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import FormModal from "@/components/FormModal";
@@ -22,6 +22,7 @@ type StudentList = {
   id: string;
   username: string;
   schoolname: string;
+  img: string | null;
   class_name: string;
   classes: { name: string }[];
 };
@@ -60,19 +61,20 @@ const MemberList = ({
       : []),
   ];
 
+
   const renderRow = (item: StudentList) => (
     <tr
       key={item.id}
       className="border-b border-gray-200 even:bg-slate-50 text-sm hover:bg-gray-50"
     >
       <td className="flex items-center gap-4 p-4">
-        <Image
-          src={"/avatar.png"} // Thêm ảnh user (nếu có)
-          alt={item.username}
-          width={40}
-          height={40}
-          className="w-10 h-10 rounded-full object-cover"
-        />
+        <Image 
+        path={item.img || "/avatar.png"}
+        alt="User Avatar"
+        w={40} // Đặt kích thước bạn muốn
+        h={40} // Đặt kích thước bạn muốn
+        className="rounded-full object-cover"
+      />
         <div className="flex flex-col">
           <h3 className="font-semibold">{item.username}</h3>
         </div>

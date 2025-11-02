@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import EditProfileModal from "@/components/forms/EditProfileModal"; // Import Modal
+import UploadAvatarModal from "@/components/forms/UploadAvatarModal"; // Import Avatar Modal
+import Image from "next/image"; // Import Next.js Image
 
 // Định nghĩa kiểu dữ liệu
 interface ProfileData {
@@ -24,6 +26,7 @@ interface ProfileData {
   province: string;
   school: string;
   role: string;
+  avatar?: string | null; // Thêm trường avatar
 }
 
 // Kiểu dữ liệu cho field đang được sửa
@@ -117,12 +120,14 @@ export default function ProfilePage({ user: initialUser, type }: ProfilePageProp
   
   // State để quản lý modal đang mở
   const [modalField, setModalField] = useState<EditingField | null>(null);
+  // State để quản lý modal upload avatar
+  const [showAvatarModal, setShowAvatarModal] = useState(false);
 
   // Hàm fetch data, dùng useCallback để không tạo lại
   const fetchProfileData = useCallback(async () => {
     try {
       setLoading(true);
-      // Gọi API route để lấy thông tin user với full data
+      // Gọi API route để lấy thông tin user v  ới full data
       const response = await fetch("/api/user?full=true", { cache: "no-store" });
       
       if (!response.ok) throw new Error("Không thể tải thông tin.");
@@ -147,7 +152,8 @@ export default function ProfilePage({ user: initialUser, type }: ProfilePageProp
         dateOfBirthValue: birthday ? birthday.toISOString().split('T')[0] : '',
         province: data.address || '',
         school: data.schoolname || '',
-        role: data.role || 'student'
+        role: data.role || 'student',
+        avatar: data.img || undefined // Thêm avatar
       };
       
       setUser(profileData);
@@ -215,10 +221,25 @@ export default function ProfilePage({ user: initialUser, type }: ProfilePageProp
                 </div>
                 <div className="flex justify-center mb-8">
                   <div className="relative group">
-                    <div className="relative w-32 h-32 rounded-full bg-blue-100 flex items-center justify-center text-6xl font-bold text-blue-600 border-4 border-white shadow-lg">
-                      <span>{user.name ? user.name[0].toUpperCase() : "A"}</span>
+                    <div className="relative w-32 h-32 rounded-full border-4 border-white shadow-lg overflow-hidden">
+                      {user.avatar ? (
+                        <Image
+                          src={`${process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT}${user.avatar}`}
+                          alt={user.name || "Avatar"}
+                          width={128}
+                          height={128}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-blue-100 flex items-center justify-center text-6xl font-bold text-blue-600">
+                          <span>{user.name ? user.name[0].toUpperCase() : "A"}</span>
+                        </div>
+                      )}
                     </div>
-                    <button className="absolute bottom-1 right-1 w-10 h-10 bg-white text-blue-600 rounded-full flex items-center justify-center shadow-md border border-gray-200 hover:bg-gray-100 transition-all duration-300 transform hover:scale-110">
+                    <button 
+                      onClick={() => setShowAvatarModal(true)}
+                      className="absolute bottom-1 right-1 w-10 h-10 bg-white text-blue-600 rounded-full flex items-center justify-center shadow-md border border-gray-200 hover:bg-gray-100 transition-all duration-300 transform hover:scale-110"
+                    >
                       <Pencil className="w-5 h-5" />
                     </button>
                   </div>
@@ -337,6 +358,14 @@ export default function ProfilePage({ user: initialUser, type }: ProfilePageProp
           fieldKey={modalField.key}
           currentValue={modalField.value}
           onClose={() => setModalField(null)}
+          onSuccess={fetchProfileData} // Truyền hàm fetch data để làm mới
+        />
+      )}
+
+      {/* RENDER MODAL UPLOAD AVATAR */}
+      {showAvatarModal && (
+        <UploadAvatarModal
+          onClose={() => setShowAvatarModal(false)}
           onSuccess={fetchProfileData} // Truyền hàm fetch data để làm mới
         />
       )}

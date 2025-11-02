@@ -6,7 +6,7 @@ import Post from "./Post";
 import { Post as PostType } from "@prisma/client";
 import { useFormState, useFormStatus } from "react-dom";
 import { useEffect, useRef, useState } from "react";
-import { addComment } from "@/lib/actions/actions";
+import { addComment } from "@/lib/actions/post.action";
 import { socket } from "@/socket";
 import Image from "next/image";
 
@@ -88,7 +88,7 @@ const Comments = ({
         disabled={pending || submitting}
         className="px-3 py-1.5 bg-blue-500 text-white text-xs rounded-full hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
       >
-        {(pending || submitting) ? "..." : "Post"}
+        {(pending || submitting) ? "..." : "Bình luận"}
       </button>
     );
   }
@@ -105,8 +105,8 @@ const Comments = ({
               <div className="flex gap-2">
                 <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
                   <Image
-                    src="/avatar.png"
-                    alt="User Avatar"
+                    src={comment.user.img ? `${process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT}${comment.user.img}` : "/avatar.png"}
+                    alt="User Avatar main"
                     width={32}
                     height={32}
                     className="object-cover"
@@ -133,8 +133,8 @@ const Comments = ({
           <form ref={formRef} action={optimisticFormAction} className="flex items-center">
             <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
               <Image
-                src="/avatar.png"
-                alt="User Avatar"
+                src={user?.img ? `${process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT}${user.img}` : "/avatar.png"}
+                alt="User Avatar cmt"
                 width={32}
                 height={32}
                 className="object-cover"
@@ -150,7 +150,7 @@ const Comments = ({
                 type="text"
                 name="desc"
                 className="flex-1 bg-gray-100 border-0 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Write a comment..."
+                placeholder="Hãy nói gì đó..."
               />
               <SubmitButton />
             </div>

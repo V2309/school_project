@@ -131,6 +131,100 @@ export async function updateUserProfile(
   }
 }
 
+// Action để upload avatar
+export async function uploadAvatar(formData: FormData): Promise<ActionState> {
+  const userSession = await getCurrentUser();
+  if (!userSession) {
+    return { success: false, error: "Bạn chưa đăng nhập." };
+  }
+
+  const file = formData.get("avatar") as File;
+  
+  if (!file || file.size === 0) {
+    return { success: false, error: "Vui lòng chọn file ảnh." };
+  }
+
+  // Kiểm tra định dạng file
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  if (!allowedTypes.includes(file.type)) {
+    return { success: false, error: "Chỉ cho phép file ảnh (JPG, PNG, WEBP)." };
+  }
+
+  // Kiểm tra kích thước file (max 5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    return { success: false, error: "Ảnh không được vượt quá 5MB." };
+  }
+
+  try {
+    // Import imagekit từ utils
+    const { imagekit } = await import('../utils');
+    
+    if (!imagekit) {
+      return { success: false, error: "Lỗi hệ thống upload ảnh." };
+    }
+
+    // Upload file lên ImageKit
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    const uploadResult = await new Promise<any>((resolve, reject) => {
+      imagekit.upload(
+        {
+          file: buffer,
+          fileName: `avatar_${userSession.id}_${Date.now()}`,
+          folder: "/avatars",
+          transformation: {
+            pre: "w-400,h-400,c-maintain_ratio",
+            post: [
+              {
+                type: "transformation",
+                value: "w-200,h-200,c-maintain_ratio"
+              }
+            ]
+          }
+        },
+        function (error, result) {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+    });
+
+    // Cập nhật avatar trong database
+    await prisma.user.update({
+      where: { id: userSession.id as string },
+      data: { img: uploadResult.filePath },
+    });
+
+    // Cập nhật cả Student hoặc Teacher table nếu cần
+    const user = await prisma.user.findUnique({
+      where: { id: userSession.id as string },
+      select: { role: true }
+    });
+
+    if (user?.role === 'student') {
+      await prisma.student.update({
+        where: { userId: userSession.id as string },
+        data: { img: uploadResult.filePath }
+      });
+    } else if (user?.role === 'teacher') {
+      await prisma.teacher.update({
+        where: { userId: userSession.id as string },
+        data: { img: uploadResult.filePath }
+      });
+    }
+
+    // Làm mới cache
+    revalidatePath("/profile");
+    
+    return { success: true };
+
+  } catch (err: any) {
+    console.error("Upload Avatar Error:", err);
+    return { success: false, error: "Upload ảnh thất bại. Vui lòng thử lại." };
+  }
+}
+
 // Action để đổi mật khẩu (bỏ mật khẩu hiện tại vì không thể so sánh với DB đã mã hóa)
 export async function changePassword(
   newPassword: string,

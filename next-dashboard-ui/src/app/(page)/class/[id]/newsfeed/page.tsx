@@ -18,7 +18,18 @@ export default async function NewsfeedPage({ params }: { params: { id: string } 
   }
 
   // Lấy thông tin user hiện tại
-  const user = await getCurrentUser();
+  const userSession = await getCurrentUser();
+  
+  // Fetch thông tin user đầy đủ từ database (bao gồm avatar)
+  const user = userSession ? await prisma.user.findUnique({
+    where: { id: userSession.id as string },
+    select: { 
+      id: true, 
+      username: true, 
+      img: true,
+      role: true 
+    }
+  }) : null;
 
   return (
     <div className="!bg-appbg min-h-screen pb-6">
@@ -32,7 +43,7 @@ export default async function NewsfeedPage({ params }: { params: { id: string } 
 
         {/* Form tạo bài viết mới */}
         <div className="bg-white rounded-lg shadow mb-6 border-1">
-          <Share classCode={classInfo.class_code!} userImg={user?.img as string || undefined} />
+          <Share classCode={classInfo.class_code!} userImg={user?.img || undefined} />
         </div>
 
         {/* Sử dụng component Feed với classCode */}

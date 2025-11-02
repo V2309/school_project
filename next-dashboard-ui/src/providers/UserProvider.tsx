@@ -24,7 +24,7 @@ export function UserProvider({ children }: UserProviderProps) {
   const fetchUser = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/user");
+      const response = await fetch("/api/user?full=true");
       if (!response.ok) {
         throw new Error("Failed to fetch user");
       }

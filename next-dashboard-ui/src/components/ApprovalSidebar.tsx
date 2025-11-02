@@ -59,14 +59,14 @@ export default function ApprovalSidebar({ requests, classCode }: ApprovalSidebar
             <button
               onClick={handleApproveAll}
               disabled={loading}
-              className="w-full px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+              className="w-full px-2 text-sm py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
             >
               Phê duyệt tất cả
             </button>
             <button
               onClick={handleRejectAll}
               disabled={loading}
-              className="w-full px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition disabled:opacity-50"
+              className="w-full px-2 text-sm py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition disabled:opacity-50"
             >
               Từ chối tất cả
             </button>

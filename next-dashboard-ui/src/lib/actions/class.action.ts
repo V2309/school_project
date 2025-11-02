@@ -579,7 +579,7 @@ export async function rejectJoinRequest(requestId: number) {
 
     // (Không cần revalidatePath vì `page.tsx` sẽ tự động fetch lại)
     // Tốt hơn là nên revalidate để đảm bảo
-    revalidatePath("/class/.*", "layout"); // Revalidate tất cả các trang con của class
+   // revalidatePath("/class/.*", "layout"); // Revalidate tất cả các trang con của class
 
     return { success: true };
 

@@ -44,7 +44,7 @@ const SimpleComments = ({
             <div key={comment.id} className="flex gap-2">
               <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
                 <Image
-                  src="/avatar.png"
+                  src={comment.user.img ? `${process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT}${comment.user.img}` : "/avatar.png"}
                   alt="User Avatar"
                   width={32}
                   height={32}
@@ -72,8 +72,8 @@ const SimpleComments = ({
         <form onSubmit={handleSubmit} className="flex items-center">
           <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
             <Image
-              src="/avatar.png"
-              alt="User Avatar"
+              src={user?.img ? `${process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT}${user.img}` : "/avatar.png"}
+              alt="User Avatar cmt1"
               width={32}
               height={32}
               className="object-cover"
@@ -85,7 +85,7 @@ const SimpleComments = ({
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               className="flex-1 bg-gray-100 border-0 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Write a comment..."
+              placeholder="Hãy nói gì đó..."
               disabled={submitting}
             />
             <button
@@ -93,7 +93,7 @@ const SimpleComments = ({
               disabled={submitting || !commentText.trim()}
               className="px-3 py-1.5 bg-blue-500 text-white text-xs rounded-full hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
             >
-              {submitting ? "..." : "Post"}
+              {submitting ? "..." : "Bình luận"}
             </button>
           </div>
         </form>
