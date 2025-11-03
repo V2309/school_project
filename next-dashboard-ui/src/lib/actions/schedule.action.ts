@@ -1,5 +1,4 @@
 "use server";
-
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/hooks/auth";
 import prisma from "@/lib/prisma";

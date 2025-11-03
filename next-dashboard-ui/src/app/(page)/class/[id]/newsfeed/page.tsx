@@ -2,10 +2,8 @@ import prisma from "@/lib/prisma";
 import Feed from "@/components/Feed";
 import Share from "@/components/Share";
 import { getCurrentUser } from "@/hooks/auth";
-import { AcademicCapIcon } from '@heroicons/react/24/outline';
-import Notification from "@/components/Notification";
-import Socket from "@/components/Socket";
-
+import { AcademicCapIcon } from '@heroicons/react/24/outline';;
+import InfiniteFeed from "@/components/InfiniteFeed";
 export default async function NewsfeedPage({ params }: { params: { id: string } }) {
   // Lấy thông tin lớp học từ class_code (vì params.id có thể là class_code)
   const classInfo = await prisma.class.findUnique({
@@ -32,27 +30,29 @@ export default async function NewsfeedPage({ params }: { params: { id: string } 
   }) : null;
 
   return (
-    <div className="!bg-appbg min-h-screen pb-6">
-
-      <h1 className="text-2xl font-bold mb-6 flex items-center gap-2 bg-white p-4  shadow ">
-        <AcademicCapIcon className="h-6 w-6 text-blue-600" />
-        Bảng tin lớp: {classInfo.name}
-      </h1>
-      <div className="max-w-3xl mx-auto">
-
-
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-4xl mx-auto px-4 py-6">
+          <h1 className="text-2xl font-bold flex items-center gap-3 text-gray-800">
+            <AcademicCapIcon className="h-7 w-7 text-blue-600" />
+            Bảng tin lớp: {classInfo.name}
+          </h1>
+        </div>
+      </div>
+      
+      {/* Content */}
+      <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Form tạo bài viết mới */}
-        <div className="bg-white rounded-lg shadow mb-6 border-1">
+        <div className="bg-white rounded-lg shadow-sm mb-6">
           <Share classCode={classInfo.class_code!} userImg={user?.img || undefined} />
         </div>
 
-        {/* Sử dụng component Feed với classCode */}
-        <Feed classCode={classInfo.class_code || undefined} />
+        {/* Feed */}
+        <div className="space-y-6">
+          <Feed classCode={classInfo.class_code || undefined} />
+        </div>
       </div>
-
-      {/* notifi */}
-      {/* <Notification /> */}
-
     </div>
   );
 }

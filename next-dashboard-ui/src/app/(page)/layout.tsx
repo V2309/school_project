@@ -1,7 +1,7 @@
 'use client';
 import Navigation from "@/components/Navigation";
 import { usePathname } from "next/navigation";
-import {UserProvider} from "@/providers/UserProvider";
+import { UserProvider } from "@/providers/UserProvider";
 export default function DashboardLayout({
   children,
 }: Readonly<{
@@ -20,14 +20,15 @@ export default function DashboardLayout({
   } 
 
   return (  
-    <UserProvider>
-      <div className="h-screen w-screen flex flex-col overflow-x-hidden">
-        {/* Cấp 1: Navigation trên cùng */}
-        {!isAddPage && !isTestPage && !isResultPage && (
-          <div className="w-full flex-shrink-0 border-2 border-gray-200">
-            <Navigation />
-          </div>
-        )}
+    
+      <UserProvider>
+        <div className="h-screen w-screen flex flex-col overflow-x-hidden">
+          {/* Cấp 1: Navigation trên cùng */}
+          {!isAddPage && !isTestPage && !isResultPage && (
+            <div className="w-full flex-shrink-0 border-2 border-gray-200">
+              <Navigation />
+            </div>
+          )}
         {/* Cấp 2: Nội dung chính */}
         <div className={
           isAddPage || isTestPage || isResultPage || isEditClassPage
@@ -37,6 +38,7 @@ export default function DashboardLayout({
           {children}
         </div>
       </div>
-    </UserProvider>
+      </UserProvider>
+  
   );
 }

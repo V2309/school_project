@@ -22,7 +22,6 @@ export type PendingRequest = Prisma.ClassJoinRequestGetPayload<{
   }
 }>;
 
-
 const MemberListPage = async ({
   params,
   searchParams,

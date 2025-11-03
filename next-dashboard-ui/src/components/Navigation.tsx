@@ -2,16 +2,17 @@
 
 import { useUser } from "@/hooks/useUser";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import React, { useState, useRef, useEffect } from "react";
+import { usePathname } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
 import { logoutAction } from "@/lib/actions/auth.action";
 import Image from "@/components/Image";
 import Socket from "./Socket";
 import Notification from "./Notification";
+
 /* =========================
    Config menu gộp chung file
    ========================= */
-export type Role =  "teacher" | "student" ;
+export type Role = "teacher" | "student";
 
 export const topNavItems = [
   // Teacher
@@ -26,12 +27,10 @@ export const topNavItems = [
   { label: "Chat bot", href: "/chat", visible: ["student"] as Role[] }
 ] as const;
 
-const Navigation: React.FC = () => {
+export default function Navigation() {
   const { user } = useUser();
   const role = user?.role as Role | undefined;
-  
-  // Debug: kiểm tra dữ liệu user
-  console.log("Navigation - User data:", user);
+
 
   const handleLogout = async () => {
     try {
@@ -324,6 +323,4 @@ const Navigation: React.FC = () => {
     
     </nav>
   );
-};
-
-export default Navigation;
+}
