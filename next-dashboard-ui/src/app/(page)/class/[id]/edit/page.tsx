@@ -196,11 +196,11 @@ return (
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-semibold text-blue-800 mb-2">💡 Hướng dẫn sử dụng</h4>
+            <h4 className="font-semibold text-blue-800 mb-2">Hướng dẫn sử dụng</h4>
             <ul className="text-sm text-blue-700 space-y-1">
-              <li>• Chọn "➕ Khác" để tạo khối mới</li>
-              <li>• Nhập tên khối và bấm "Lưu lại"</li>
-              <li>• Khối mới sẽ được tự động tạo</li>
+              <li>Chọn Khác để tạo khối mới</li>
+              <li>Nhập tên khối và bấm Lưu lại</li>
+              <li>Khối mới sẽ được tự động tạo</li>
             </ul>
           </div>
 

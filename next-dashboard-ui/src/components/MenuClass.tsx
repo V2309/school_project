@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 import LeaveClassDialog from "./LeaveClassDialog";
 import { toast } from 'react-toastify'; 
-import QRCodeModal from './QRCodeModal'; // Import Modal QR Code
+import QRCodeModal from './modals/QRCodeModal'; // Import Modal QR Code
 
 // Import icon từ lucide-react
 import {
@@ -91,7 +91,7 @@ export default function MenuClass({ classDetail, role }: MenuClassProps) {
         
         {/* Ẩn thông tin phụ trên mobile */}
         <div className="hidden md:block">
-          <p className="text-sm md:text-base text-gray-500 mt-1">
+          <p className="text-sm md:text-sm text-gray-500 mt-1">
             Mã lớp: {classDetail.class_code}
           </p>
           <p className="text-xs md:text-sm text-gray-500 mt-2">Giáo viên: {classDetail.supervisor?.username || "Chưa phân công"}</p>
@@ -161,7 +161,7 @@ export default function MenuClass({ classDetail, role }: MenuClassProps) {
 
       {/* Danh mục (co giãn và cuộn) */}
       {/* SỬA LỖI LAYOUT: Thêm flex-grow và overflow-y-auto */}
-      <nav className="flex flex-col space-y-2">
+      <nav className="flex flex-col">
         {links.map((link) => {
           const isActive = pathname.startsWith(link.href);
           const IconComponent = link.icon;

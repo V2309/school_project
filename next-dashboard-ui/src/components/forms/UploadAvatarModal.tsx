@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { X, Upload, Camera } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { uploadAvatar } from '@/lib/actions/user.action';
-
+import Image from 'next/image';
 interface UploadAvatarModalProps {
   onClose: () => void;
   onSuccess: () => void; // Callback để refresh data
@@ -119,10 +119,12 @@ export default function UploadAvatarModal({ onClose, onSuccess }: UploadAvatarMo
             ) : (
               <div className="relative">
                 <div className="w-48 h-48 mx-auto rounded-full overflow-hidden border-4 border-gray-200 shadow-lg">
-                  <img
+                  <Image
                     src={preview}
                     alt="Preview"
                     className="w-full h-full object-cover"
+                    width={192}
+                    height={192}
                   />
                 </div>
                 <button

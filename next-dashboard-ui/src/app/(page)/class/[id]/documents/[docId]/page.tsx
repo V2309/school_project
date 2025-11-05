@@ -1,9 +1,9 @@
 
 
 import prisma from '@/lib/prisma';
-
-import { notFound, redirect } from 'next/navigation';
-import { ArrowLeft, Download, Calendar, User, FileText } from 'lucide-react';
+import { getCurrentUser } from "@/hooks/auth";
+import { notFound } from 'next/navigation';
+import { ArrowLeft, Download } from 'lucide-react';
 import Link from 'next/link';
 import PDFViewer from '@/components/PDFViewer';
 
@@ -12,7 +12,8 @@ export default async function DocumentDetail({
 }: { 
   params: { id: string; docId: string } 
 }) {
- 
+  // Lấy thông tin user hiện tại
+  const user = await getCurrentUser();
 
   // Lấy thông tin file từ database
   const file = await prisma.file.findUnique({
@@ -34,6 +35,31 @@ export default async function DocumentDetail({
 
   if (!file) {
     notFound();
+  }
+
+  // Tạo record FileView để đánh dấu user đã xem file này (chỉ tạo lần đầu tiên)
+  if (user) {
+    try {
+      await prisma.fileView.upsert({
+        where: {
+          fileId_userId: {
+            fileId: params.docId,
+            userId: user.id as string,
+          },
+        },
+        update: {
+          // Không cập nhật gì cả - giữ nguyên thời gian xem lần đầu tiên
+        },
+        create: {
+          fileId: params.docId,
+          userId: user.id as string,
+          viewedAt: new Date(), // Chỉ set thời gian khi tạo mới (lần đầu tiên)
+        },
+      });
+    } catch (error) {
+      // Log error nhưng không block việc hiển thị tài liệu
+      console.error("Error creating file view record:", error);
+    }
   }
 
   return (

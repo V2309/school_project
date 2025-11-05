@@ -720,3 +720,33 @@ async function generateUniqueVideoSlug(title: string) {
    }
  };
  
+ // moveCourseToFolder
+
+ interface MoveCourseParams {
+  courseId: string;
+  newFolderId: string | null;
+  classCode: string; // Cần classCode để revalidate đúng path
+}
+
+export async function moveCourseToFolder(params: MoveCourseParams) {
+  const { courseId, newFolderId, classCode } = params;
+
+  try {
+    await prisma.course.update({
+      where: { id: courseId },
+      data: {
+        // Nếu newFolderId là 'unassigned' thì set là null
+        // Nếu không, gán newFolderId
+        folderId: newFolderId === "unassigned" ? null : newFolderId,
+      },
+    });
+
+    // Revalidate lại trang video của lớp học
+    revalidatePath(`/class/${classCode}/video`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error moving course:", error);
+    return { success: false, error: "Không thể di chuyển khóa học." };
+  }
+}

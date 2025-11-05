@@ -1,5 +1,0 @@
-{
-  "scripts": {
-    "seed:video": "ts-node scripts/seed-video-data.ts"
-  }
-}

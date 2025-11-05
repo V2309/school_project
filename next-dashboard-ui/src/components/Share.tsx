@@ -16,7 +16,7 @@ const SubmitButton = () => {
   return (
     <button
       type="submit"
-      className="bg-white text-black font-bold rounded-full py-2 px-4 disabled:cursor-not-allowed disabled:opacity-50 transition-opacity"
+      className="bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg py-2 px-3 sm:px-4 text-sm sm:text-base disabled:cursor-not-allowed disabled:opacity-50 transition-all"
       disabled={pending}
     >
       {pending ? "Đang đăng..." : "Đăng bài"}
@@ -71,15 +71,15 @@ const Share = ({ classCode, userImg }: { classCode: string, userImg?: string }) 
   return (
     <form
       ref={formRef}
-      className="p-4 flex gap-4"
+      className="p-3 sm:p-4 lg:p-6 flex gap-3 sm:gap-4"
       action={formAction}
     >
       {/* AVATAR */}
-      <div className="relative w-10 h-10 rounded-full overflow-hidden">
+      <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden flex-shrink-0">
         <Image path={userImg || "/avatar.png"} alt="" w={100} h={100} tr={true} />
       </div>
       {/* OTHERS */}
-      <div className="flex-1 flex flex-col gap-4">
+      <div className="flex-1 flex flex-col gap-3 sm:gap-4">
         <input
           type="hidden"
           name="classCode"
@@ -99,11 +99,11 @@ const Share = ({ classCode, userImg }: { classCode: string, userImg?: string }) 
           hidden
           readOnly
         />
-        <input
-          type="text"
+        <textarea
           name="desc"
           placeholder="Chia sẻ điều gì đó với lớp học..."
-          className="bg-transparent outline-none placeholder:text-textGray text-xl"
+          className="bg-transparent outline-none placeholder:text-gray-500 text-sm sm:text-base lg:text-lg resize-none min-h-[60px] sm:min-h-[80px]"
+          rows={3}
           required
         />
         {/* PREVIEW IMAGE */}
@@ -155,8 +155,8 @@ const Share = ({ classCode, userImg }: { classCode: string, userImg?: string }) 
             setSettings={setSettings}
           />
         )}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex gap-4 flex-wrap">
+        <div className="flex items-center justify-between gap-3 sm:gap-4 flex-wrap">
+          <div className="flex gap-3 sm:gap-4 flex-wrap">
             <input
               type="file"
               name="file"
@@ -165,21 +165,20 @@ const Share = ({ classCode, userImg }: { classCode: string, userImg?: string }) 
               id="file"
               accept="image/*,video/*"
             />
-            <label htmlFor="file">
+            <label htmlFor="file" className="flex items-center gap-2 cursor-pointer p-2 hover:bg-gray-100 rounded-lg transition-colors">
               <NextImage
                 src="/icons/picture.png"
                 alt="Upload image"
-                width={20}
-                height={20}
-                className="cursor-pointer"
+                width={16}
+                height={16}
+                className="sm:w-5 sm:h-5"
               />
-                </label>
-           
-        
+              <span className="hidden sm:inline text-sm text-gray-600">Ảnh/Video</span>
+            </label>
           </div>
           <SubmitButton />
           {state.error && (
-            <span className="text-red-300 p-4">Something went wrong!</span>
+            <span className="text-red-500 text-sm mt-2">Có lỗi xảy ra!</span>
           )}
         </div>
       </div>

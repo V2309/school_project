@@ -59,6 +59,13 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
   const [attempts, setAttempts] = useState<number>(1);
   const [error, setError] = useState<string>("");
   
+  // Thêm các trường mới cho quyền học sinh
+  const [studentViewPermission, setStudentViewPermission] = useState<'NO_VIEW' | 'SCORE_ONLY' | 'SCORE_AND_RESULT'>('NO_VIEW');
+  const [blockViewAfterSubmit, setBlockViewAfterSubmit] = useState<boolean>(false);
+  
+  // Thêm thiết lập bảng điểm
+  const [gradingMethod, setGradingMethod] = useState<'FIRST_ATTEMPT' | 'LATEST_ATTEMPT' | 'HIGHEST_ATTEMPT'>('FIRST_ATTEMPT');
+  
   // State cho validation errors
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
@@ -332,6 +339,9 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
         startTime,
         deadline,
         attempts,
+        studentViewPermission,
+        blockViewAfterSubmit,
+        gradingMethod,
       });
       
       // Xóa dữ liệu đã lưu và chuyển về danh sách bài tập
@@ -668,6 +678,83 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
                   {validationErrors.maxAttempts && (
                     <p className="text-red-500 text-sm mt-1">{validationErrors.maxAttempts}</p>
                   )}
+                </div>
+                
+                {/* Thiết lập bảng điểm */}
+                <div className="mb-4">
+                  <label className="block mb-2">Thiết lập bảng điểm:</label>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="gradingMethod"
+                        value="FIRST_ATTEMPT"
+                        checked={gradingMethod === 'FIRST_ATTEMPT'}
+                        onChange={e => setGradingMethod(e.target.value as 'FIRST_ATTEMPT' | 'LATEST_ATTEMPT' | 'HIGHEST_ATTEMPT')}
+                        className="w-4 h-4 text-blue-600"
+                      />
+                      <div>
+                        <span className="text-sm font-medium">Lấy điểm lần làm bài đầu tiên</span>
+                        <p className="text-xs text-gray-500">Điểm cuối cùng sẽ là điểm của lần làm bài đầu tiên</p>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="gradingMethod"
+                        value="LATEST_ATTEMPT"
+                        checked={gradingMethod === 'LATEST_ATTEMPT'}
+                        onChange={e => setGradingMethod(e.target.value as 'FIRST_ATTEMPT' | 'LATEST_ATTEMPT' | 'HIGHEST_ATTEMPT')}
+                        className="w-4 h-4 text-blue-600"
+                      />
+                      <div>
+                        <span className="text-sm font-medium">Lấy điểm lần làm bài mới nhất</span>
+                        <p className="text-xs text-gray-500">Điểm cuối cùng sẽ là điểm của lần làm bài gần đây nhất</p>
+                      </div>
+                    </label>
+
+                    <label className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        name="gradingMethod"
+                        value="HIGHEST_ATTEMPT"
+                        checked={gradingMethod === 'HIGHEST_ATTEMPT'}
+                        onChange={e => setGradingMethod(e.target.value as 'FIRST_ATTEMPT' | 'LATEST_ATTEMPT' | 'HIGHEST_ATTEMPT')}
+                        className="w-4 h-4 text-blue-600"
+                      />
+                      <div>
+                        <span className="text-sm font-medium">Lấy điểm lần làm bài cao nhất</span>
+                        <p className="text-xs text-gray-500">Điểm cuối cùng sẽ là điểm cao nhất trong tất cả các lần làm</p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Quyền của học sinh */}
+                <div className="mb-4">
+                  <label className="block mb-2">Quyền xem điểm của học sinh:</label>
+                  <select
+                    value={studentViewPermission}
+                    onChange={e => setStudentViewPermission(e.target.value as 'NO_VIEW' | 'SCORE_ONLY' | 'SCORE_AND_RESULT')}
+                    className="border rounded px-3 py-2 w-64"
+                  >
+                    <option value="NO_VIEW">Không được xem điểm</option>
+                    <option value="SCORE_ONLY">Chỉ xem điểm tổng</option>
+                    <option value="SCORE_AND_RESULT">Xem điểm và kết quả chi tiết</option>
+                  </select>
+                </div>
+                
+                <div className="mb-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={blockViewAfterSubmit}
+                      onChange={e => setBlockViewAfterSubmit(e.target.checked)}
+                      className="w-4 h-4"
+                    />
+                    <span>Chặn học sinh xem lại đề sau khi nộp bài</span>
+                  </label>
                 </div>
 
                 {/* Nút hành động Step 2 */}

@@ -17,16 +17,13 @@ type UserSummary = {
 };
 
 type Engagement = {
-  _count: { likes: number; rePosts: number; comments: number };
+  _count: { likes: number; comments: number };
   likes: { id: number }[];
-  rePosts: { id: number }[];
-  saves: { id: number }[];
 };
 
 type PostWithDetails = PostType &
   Engagement & {
     user: UserSummary;
-    rePost?: (PostType & Engagement & { user: UserSummary }) | null;
   };
 
 const Post = ({
@@ -36,7 +33,7 @@ const Post = ({
   type?: "status" | "comment";
   post: PostWithDetails;
 }) => {
-  const originalPost = post.rePost || post;
+  const originalPost = post;
   const { user } = useUser();
   const [showDropdown, setShowDropdown] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -161,16 +158,16 @@ const Post = ({
   }, []);
 
   return (
-    <div className=" bg-white rounded-lg shadow mb-6 border-1 p-4">
+    <div className="bg-white rounded-lg shadow-sm mb-4 sm:mb-6 border p-3 sm:p-4 lg:p-6">
    
       {/* POST CONTENT */}
-      <div className={`flex gap-4 ${type === "status" && "flex-col"}`}>
+      <div className={`flex gap-3 sm:gap-4 ${type === "status" && "flex-col"}`}>
         {/* AVATAR */}
 
         <div
           className={`${
             type === "status" && "hidden"
-          } relative w-10 h-10 rounded-full overflow-hidden`}
+          } relative w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden flex-shrink-0`}
         >
           <Image
             path={originalPost.user.img || "/avatar.png"}
@@ -182,17 +179,17 @@ const Post = ({
         </div>
 
         {/* CONTENT */}
-        <div className="flex-1 flex flex-col gap-2">
+        <div className="flex-1 flex flex-col gap-2 sm:gap-3 min-w-0">
           {/* TOP */}
-          <div className="w-full flex justify-between">
+          <div className="w-full flex justify-between items-start">
             <Link
               href="#"
-              className="flex gap-4"
+              className="flex gap-2 sm:gap-3 lg:gap-4 flex-1 min-w-0"
             >
               <div
                 className={`${
                   type !== "status" && "hidden"
-                } relative w-10 h-10 rounded-full overflow-hidden`}
+                } relative w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden flex-shrink-0`}
               >
                 <Image
                   path={originalPost.user.img || "/avatar.png"}
@@ -203,16 +200,16 @@ const Post = ({
                 />
               </div>
               <div
-                className={`flex items-center gap-2 flex-wrap ${
+                className={`flex items-center gap-2 flex-wrap min-w-0 ${
                   type === "status" && "flex-col gap-0 !items-start"
                 }`}
               >
-                <h1 className="text-md font-bold">
+                <h1 className="text-sm sm:text-base font-bold truncate">
                   {originalPost.user.username}
                 </h1>
                 
                 {type !== "status" && (
-                  <span className="text-textGray" suppressHydrationWarning>
+                  <span className="text-gray-500 text-xs sm:text-sm flex-shrink-0" suppressHydrationWarning>
                     {isClient ? format(originalPost.createdAt) : new Date(originalPost.createdAt).toLocaleDateString()}
                   </span>
                 )}
@@ -220,20 +217,20 @@ const Post = ({
             </Link>
             
             {/* Three-dot menu */}
-            <div className="relative" ref={dropdownRef}>
+            <div className="relative flex-shrink-0" ref={dropdownRef}>
               <button
                 onClick={(e) => {
                   e.preventDefault();
                   setShowDropdown(!showDropdown);
                 }}
-                className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <svg
                   width="16"
                   height="16"
                   viewBox="0 0 24 24"
                   fill="none"
-                  className="text-gray-500"
+                  className="text-gray-500 w-4 h-4 sm:w-5 sm:h-5"
                 >
                   <circle cx="12" cy="5" r="2" fill="currentColor"/>
                   <circle cx="12" cy="12" r="2" fill="currentColor"/>
@@ -382,19 +379,19 @@ const Post = ({
             <Link
               href=""
             >
-              <p className={`${type === "status" && "text-lg"}`}>
+              <p className={`text-sm sm:text-base ${type === "status" && "sm:text-lg"} break-words`}>
                 {originalPost.desc}
               </p>
             </Link>
           )}
           {originalPost.img && (
-            <div className="overflow-hidden">
+            <div className="overflow-hidden rounded-lg">
               <Image
                 path={originalPost.img}
                 alt=""
                 w={600}
                 h={ 600}
-                className={originalPost.isSensitive ? "blur-3xl" : ""}
+                className={`w-full h-auto max-h-96 sm:max-h-[500px] object-cover ${originalPost.isSensitive ? "blur-3xl" : ""}`}
               />
             </div>
           )}
@@ -402,7 +399,7 @@ const Post = ({
             <div className="rounded-lg overflow-hidden">
               <Video
                 path={originalPost.video}
-                className={originalPost.isSensitive ? "blur-3xl" : ""}
+                className={`w-full ${originalPost.isSensitive ? "blur-3xl" : ""}`}
               />
             </div>
           )}

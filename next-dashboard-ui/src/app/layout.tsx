@@ -3,9 +3,11 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ToastContainer } from "react-toastify";
+import "react-datepicker/dist/react-datepicker.css";
+import "react-toastify/dist/ReactToastify.css";
 const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
-  title: "AP School - Tạo và quản lý bài tập",
+  title: "Docus School - Quản lý lớp học trực tuyến",
   description: "Next.js School Management System",
 };
 

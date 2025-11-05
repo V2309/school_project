@@ -10,8 +10,6 @@ export async function GET(request: NextRequest) {
   const page = searchParams.get("cursor");
   const LIMIT = 3;
 
-
-
   const userSession = await getCurrentUser();
 
   if (!userSession) {
@@ -26,20 +24,13 @@ export async function GET(request: NextRequest) {
 
   const postIncludeQuery = {
     user: { select: { username: true, img: true } },
-    _count: { select: { likes: true, rePosts: true, comments: true } },
+    _count: { select: { likes: true, comments: true } },
     likes: { where: { userId: userSession.id as string }, select: { id: true } },
-    rePosts: { where: { userId: userSession.id as string }, select: { id: true } },
-    saves: { where: { userId: userSession.id as string }, select: { id: true } },
   };
 
   const posts = await prisma.post.findMany({
     where: whereCondition,
-    include: {
-      rePost: {
-        include: postIncludeQuery,
-      },
-      ...postIncludeQuery,
-    },
+    include: postIncludeQuery,
     take: LIMIT,
     skip: Math.max(0, (Number(page || 1) - 1) * LIMIT),
     orderBy: { createdAt: "desc" }
@@ -49,6 +40,7 @@ export async function GET(request: NextRequest) {
   const currentPage = Number(page || 1);
   const hasMore = currentPage * LIMIT < totalPosts;
 
+  // await new Promise((resolve) => setTimeout(resolve, 3000));
 
   return Response.json({ posts, hasMore });
 }

@@ -20,6 +20,13 @@ export default function HomeworkListClient({
 }) {
   const [selected, setSelected] = useState<any | null>(homeworks?.[0] || null);
 
+  // Reset selected khi homework hiện tại không còn trong danh sách (bị xóa)
+  useEffect(() => {
+    if (selected && !homeworks.find(hw => hw.id === selected.id)) {
+      setSelected(homeworks?.[0] || null);
+    }
+  }, [homeworks, selected]);
+
   // ---- Sort ----
   const [sortOpen, setSortOpen] = useState(false);
   const [sortOption, setSortOption] = useState<SortValue>("newest");

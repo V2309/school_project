@@ -326,6 +326,15 @@ model Homework {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  // Quyền xem điểm của học sinh
+  studentViewPermission StudentViewPermission @default(NO_VIEW)
+  
+  // thiết lập điểm
+  gradingMethod GradingMethod @default(FIRST_ATTEMPT)
+
+  // Thêm field mới: Chặn xem lại đề sau khi nộp bài
+  blockViewAfterSubmit Boolean @default(false)
+  
   classCode String? @map("class_code")
   class     Class?  @relation(fields: [classCode], references: [class_code])
 
@@ -339,6 +348,25 @@ model Homework {
   attachments HomeworkAttachment[] 
   questions   Question[]           
 }
+
+// Enum mới cho quyền xem điểm
+enum StudentViewPermission {
+  NO_VIEW           // Không được xem điểm
+  SCORE_ONLY        // Chỉ xem điểm tổng
+  SCORE_AND_RESULT  // Xem điểm và đúng/sai từng câu
+  
+  @@map("student_view_permissions")
+}
+
+// Enum mới cho thiết lập bảng điểm
+enum GradingMethod {
+  FIRST_ATTEMPT    // Lấy điểm lần làm bài đầu tiên
+  LATEST_ATTEMPT   // Lấy điểm lần làm bài mới nhất
+  HIGHEST_ATTEMPT  // Lấy điểm lần làm bài cao nhất
+  
+  @@map("grading_methods")
+}
+
 
 model HomeworkSubmission {
   id            Int      @id @default(autoincrement())

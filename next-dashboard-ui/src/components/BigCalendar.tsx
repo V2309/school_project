@@ -11,7 +11,8 @@ import RecurrenceDeleteDialog from "@/components/calendar/RecurrenceDeleteDialog
 import type { ScheduleEvent } from "@/components/calendar/EventItem";
 import { checkRecurrenceGroup, updateSingleEvent, updateAllRecurrenceEvents, deleteSingleEvent, deleteAllRecurrenceEvents } from "@/lib/actions/schedule.action";
 import { toast } from "react-toastify";
-
+// 1. IMPORT ICON MỚI
+import { Printer, CalendarDays } from "lucide-react";
 // Cấu hình moment: Locale VI + tuần bắt đầu từ Thứ 2
 moment.locale("vi");
 moment.updateLocale("vi", { week: { dow: 1, doy: 4 } });
@@ -100,18 +101,31 @@ const AllDaySchedule = ({ schedules = [], role, classId, teacherClasses = [] }: 
     () => buildSevenDayRangeFrom(currentDate),
     [currentDate]
   );
+  // Biến kiểm tra xem có đang ở tuần hiện tại không
+  const isCurrentWeek = useMemo(
+    () => moment(currentDate).isSame(new Date(), "week"),
+    [currentDate]
+  );
 
   // --- Handlers (Optimized with useCallback) ---
   const handlePrevWeek = useCallback(() =>
     setCurrentDate(moment(currentDate).subtract(1, "week").toDate()),
     [currentDate]
   );
-  
+
   const handleNextWeek = useCallback(() =>
     setCurrentDate(moment(currentDate).add(1, "week").toDate()),
     [currentDate]
   );
+  // 2. THÊM HANDLER CHO NÚT "HÔM NAY"
+  const handleGoToToday = useCallback(() => {
+    setCurrentDate(new Date());
+  }, []);
 
+  // 3. THÊM HANDLER CHO NÚT IN
+  const handlePrint = () => {
+    window.print();
+  };
   const handleViewChange = useCallback((view: "week" | "month") => {
     setActiveView(view);
   }, []);
@@ -132,7 +146,7 @@ const AllDaySchedule = ({ schedules = [], role, classId, teacherClasses = [] }: 
   const handleDeleteEvent = useCallback(async (event: ScheduleEvent) => {
     // Kiểm tra recurrence trước khi hiển thị dialog
     const recurrenceGroup = await checkRecurrenceGroup(event.id);
-    
+
     setDeleteData({
       eventId: event.id,
       title: event.title,
@@ -143,7 +157,7 @@ const AllDaySchedule = ({ schedules = [], role, classId, teacherClasses = [] }: 
 
   const handleScheduleSuccess = useCallback(() => {
     // TỐI ƯU: Dùng router.refresh() để lấy lại dữ liệu mới (từ Server)
-    router.refresh(); 
+    router.refresh();
   }, [router]);
 
   const handleRecurrenceClose = useCallback(() => {
@@ -158,7 +172,7 @@ const AllDaySchedule = ({ schedules = [], role, classId, teacherClasses = [] }: 
 
   const handleEditSingleEvent = async () => {
     if (!recurrenceData) return;
-    
+
     try {
       const result = await updateSingleEvent(
         { success: false, error: false },
@@ -168,7 +182,7 @@ const AllDaySchedule = ({ schedules = [], role, classId, teacherClasses = [] }: 
           description: recurrenceData.description || ""
         }
       );
-      
+
       if (result.success) {
         setShowRecurrenceDialog(false);
         setRecurrenceData(null);
@@ -181,7 +195,7 @@ const AllDaySchedule = ({ schedules = [], role, classId, teacherClasses = [] }: 
 
   const handleEditAllEvents = async () => {
     if (!recurrenceData) return;
-    
+
     try {
       const result = await updateAllRecurrenceEvents(
         { success: false, error: false },
@@ -191,7 +205,7 @@ const AllDaySchedule = ({ schedules = [], role, classId, teacherClasses = [] }: 
           description: recurrenceData.description || ""
         }
       );
-      
+
       if (result.success) {
         setShowRecurrenceDialog(false);
         setRecurrenceData(null);
@@ -204,13 +218,13 @@ const AllDaySchedule = ({ schedules = [], role, classId, teacherClasses = [] }: 
 
   const handleDeleteSingleEvent = async () => {
     if (!deleteData) return;
-    
+
     try {
       const result = await deleteSingleEvent(
         { success: false, error: false },
         { id: deleteData.eventId }
       );
-      
+
       if (result.success) {
         toast.success('Xóa lịch học thành công!');
         setShowDeleteDialog(false);
@@ -227,13 +241,13 @@ const AllDaySchedule = ({ schedules = [], role, classId, teacherClasses = [] }: 
 
   const handleDeleteAllEvents = async () => {
     if (!deleteData) return;
-    
+
     try {
       const result = await deleteAllRecurrenceEvents(
         { success: false, error: false },
         { id: deleteData.eventId }
       );
-      
+
       if (result.success) {
         toast.success(result.message || 'Xóa lịch học thành công!');
         setShowDeleteDialog(false);
@@ -249,32 +263,38 @@ const AllDaySchedule = ({ schedules = [], role, classId, teacherClasses = [] }: 
   };
 
   return (
-    <div className="bg-white  border border-gray-200 overflow-hidden">
+    <div className="bg-white border border-gray-200 overflow-hidden print:border-0 print:shadow-none">
       {/* 1. Header Điều Hướng */}
-      <div className="px-4 py-3 border-b border-gray-200">
-        <div className="flex justify-between items-center">
-           <div className="flex bg-gray-100 p-1 rounded-lg">
+      <div className="px-4 py-3 border-b border-gray-200 print:hidden">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+
+
+          <div className="flex items-center gap-2">
+            {/* Nút Tuần */}
+            <div className="flex bg-gray-100 p-1 rounded-lg">
+              <button
+                onClick={() => handleViewChange("week")}
+                className={`px-4 py-1.5 text-sm font-semibold rounded-md ${activeView === "week"
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-gray-600 hover:text-gray-900"
+                  } transition-all`}
+              >
+                Tuần
+              </button>
+              {/* (Nếu bạn muốn thêm lại nút Tháng, chỉ cần copy nút Tuần) */}
+            </div>
+
+            {/* 6. THÊM NÚT "HÔM NAY" */}
             <button
-              onClick={() => handleViewChange("week")}
-              className={`px-4 py-1.5 text-sm font-semibold rounded-md ${
-                activeView === "week"
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              } transition-all`}
+              onClick={handleGoToToday}
+              disabled={isCurrentWeek} // Vô hiệu hóa nếu đang ở tuần này
+              className="px-4 py-1.5 text-sm font-semibold rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              Tuần
-            </button>
-             <button
-              onClick={() => handleViewChange("month")}
-              className={`px-4 py-1.5 text-sm font-semibold rounded-md ${
-                activeView === "month"
-                  ? "bg-white text-blue-600 shadow-sm"
-                  : "text-gray-600 hover:text-gray-900"
-              } transition-all`}
-            >
-              Tháng
+              Hôm nay
             </button>
           </div>
+
+
           <div className="flex items-center gap-2">
             <button
               className="h-8 w-8 rounded-md hover:bg-gray-100 transition-colors"
@@ -294,19 +314,21 @@ const AllDaySchedule = ({ schedules = [], role, classId, teacherClasses = [] }: 
               ›
             </button>
           </div>
-          <div className="flex items-center gap-2">
-            <button className="px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-              Sao chép lịch
-            </button>
-            <button className="px-3 py-1.5 rounded-lg bg-gray-800 text-white text-sm font-medium hover:bg-gray-700 transition-colors">
-              Nhận xét
+          {/* 7. THÊM NÚT IN, ẨN TRÊN MOBILE */}
+          <div className="hidden md:flex items-center gap-2">
+            <button
+              onClick={handlePrint}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              <Printer size={16} />
+              In lịch
             </button>
           </div>
         </div>
       </div>
 
       {/* 2. Lưới Lịch 7 Cột */}
-      <div className="grid grid-cols-7 border-l border-gray-200">
+     <div className="md:grid md:grid-cols-7 flex overflow-x-auto md:overflow-x-visible border-gray-200 md:border-l print:grid print:grid-cols-7 print:overflow-visible">
         {weekDays.map((day) => {
           const isToday = day.isSame(new Date(), "day");
           const eventsForDay = allDayEvents.filter((event) =>
@@ -342,7 +364,7 @@ const AllDaySchedule = ({ schedules = [], role, classId, teacherClasses = [] }: 
             endTime: moment(editingEvent.endTime).format("HH:mm"),
           } : undefined}
           selectedDate={selectedDateForForm}
-          classId={classId} 
+          classId={classId}
           setOpen={(open) => {
             setShowScheduleForm(open);
             if (!open) setEditingEvent(null); // Reset editing event when closing
@@ -351,10 +373,10 @@ const AllDaySchedule = ({ schedules = [], role, classId, teacherClasses = [] }: 
           // Callback đặc biệt cho update với recurrence check
           onUpdateSubmit={async (formData): Promise<boolean> => {
             if (!editingEvent) return false;
-            
+
             // Kiểm tra recurrence trước khi submit
             const recurrenceGroup = await checkRecurrenceGroup(editingEvent.id);
-            
+
             // Luôn hiển thị dialog bước 2, bất kể có recurrence hay không
             setRecurrenceData({
               eventId: editingEvent.id,
@@ -367,7 +389,7 @@ const AllDaySchedule = ({ schedules = [], role, classId, teacherClasses = [] }: 
             return false; // Ngăn submit thông thường, chờ user chọn trong dialog
           }}
           // TỐI ƯU: Truyền danh sách lớp đã tải sẵn xuống form
-          teacherClasses={teacherClasses} 
+          teacherClasses={teacherClasses}
         />
       )}
 

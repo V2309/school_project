@@ -2,16 +2,16 @@
 
 "use client";
 
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
-} from 'recharts';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 
 interface ChartData {
   name: string;
@@ -24,8 +24,10 @@ interface ScoreLineChartProps {
 
 export default function ScoreLineChart({ data }: ScoreLineChartProps) {
   return (
-    // Đặt chiều cao cố định cho biểu đồ
-    <div style={{ width: '100%', height: 400 }}>
+    // TỐI ƯU RESPONSIVE:
+    // Đặt chiều cao linh hoạt: h-80 (320px) trên di động,
+    // h-[400px] (400px) trên màn hình vừa (md) trở lên.
+    <div className="w-full h-80 md:h-[400px]">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart
           data={data}
@@ -37,31 +39,32 @@ export default function ScoreLineChart({ data }: ScoreLineChartProps) {
           }}
         >
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis 
-            dataKey="name" 
-            tick={{ fontSize: 12 }} 
-            interval={0} // Hiển thị tất cả các nhãn
-            // angle={-15} // Nghiêng nhãn nếu quá dài
+          <XAxis
+            dataKey="name"
+            tick={{ fontSize: 12 }}
+            // TỐI ƯU RESPONSIVE:
+            // Xóa interval={0} để Recharts tự động ẩn bớt nhãn
+            // khi không đủ không gian (trên di động)
+            // interval={0} 
+            
+            // angle={-15} // Giữ lại comment này, hữu ích nếu nhãn vẫn dài
             // textAnchor="end"
           />
-          <YAxis 
-            domain={[0, 10]} // Giả sử thang điểm 10
-            tick={{ fontSize: 12 }} 
-          />
-          <Tooltip 
-            contentStyle={{ 
-              backgroundColor: '#ffffff', 
-              border: '1px solid #cccccc',
-              borderRadius: '8px' 
+          <YAxis domain={[0, 10]} tick={{ fontSize: 12 }} />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "#ffffff",
+              border: "1px solid #cccccc",
+              borderRadius: "8px",
             }}
           />
           <Legend />
-          <Line 
-            type="monotone" 
+          <Line
+            type="monotone"
             dataKey="Điểm TB" // Khớp với key trong `chartData`
             stroke="#3b82f6" // Màu xanh blue
             strokeWidth={2}
-            activeDot={{ r: 8 }} 
+            activeDot={{ r: 8 }}
           />
         </LineChart>
       </ResponsiveContainer>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { toast } from "react-toastify";
 
 interface HomeworkSession {
@@ -24,6 +24,15 @@ export function useHomeworkSession({ homeworkId, duration, onTimeUp, role }: Use
 
   const storageKey = `homework-${homeworkId}${role === 'teacher' ? '-teacher' : ''}`;
   const isTeacher = role === 'teacher';
+
+  // Hàm khởi tạo phiên làm bài mới
+  const initializeNewSession = useCallback(() => {
+    const now = Date.now();
+    setStartTime(now);
+    setTimeLeft(duration * 60);
+    setAnswers({});
+    console.log(`Bắt đầu phiên làm bài mới${isTeacher ? ' (Giáo viên)' : ''}`);
+  }, [duration, isTeacher]);
 
   // Khởi tạo trạng thái từ localStorage
   useEffect(() => {
@@ -70,16 +79,7 @@ export function useHomeworkSession({ homeworkId, duration, onTimeUp, role }: Use
     }
     
     setIsInitialized(true);
-  }, [homeworkId, duration, storageKey, isTeacher]);
-
-  // Hàm khởi tạo phiên làm bài mới
-  const initializeNewSession = () => {
-    const now = Date.now();
-    setStartTime(now);
-    setTimeLeft(duration * 60);
-    setAnswers({});
-    console.log(`Bắt đầu phiên làm bài mới${isTeacher ? ' (Giáo viên)' : ''}`);
-  };
+  }, [homeworkId, duration, storageKey, isTeacher, initializeNewSession]);
 
   // Lưu trạng thái vào localStorage
   useEffect(() => {

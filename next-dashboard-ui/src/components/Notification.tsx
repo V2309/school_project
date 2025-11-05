@@ -1,5 +1,4 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { socket } from "@/socket";
@@ -41,9 +40,9 @@ const Notification = () => {
     router.push(notification.link);
   };
   return (
-    <div className="relative mb-4">
+    <div className="relative mb-4 ">
       <div
-        className="cursor-pointer p-2 rounded-full hover:bg-[#181818] flex items-center gap-4"
+        className="cursor-pointer p-2 rounded-full hover:bg-[gray] flex items-center gap-4"
         onClick={() => setOpen((prev) => !prev)}
       >
         <div className="relative">
@@ -54,10 +53,10 @@ const Notification = () => {
             </div>
           )}
         </div>
-        <span className="hidden xxl:inline">Notifications</span>
+      
       </div>
       {open && (
-        <div className="absolute -right-full p-4 rounded-lg bg-white text-black flex flex-col gap-4 w-max">
+        <div className="absolute z-50 -right-full p-4 rounded-lg bg-gray-100 text-black flex flex-col gap-4 min-w-[300px] ">
           <h1 className="text-xl text-textGray">Notifications</h1>
           {notifications.map((n) => (
             <div

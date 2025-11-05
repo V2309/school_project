@@ -1,6 +1,8 @@
+
+///src/components/forms/ScheduleForm.tsx
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
+import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import { z } from "zod";
@@ -63,7 +65,7 @@ const ScheduleForm = ({
 }: ScheduleFormProps) => {
 
   const [isLoading, setIsLoading] = useState(false);
-  const [currentStep, setCurrentStep] = useState(classId ? 2 : 1); // 1: Chọn lớp, 2: Nhập thông tin
+  const [currentStep, setCurrentStep] = useState(classId || type === "update" ? 2 : 1); // 1: Chọn lớp, 2: Nhập thông tin
   const [selectedClass, setSelectedClass] = useState<ClassData | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -324,7 +326,7 @@ const ScheduleForm = ({
                         <div 
                           className="w-12 h-12 rounded-lg flex-shrink-0"
                         >
-                          <img src={classItem.img} alt={classItem.name} className="w-12 h-12 rounded-lg object-cover" />
+                          <Image src={classItem.img} alt={classItem.name} width={32} height={32} className="rounded-lg object-cover" />
                         </div>
                         
                         <div className="flex-1">
@@ -389,7 +391,7 @@ const ScheduleForm = ({
                     <div 
                       className="w-8 h-8 rounded flex-shrink-0"
                     >
-                      <img src={selectedClass.img} alt={selectedClass.name} className="w-8 h-8 rounded object-cover" />
+                      <Image src={selectedClass.img} alt={selectedClass.name} width={32} height={32} className="rounded object-cover" />
                     </div>
                     <div>
                       <p className="font-medium text-blue-900">{selectedClass.name}</p>
@@ -402,7 +404,7 @@ const ScheduleForm = ({
               {/* Schedule title */}
               <div className="space-y-1">
                 <label htmlFor="title" className="block text-sm font-medium text-gray-700">
-                  Tên buổi học *
+                  Tên buổi học 
                 </label>
                 <input
                   type="text"

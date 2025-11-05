@@ -60,7 +60,7 @@ export function UserProvider({ children }: UserProviderProps) {
     return () => {
       window.removeEventListener("user-logged-in", handleLogin);
     };
-  }, []);
+  }, [fetchUser]);
 
   const refetchUser = useCallback(() => {
     fetchUser();

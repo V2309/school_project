@@ -1,8 +1,6 @@
 // components/HomeworkCard.tsx
-import Link from "next/link";
-import { format } from "date-fns";
-import { vi } from "date-fns/locale"; // Nếu muốn hiển thị ngày tháng tiếng Việt
 import Image from "next/image";
+import { useState, useEffect } from "react";
 interface HomeworkCardProps {
   homework: {
     id: number;
@@ -11,6 +9,9 @@ interface HomeworkCardProps {
     type?: string | null; // Thêm type để phân biệt loại bài tập
     points?: number | null; // Thêm null nếu cần
     createdAt: Date;
+    endTime?: Date | string | null; // Thêm thời gian hết hạn
+    studentViewPermission?: 'NO_VIEW' | 'SCORE_ONLY' | 'SCORE_AND_RESULT'; // Thêm quyền xem điểm
+    gradingMethod?: 'FIRST_ATTEMPT' | 'LATEST_ATTEMPT' | 'HIGHEST_ATTEMPT'; // Thêm phương pháp chấm điểm
     class: {
       name: string;
       class_code: string | null; // Thêm null nếu class_code có thể null
@@ -46,25 +47,46 @@ export function HomeworkCard({ homework, role }: HomeworkCardProps) {
   const totalStudents = homework.totalStudents || 0;
   const submissionStats = `${completedCount}/${totalStudents} đã làm`;
   
-  // Tính điểm cao nhất từ submissions
-  const getHighestGrade = () => {
-    if (!homework.submissions || homework.submissions.length === 0) {
-      return null;
-    }
-    const validGrades = homework.submissions
-      .map(sub => sub.grade)
-      .filter(grade => grade !== null) as number[];
-    
-    if (validGrades.length === 0) return null;
-    return Math.max(...validGrades);
-  };
+  // State để lưu điểm từ API
+  const [currentGrade, setCurrentGrade] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const highestGrade = getHighestGrade();
-  const maxPoints = homework.points || 10; // Điểm tối đa, mặc định 10
+  // Lấy điểm từ API giống như HomeWorkInfo
+  useEffect(() => {
+    if (role === "student") {
+      const fetchGrade = async () => {
+        try {
+          const response = await fetch(`/api/homework/submissions/count?homeworkId=${homework.id}`);
+          const data = await response.json();
+          if (data.success) {
+            setCurrentGrade(data.bestGrade ?? null);
+          }
+        } catch (error) {
+          console.error("Error fetching grade:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+      fetchGrade();
+    } else {
+      setIsLoading(false);
+    }
+  }, [homework.id, role]);
+  const maxPoints = homework.points || 0; // Điểm tối đa, mặc định 0
+  
+  // Kiểm tra quyền xem điểm
+  const canViewScore = homework.studentViewPermission !== 'NO_VIEW';
+  
+  // Kiểm tra xem bài tập đã hết hạn chưa
+  const isExpired = homework.endTime ? new Date() > new Date(homework.endTime) : false;
+  
+  // Logic hiển thị điểm: Nếu không có quyền xem và chưa hết hạn -> hiển thị thông báo chờ
+  // Nếu đã hết hạn hoặc có quyền xem -> hiển thị điểm thực tế
+  const shouldShowScore = canViewScore || isExpired;
 
 // Kiểm tra loại file
   const attachmentType = homework.attachments?.[0]?.type || "Not found "; // Lấy loại file từ attachment đầu tiên
-
+// nếu có ảnh nữa 
   const attachmentImage =
     attachmentType === "application/pdf"
       ? "/pdf_red.png" // Nếu là PDF, hiển thị ảnh PDF
@@ -96,20 +118,29 @@ export function HomeworkCard({ homework, role }: HomeworkCardProps) {
           </div>
         </div>
 
-        {/* Label điểm bên phải - chỉ hiển thị cho student */}
-        {role === "student" && highestGrade !== null && (
+        {/* Label điểm bên phải - hiển thị cho student khi có quyền xem hoặc đã hết hạn */}
+        {role === "student" && currentGrade !== null && shouldShowScore && (
           <div className="flex-shrink-0 ml-4">
             <div className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-              {highestGrade}/{maxPoints} điểm
+              {currentGrade}/{maxPoints} điểm
             </div>
           </div>
         )}
         
-        {/* Hiển thị "Chưa làm" nếu chưa có submission - chỉ cho student */}
-        {role === "student" && highestGrade === null && (
+        {/* Hiển thị "Chưa làm" nếu chưa có submission - khi có quyền xem hoặc đã hết hạn */}
+        {role === "student" && currentGrade === null && shouldShowScore && (
           <div className="flex-shrink-0 ml-4">
             <div className="px-3 py-1 bg-red-100 text-red-600 rounded-full text-sm font-medium">
               Chưa làm
+            </div>
+          </div>
+        )}
+        
+        {/* Hiển thị thông báo khi không có quyền xem điểm và chưa hết hạn */}
+        {role === "student" && !shouldShowScore && (
+          <div className="flex-shrink-0 ml-4">
+            <div className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm font-medium">
+              {isExpired ? "Điểm đang được chấm" : "Điểm sẽ có sau hết hạn"}
             </div>
           </div>
         )}

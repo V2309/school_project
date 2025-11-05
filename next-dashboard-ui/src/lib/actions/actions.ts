@@ -27,6 +27,9 @@ export async function createHomeworkWithQuestions({
   deadline,
   attempts,
   type = "original", // Thêm type để phân biệt
+  studentViewPermission = "NO_VIEW",
+  blockViewAfterSubmit = false,
+  gradingMethod = "FIRST_ATTEMPT",
 }: {
   title: string;
   class_code: string;
@@ -40,6 +43,9 @@ export async function createHomeworkWithQuestions({
   deadline: string; // ISO string
   attempts: number;
   type?: string; // "original" hoặc "extracted"
+  studentViewPermission?: 'NO_VIEW' | 'SCORE_ONLY' | 'SCORE_AND_RESULT';
+  blockViewAfterSubmit?: boolean;
+  gradingMethod?: 'FIRST_ATTEMPT' | 'LATEST_ATTEMPT' | 'HIGHEST_ATTEMPT';
 }) {
   // 1. Xác thực người dùng
   const user = await getCurrentUser();
@@ -78,6 +84,9 @@ export async function createHomeworkWithQuestions({
         duration,
         maxAttempts: attempts,
         points,
+        studentViewPermission, // Thêm quyền xem điểm
+        blockViewAfterSubmit, // Thêm chặn xem lại đề
+        gradingMethod, // Thêm thiết lập bảng điểm
         classCode: classRecord.class_code,
         teacherId: teacher.id,
         attachments: {
@@ -120,6 +129,9 @@ export async function createHomeworkFromExtractedQuestions({
   startTime,
   deadline,
   attempts,
+  studentViewPermission = "NO_VIEW",
+  blockViewAfterSubmit = false,
+  gradingMethod = "FIRST_ATTEMPT",
 }: {
   title: string;
   class_code: string;
@@ -138,6 +150,9 @@ export async function createHomeworkFromExtractedQuestions({
   startTime: string;
   deadline: string;
   attempts: number;
+  studentViewPermission?: 'NO_VIEW' | 'SCORE_ONLY' | 'SCORE_AND_RESULT';
+  blockViewAfterSubmit?: boolean;
+  gradingMethod?: 'FIRST_ATTEMPT' | 'LATEST_ATTEMPT' | 'HIGHEST_ATTEMPT';
 }) {
   // Validation với homeworkSchema
   const totalPoints = Math.round(extractedQuestions.reduce((sum, q) => sum + q.point, 0) * 100) / 100;
@@ -192,6 +207,9 @@ export async function createHomeworkFromExtractedQuestions({
         duration,
         maxAttempts: attempts,
         points: totalPoints,
+        studentViewPermission, // Thêm quyền xem điểm
+        blockViewAfterSubmit, // Thêm chặn xem lại đề
+        gradingMethod, // Thêm thiết lập bảng điểm
         classCode: classRecord.class_code,
         teacherId: teacher.id,
       },
@@ -222,6 +240,17 @@ export const deleteHomework = async (
 ) => {
   const id = data.get("id") as string;
   try {
+    // Kiểm tra xem bài tập có tồn tại không trước khi xóa
+    const existingHomework = await prisma.homework.findUnique({
+      where: {
+        id: parseInt(id),
+      },
+    });
+
+    if (!existingHomework) {
+      return { success: false, error: true, message: "Bài tập không tồn tại hoặc đã được xóa" };
+    }
+
     await prisma.homework.delete({
       where: {
         id: parseInt(id),
@@ -231,7 +260,7 @@ export const deleteHomework = async (
     return { success: true, error: false };
   } catch (err) {
     console.log(err);
-    return { success: false, error: true };
+    return { success: false, error: true, message: "Có lỗi xảy ra khi xóa bài tập" };
   }
 };
 

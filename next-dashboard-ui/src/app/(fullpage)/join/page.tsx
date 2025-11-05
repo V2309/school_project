@@ -1,9 +1,12 @@
+//src/app/(fullpage)/join/[classCode]/page.tsx
 "use client";
 
 import React, { useState, useRef, KeyboardEvent, ClipboardEvent } from 'react';
 import { joinClassAction } from "@/lib/actions/class.action";
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
+
+import ApprovalModal from '@/components/modals/ApprovalModal';
 // Import thêm icon
 import { UserPlus, ArrowLeft, AlertCircle } from 'lucide-react';
 
@@ -173,52 +176,17 @@ export default function JoinClass() {
         {/* Help Text */}
         <div className="mt-6 text-center">
           <p className="text-xs text-gray-500">
-            Mã lớp gồm 5 ký tự (chữ cái và số).
+            Mã lớp gồm 5 ký tự chữ cái và số.
           </p>
         </div>
       </div>
 
       {/* Modal phê duyệt */}
       {showApprovalModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-md mx-4 transform animate-in fade-in duration-300">
-            {/* Icon thành công */}
-            <div className="flex flex-col items-center text-center">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
-                {/* Icon tick với animation */}
-                <div className="relative">
-                  <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
-                    <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-                  {/* Hiệu ứng confetti */}
-                  <div className="absolute -top-2 -left-2 w-3 h-3 bg-yellow-400 rounded-full animate-bounce"></div>
-                  <div className="absolute -top-1 -right-2 w-2 h-2 bg-blue-400 rounded-full animate-bounce delay-75"></div>
-                  <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-green-400 rounded-full animate-bounce delay-150"></div>
-                  <div className="absolute -bottom-2 -right-1 w-3 h-3 bg-purple-400 rounded-full animate-bounce delay-300"></div>
-                </div>
-              </div>
-              
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
-                Yêu cầu đã được gửi
-              </h3>
-              <p className="text-gray-600 mb-8 leading-relaxed">
-                Yêu cầu tham gia lớp của bạn đã được gửi đến giáo viên, chờ phê duyệt để vào lớp.
-              </p>
-              
-              <button
-                onClick={() => {
-                  setShowApprovalModal(false);
-                  router.push('/class');
-                }}
-                className="w-full bg-blue-600 text-white py-3.5 px-4 rounded-lg font-semibold text-base hover:bg-blue-700 transition-colors shadow-lg hover:shadow-blue-500/30"
-              >
-                Đã hiểu
-              </button>
-            </div>
-          </div>
-        </div>
+        <ApprovalModal 
+          onClose={() => setShowApprovalModal(false)}
+          redirectPath="/class"
+        />
       )}
     </div>
   );

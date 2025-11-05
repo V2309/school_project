@@ -17,10 +17,10 @@ export default function QRCodeModal({ isOpen, onClose, link, className, code }: 
 
   return (
     // Lớp nền mờ
-    <div className="fixed inset-0 z-100 flex items-center justify-center  backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center  backdrop-blur-sm p-4">
       
       {/* Nội dung Modal */}
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm mx-auto transform animate-in fade-in zoom-in-95 duration-300 z-100">
+      <div className="z-50 bg-white rounded-2xl shadow-xl w-full max-w-sm mx-auto transform animate-in fade-in zoom-in-95 duration-300 ">
         
         {/* Header Modal */}
         <div className="flex items-center justify-between p-5 border-b border-gray-200">

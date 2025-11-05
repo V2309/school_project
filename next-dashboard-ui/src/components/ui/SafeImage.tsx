@@ -1,3 +1,5 @@
+//./src/components/ui/SafeImage.tsx
+
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { processImageUrl } from '@/lib/utils';
@@ -55,6 +57,7 @@ export default function SafeImage({
         {...commonProps}
         src={imgSrc}
         fill
+        alt='safe image'
       />
     );
   }
@@ -65,6 +68,7 @@ export default function SafeImage({
       src={imgSrc}
       width={width}
       height={height}
+      alt='safe image'
     />
   );
 }

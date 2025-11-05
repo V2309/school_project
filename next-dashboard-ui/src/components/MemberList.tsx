@@ -5,7 +5,7 @@ import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import FormModal from "@/components/FormModal";
 // 1. Import component sidebar mới
-import ApprovalSidebar from "./ApprovalSidebar";
+import ApprovalSidebar from "./modals/ApprovalSidebar";
 // 2. Import kiểu dữ liệu từ page.tsx
 import { PendingRequest } from "@/app/(page)/class/[id]/member/page";
 

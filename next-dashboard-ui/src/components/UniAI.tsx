@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Upload, FileText, MessageCircle, Send, Loader2, BookOpen, Brain, Mic } from "lucide-react";
 import { useDropzone } from "react-dropzone";
-import { uploadDocuments, sendMessage, generatePodcast } from "@/app/api/chat/route";
+import { uploadDocuments, sendMessage, generatePodcast } from "@/lib/chatService";
 import ChatMessage from "./ChatMessage";
 
 type Role = "user" | "assistant";

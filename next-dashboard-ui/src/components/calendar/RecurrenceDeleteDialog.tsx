@@ -28,7 +28,7 @@ const RecurrenceDeleteDialog = ({
             Xóa sự kiện lặp lại
           </h3>
           <p className="text-sm text-gray-600 mt-1">
-            "{eventTitle}" là một phần của chuỗi {totalEvents} lịch học lặp lại
+            {eventTitle} là một phần của chuỗi {totalEvents} lịch học lặp lại
           </p>
         </div>
 

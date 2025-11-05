@@ -86,7 +86,7 @@ export default async function EditCoursePage({
                         Chỉnh sửa khóa học
                     </h1>
                     <p className="mt-2 text-gray-600">
-                        Chỉnh sửa khóa học "{course.title}" trong lớp {classRoom.name}
+                        Chỉnh sửa khóa học {course.title} trong lớp {classRoom.name}
                     </p>
                 </div>
 
