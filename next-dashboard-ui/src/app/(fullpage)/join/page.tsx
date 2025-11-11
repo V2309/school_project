@@ -1,4 +1,4 @@
-//src/app/(fullpage)/join/[classCode]/page.tsx
+//src/app/(fullpage)/join/page.tsx
 "use client";
 
 import React, { useState, useRef, KeyboardEvent, ClipboardEvent } from 'react';

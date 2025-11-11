@@ -21,6 +21,7 @@ export default async function HomeworkTestPage({ params }: { params: { id: strin
     content: q.content,
     options: q.options || [], // Sử dụng trường options dạng JSON
     point: q.point,
+    answer: q.answer, // Thêm đáp án đúng từ database
   }));
 
   const duration = homework.duration || 30;

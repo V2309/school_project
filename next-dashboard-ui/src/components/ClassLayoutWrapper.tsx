@@ -7,9 +7,10 @@ interface ClassLayoutWrapperProps {
   children: React.ReactNode;
   classDetail: any;
   role: string;
+  pendingRequestCount: number;
 }
 
-export default function ClassLayoutWrapper({ children, classDetail, role }: ClassLayoutWrapperProps) {
+export default function ClassLayoutWrapper({ children, classDetail, role, pendingRequestCount }: ClassLayoutWrapperProps) {
   const pathname = usePathname();
   
   // (Logic ẩn layout của bạn giữ nguyên)
@@ -21,7 +22,7 @@ export default function ClassLayoutWrapper({ children, classDetail, role }: Clas
     <div className="h-screen w-screen flex overflow-hidden">
       {/* Menu bên trái */}
       <div className="w-[25%] md:w-[20%] lg:w-[18%] h-full bg-white shadow-md border-r border-gray-400 flex-shrink-0 ">
-        <MenuClass classDetail={classDetail} role={role as "teacher" | "student"}/>
+        <MenuClass classDetail={classDetail} role={role as "teacher" | "student"} pendingRequestCount={pendingRequestCount} />
       </div>
 
       {/* Nội dung bên phải - CHỈ scroll area này */}

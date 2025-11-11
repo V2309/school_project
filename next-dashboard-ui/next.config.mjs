@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: true,
+  experimental: {
+    esmExternals: true,
+  },
+  transpilePackages: ["nextstepjs"],
   images: {
     remotePatterns: [
       { hostname: "images.pexels.com" },
@@ -12,17 +17,17 @@ const nextConfig = {
       { hostname: "images.unsplash.com" },
       { hostname: "source.unsplash.com" },
       // Thêm pattern để hỗ trợ nhiều subdomain
-      { 
+      {
         protocol: "https",
         hostname: "**",
-        pathname: "**"
-      }
+        pathname: "**",
+      },
     ],
     domains: [
       "source.unsplash.com",
       "ik.imagekit.io",
       "img.youtube.com",
-      "i.ytimg.com", 
+      "i.ytimg.com",
       "www.google.com",
       "google.com",
       "lh3.googleusercontent.com",
@@ -34,11 +39,11 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/(.*)',
+        source: "/(.*)",
         headers: [
           {
-            key: 'X-Frame-Options',
-            value: 'SAMEORIGIN',
+            key: "X-Frame-Options",
+            value: "SAMEORIGIN",
           },
         ],
       },

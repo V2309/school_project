@@ -44,7 +44,7 @@ export default function SelectHomeworkTypePage({ params }: { params: { id: strin
           <p className="text-center text-gray-500 mb-4">Nhận diện đề trắc nghiệm, tiếng anh từ file Word, PDF</p>
           <span className="bg-pink-500 text-white text-xs px-2 py-1 rounded mb-2">Mới</span>
           <button className="bg-blue-500 text-white px-6 py-2 rounded font-bold">Tải File (word, pdf)</button>
-          <button className="bg-gray-100 text-blue-600 px-6 py-2 rounded font-bold mt-2">Soạn thảo thông minh</button>
+     
         </div>
       </div>
       </div>

@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Breadcrumb from "@/components/Breadcrumb";
+import HomeworkFileUpload from "@/components/HomeworkFileUpload";
 
 interface QuizQuestion {
   question_number: number;
@@ -30,45 +31,15 @@ export default function AutoExtractPage({ params }: { params: { id: string } }) 
   const router = useRouter();
   const classId = params.id;
   
-  const [file, setFile] = useState<File | null>(null);
-  
-  // AI extraction states
   const [isExtracting, setIsExtracting] = useState(false);
   const [error, setError] = useState<string>("");
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
-
-    // Kiểm tra định dạng file
-    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    if (!allowedTypes.includes(selectedFile.type)) {
-      setError("Chỉ hỗ trợ file PDF và Word (.docx)");
-      return;
-    }
-
-    setFile(selectedFile);
+  const handleFileSelect = async (selectedFile: File, fileUrl: string) => {
     setIsExtracting(true);
     setError("");
 
     try {
-      // 1. Upload file tạm thời vào thư mục uploads để preview
-      const tempFormData = new FormData();
-      tempFormData.append('file', selectedFile);
-
-      const tempUploadResponse = await fetch('/api/upload-temp', {
-        method: 'POST',
-        body: tempFormData,
-      });
-
-      const tempUploadResult = await tempUploadResponse.json();
-
-      if (!tempUploadResult.success) {
-        setError("Có lỗi khi lưu file tạm thời");
-        return;
-      }
-
-      // 2. Trích xuất câu hỏi qua Flask API
+      // Trích xuất câu hỏi qua Flask API
       const extractFormData = new FormData();
       extractFormData.append('file', selectedFile);
 
@@ -80,33 +51,20 @@ export default function AutoExtractPage({ params }: { params: { id: string } }) 
       const extractResult = await extractResponse.json();
 
       if (extractResult.success) {
-        // Lưu dữ liệu vào localStorage kèm File object (như original)
+        // Lưu dữ liệu vào localStorage với file URL từ S3
         const extractedData = {
           ...extractResult,
           originalFile: {
-            file: selectedFile, // Lưu File object để upload S3 sau
-            tempUrl: tempUploadResult.url, // URL tạm thời để preview
+            url: fileUrl, // URL S3 đã upload
             name: selectedFile.name,
             type: selectedFile.type,
             size: selectedFile.size,
           }
         };
         
-        localStorage.setItem('extractedQuiz', JSON.stringify(extractedData, (key, value) => {
-          // Không serialize File object
-          if (key === 'file') return undefined;
-          return value;
-        }));
+        localStorage.setItem('extractedQuiz', JSON.stringify(extractedData));
         
-        // Lưu File object riêng vào sessionStorage (có thể lưu được)
-        sessionStorage.setItem('extractedQuizFile', JSON.stringify({
-          name: selectedFile.name,
-          type: selectedFile.type,
-          size: selectedFile.size,
-          lastModified: selectedFile.lastModified,
-        }));
-        
-        // Chuyển hướng ngay lập tức
+        // Chuyển hướng đến trang create
         router.push(`/class/${classId}/homework/add/create?type=extracted`);
       } else {
         setError(extractResult.error || "Có lỗi xảy ra khi xử lý file");
@@ -119,14 +77,19 @@ export default function AutoExtractPage({ params }: { params: { id: string } }) 
     }
   };
 
+  const handleFileError = (errorMessage: string) => {
+    setError(errorMessage);
+    setIsExtracting(false);
+  };
+
   return (
     <div className="w-full mx-auto h-full">
       <div className="flex flex-col h-full">
         <div className="w-full bg-white p-4 rounded-lg mb-4">
           <Breadcrumb
             items={[
-              { label: "Bài tập", href: `/class/${classId}/homework/list` },
-              { label: "Chọn dạng đề", href: `/class/${classId}/homework/add` },
+              { label: "Bài tập", href: `/teacher/class/${classId}/homework/list` },
+              { label: "Chọn dạng đề", href: `/teacher/class/${classId}/homework/add` },
               { label: "Tách câu tự động", active: true }
             ]}
           />
@@ -136,47 +99,25 @@ export default function AutoExtractPage({ params }: { params: { id: string } }) 
           <h1 className="text-2xl font-bold mb-6 text-center">Tải File Lên</h1>
           
           <div className="max-w-2xl mx-auto">
-            {/* Upload file */}
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
-              <div className="flex flex-col items-center">
-                <svg className="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                
-                {isExtracting ? (
-                  <div className="flex flex-col items-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-4"></div>
-                    <p className="text-lg font-medium text-blue-600">Đang xử lý file...</p>
-                    <p className="text-sm text-gray-500 mt-2">Vui lòng đợi trong giây lát</p>
-                  </div>
-                ) : (
-                  <>
-                    <h3 className="text-xl font-semibold text-gray-700 mb-2">Chọn file để tải lên</h3>
-                    <p className="text-gray-500 mb-6">Hỗ trợ file PDF và Word (.docx)</p>
-                    
-                    <input
-                      type="file"
-                      accept=".pdf,.docx"
-                      onChange={handleFileChange}
-                      className="hidden"
-                      id="file-upload"
-                    />
-                    <label
-                      htmlFor="file-upload"
-                      className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg cursor-pointer transition-colors"
-                    >
-                      Chọn File
-                    </label>
-                  </>
-                )}
-              </div>
-            </div>
+            <HomeworkFileUpload
+              onFileSelect={handleFileSelect}
+              onError={handleFileError}
+              isLoading={isExtracting}
+              label="Chọn file để trích xuất câu hỏi tự động"
+              className="mb-6"
+              accept=".pdf,.docx"
+            />
 
-            {/* Hiển thị tên file đã chọn */}
-            {file && !isExtracting && (
+            {/* Hiển thị trạng thái xử lý */}
+            {isExtracting && (
               <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-gray-600">File đã chọn:</p>
-                <p className="font-medium text-blue-800">{file.name}</p>
+                <div className="flex items-center gap-3">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                  <div>
+                    <p className="text-blue-800 font-medium">Đang trích xuất câu hỏi...</p>
+                    <p className="text-blue-600 text-sm">AI đang phân tích file của bạn, vui lòng đợi</p>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -191,8 +132,9 @@ export default function AutoExtractPage({ params }: { params: { id: string } }) 
             <div className="mt-8 text-center">
               <button
                 type="button"
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 transition-colors"
                 onClick={() => router.back()}
+                disabled={isExtracting}
               >
                 ← Quay lại chọn dạng đề
               </button>

@@ -11,6 +11,7 @@ const publicRoutes = [
   "/",
   "/sign-in", 
   "/sign-up",
+  "/dashboard"
 ];
 
 export async function middleware(req: NextRequest) {

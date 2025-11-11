@@ -30,6 +30,7 @@ interface Question {
   content: string;
   options: string[];
   point?: number;
+  answer?: string; // Thêm trường đáp án đúng
 }
 interface ExamTestProps {
   homework?: Homework;
@@ -315,7 +316,26 @@ export function TestHomeWork({
           <div>
             <div className="mb-1">Đáp án câu {current + 1}:</div>
             <div className="flex gap-2 mb-2">
-              {["A", "B", "C", "D"].map((opt) => (
+              {/* Tạo nút dựa trên số lượng options thực tế */}
+              {questions[current]?.options?.map((_, index) => {
+                const optionLetter = String.fromCharCode(65 + index);
+                return (
+                  <button
+                    key={optionLetter}
+                    className={`px-3 py-1 border rounded ${
+                      getAnswers()[questions[current].id] === optionLetter
+                        ? "bg-blue-500 text-white"
+                        : ""
+                    }`}
+                    onClick={() => handleSelect(questions[current].id, optionLetter)}
+                    type="button"
+                  >
+                    {optionLetter}
+                  </button>
+                );
+              }) || 
+              // Fallback nếu không có options
+              ["A", "B", "C", "D"].map((opt) => (
                 <button
                   key={opt}
                   className={`px-3 py-1 border rounded ${

@@ -44,7 +44,6 @@ export default async function HomeworkList({ params }: { params: { id: string } 
   const role = user?.role;
 
 
-
   return (
     <div className="px-4 pt-4 bg-white rounded-lg shadow-md flex flex-col h-full">
       <h1 className="text-2xl font-bold">Danh sách bài tập</h1>

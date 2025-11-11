@@ -247,7 +247,7 @@ export function HomeWorkInfo({
                         homework.gradingMethod === 'HIGHEST_ATTEMPT' ? 'Điểm cao nhất' :
                           'Điểm hiện tại'
                   }
-                  value={`${currentGrade}/${homework.points || 10} điểm`}
+                  value={`${currentGrade.toFixed(2)}/${homework.points || 10} điểm`}
                 />
               )}
               {/* Hiển thị thông báo khi không có quyền xem điểm và chưa hết hạn */}

@@ -1,0 +1,348 @@
+// components/HomeworkSettings.tsx
+"use client";
+
+// Giả định bạn có type này ở "@/types/homework"
+interface HomeworkFormData {
+  title: string;
+  duration: number;
+  startTime: string;
+  endTime: string;
+  maxAttempts: number;
+  studentViewPermission: 'NO_VIEW' | 'SCORE_ONLY' | 'SCORE_AND_RESULT';
+  gradingMethod: 'FIRST_ATTEMPT' | 'LATEST_ATTEMPT' | 'HIGHEST_ATTEMPT';
+  blockViewAfterSubmit: boolean;
+  isShuffleQuestions?: boolean;
+  isShuffleAnswers?: boolean;
+  // Thêm các trường khác nếu có
+}
+
+interface HomeworkSettingsProps {
+  data: HomeworkFormData;
+  onChange: (data: Partial<HomeworkFormData>) => void;
+  validationErrors?: Record<string, string>;
+  disabled?: boolean;
+  type?: 'original' | 'extracted'; // Thêm prop để phân biệt loại bài tập
+}
+
+// Icon ? (Dùng SVG cho đẹp và linh hoạt)
+const HelpIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    strokeWidth={1.5}
+    stroke="currentColor"
+    className="w-5 h-5 text-gray-400 cursor-help"
+
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z"
+    />
+  </svg>
+);
+
+// Component ToggleSwitch để thay thế checkbox
+const ToggleSwitch = ({
+  checked,
+  onChange,
+  disabled = false
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  disabled?: boolean;
+}) => (
+  <button
+    type="button"
+    role="switch"
+    aria-checked={checked}
+    onClick={() => onChange(!checked)}
+    disabled={disabled}
+    className={`relative inline-flex items-center h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent ${
+      checked ? 'bg-blue-600' : 'bg-gray-200'
+    } ${
+      disabled ? 'opacity-50 cursor-not-allowed' : ''
+    } transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+  >
+    <span
+      aria-hidden="true"
+      className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ${
+        checked ? 'translate-x-5' : 'translate-x-0'
+      } transition-transform duration-200 ease-in-out`}
+    />
+  </button>
+);
+
+export default function HomeworkSettings({
+  data,
+  onChange,
+  validationErrors = {},
+  disabled = false,
+  type = 'original' // Mặc định là original
+}: HomeworkSettingsProps) {
+  return (
+    // Card container
+    <div className="bg-white p-6 rounded-lg shadow-md max-w-2xl mx-auto">
+      <h2 className="text-xl font-bold mb-6">Thiết lập bài tập</h2>
+
+      {/* Tiêu đề */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-1">
+          Tiêu đề bài tập *
+        </label>
+        <input
+          type="text"
+
+          onChange={(e) => onChange({ title: e.target.value })}
+          className={`border rounded px-3 py-2 w-full ${
+            validationErrors.title ? 'border-red-500' : ''
+          }`}
+          disabled={disabled}
+          required
+        />
+        {validationErrors.title && (
+          <p className="text-red-500 text-sm mt-1">
+            {validationErrors.title}
+          </p>
+        )}
+      </div>
+
+      {/* Các cài đặt còn lại */}
+      <div className="space-y-4 border-t border-gray-200 pt-6">
+        {/* Thời lượng */}
+        <div className="flex justify-between items-start">
+          <div className="flex items-center space-x-3 pt-2">
+            <HelpIcon />
+            <label className="text-sm font-medium text-gray-800">
+              Thời lượng (phút) *
+            </label>
+          </div>
+          <div className="flex-shrink-0 w-64"> {/* <-- Đổi w-48 thành w-64 cho đồng bộ */}
+            <input
+              type="number"
+              min="1"
+              value={data.duration}
+              onChange={(e) => onChange({ duration: Number(e.target.value) })}
+              className={`border rounded px-3 py-2 w-full ${
+                validationErrors.duration ? 'border-red-500' : ''
+              }`}
+              disabled={disabled}
+            />
+            {validationErrors.duration && (
+              <p className="text-red-500 text-sm mt-1">
+                {validationErrors.duration}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Thời gian bắt đầu */}
+        <div className="flex justify-between items-start">
+          <div className="flex items-center space-x-3 pt-2">
+            <HelpIcon />
+            <label className="text-sm font-medium text-gray-800">
+              Thời gian bắt đầu *
+            </label>
+          </div>
+          <div className="flex-shrink-0 w-64">
+            <input
+              type="datetime-local"
+              value={data.startTime}
+              onChange={(e) => onChange({ startTime: e.target.value })}
+              className={`border rounded px-3 py-2 w-full ${
+                validationErrors.startTime ? 'border-red-500' : ''
+              }`}
+              disabled={disabled}
+            />
+            {validationErrors.startTime && (
+              <p className="text-red-500 text-sm mt-1">
+                {validationErrors.startTime}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Hạn chót */}
+        <div className="flex justify-between items-start">
+          <div className="flex items-center space-x-3 pt-2">
+            <HelpIcon />
+            <label className="text-sm font-medium text-gray-800">
+              Hạn chót nộp bài *
+            </label>
+          </div>
+          <div className="flex-shrink-0 w-64">
+            <input
+              type="datetime-local"
+              value={data.endTime}
+              onChange={(e) => onChange({ endTime: e.target.value })}
+              className={`border rounded px-3 py-2 w-full ${
+                validationErrors.endTime ? 'border-red-500' : ''
+              }`}
+              disabled={disabled}
+            />
+            {validationErrors.endTime && (
+              <p className="text-red-500 text-sm mt-1">
+                {validationErrors.endTime}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Số lần làm bài */}
+        <div className="flex justify-between items-start">
+          <div className="flex items-center space-x-3 pt-2">
+            <HelpIcon />
+            <label className="text-sm font-medium text-gray-800">
+              Số lần làm bài tối đa *
+            </label>
+          </div>
+          <div className="flex-shrink-0 w-64"> {/* <-- Đổi w-48 thành w-64 cho đồng bộ */}
+            <input
+              type="number"
+              min="1"
+              value={data.maxAttempts}
+              onChange={(e) => onChange({ maxAttempts: Number(e.target.value) })}
+              className={`border rounded px-3 py-2 w-full ${
+                validationErrors.maxAttempts ? 'border-red-500' : ''
+              }`}
+              disabled={disabled}
+            />
+            {validationErrors.maxAttempts && (
+              <p className="text-red-500 text-sm mt-1">
+                {validationErrors.maxAttempts}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Quyền xem điểm của học sinh (Dropdown) - CẬP NHẬT */}
+        <div className="flex justify-between items-center py-2">
+          <div className="flex items-center space-x-3">
+            <HelpIcon />
+            <label className="text-sm font-medium text-gray-800">
+              Quyền của học sinh
+            </label>
+          </div>
+          <div className="flex-shrink-0 w-64 relative"> {/* <-- Thêm w-64 và relative */}
+            <select
+              value={data.studentViewPermission}
+              onChange={(e) =>
+                onChange({ studentViewPermission: e.target.value as any })
+              }
+              disabled={disabled}
+              className="border rounded px-3 py-2 text-sm font-medium bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full appearance-none" /* <-- Thêm w-full và appearance-none */
+            >
+              <option value="NO_VIEW">Không được xem điểm</option>
+              <option value="SCORE_ONLY">Chỉ xem điểm tổng</option>
+              <option value="SCORE_AND_RESULT">Xem điểm và chi tiết</option>
+            </select>
+            {/* Mũi tên tùy chỉnh */}
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path d="M5.516 7.548c.436-.446 1.144-.446 1.58 0L10 10.405l2.904-2.857c.436-.446 1.144-.446 1.58 0 .436.446.436 1.17 0 1.615l-3.694 3.639c-.436.446-1.144.446-1.58 0L5.516 9.163c-.436-.446-.436-1.17 0-1.615z"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Phương pháp chấm điểm (Dropdown) - CẬP NHẬT */}
+        <div className="flex justify-between items-center py-2">
+          <div className="flex items-center space-x-3">
+            <HelpIcon />
+            <label className="text-sm font-medium text-gray-800">
+              Phương pháp chấm điểm
+            </label>
+          </div>
+          <div className="flex-shrink-0 w-64 relative"> {/* <-- Thêm w-64 và relative */}
+            <select
+              value={data.gradingMethod}
+              onChange={(e) =>
+                onChange({ gradingMethod: e.target.value as any })
+              }
+              disabled={disabled}
+              className="border rounded px-3 py-2 text-sm font-medium bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full appearance-none" /* <-- Thêm w-full và appearance-none */
+            >
+              <option value="FIRST_ATTEMPT">Lấy điểm lần làm bài đầu tiên</option>
+              <option value="LATEST_ATTEMPT">Lấy điểm lần làm bài mới nhất</option>
+              <option value="HIGHEST_ATTEMPT">Lấy điểm lần làm bài cao nhất</option>
+            </select>
+            {/* Mũi tên tùy chỉnh */}
+            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                <path d="M5.516 7.548c.436-.446 1.144-.446 1.58 0L10 10.405l2.904-2.857c.436-.446 1.144-.446 1.58 0 .436.446.436 1.17 0 1.615l-3.694 3.639c-.436.446-1.144.446-1.58 0L5.516 9.163c-.436-.446-.436-1.17 0-1.615z"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        {/* Chặn xem lại đề (Toggle) */}
+        <div className="flex justify-between items-center py-2">
+          <div className="flex items-center space-x-3">
+            <HelpIcon />
+            <label className="text-sm font-medium text-gray-800">
+              Chặn học sinh xem lại đề
+            </label>
+          </div>
+          <div className="flex-shrink-0">
+            <ToggleSwitch
+              checked={data.blockViewAfterSubmit}
+              onChange={(checked) =>
+                onChange({ blockViewAfterSubmit: checked })
+              }
+              disabled={disabled}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Shuffle Settings - chỉ hiển thị cho type extracted */}
+      {/* Đảo thứ tự câu hỏi và đáp án - chỉ hiển thị cho bài tập extracted */}
+      {type === 'extracted' && (
+        <>
+          {/* Đảo thứ tự câu trong đề */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Đảo thứ tự câu trong đề
+                </label>
+                <HelpIcon />
+              </div>
+              <div className="flex-shrink-0">
+                <ToggleSwitch
+                  checked={data.isShuffleQuestions || false}
+                  onChange={(checked) =>
+                    onChange({ isShuffleQuestions: checked })
+                  }
+                  disabled={disabled}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Đảo thứ tự câu trả lời */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Đảo thứ tự câu trả lời
+                </label>
+                <HelpIcon />
+              </div>
+              <div className="flex-shrink-0">
+                <ToggleSwitch
+                  checked={data.isShuffleAnswers || false}
+                  onChange={(checked) =>
+                    onChange({ isShuffleAnswers: checked })
+                  }
+                  disabled={disabled}
+                />
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

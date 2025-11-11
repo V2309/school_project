@@ -2,6 +2,7 @@
 import Navigation from "@/components/Navigation";
 import { usePathname } from "next/navigation";
 import { UserProvider } from "@/providers/UserProvider";
+import PusherListener from "@/components/PusherListener";
 export default function DashboardLayout({
   children,
 }: Readonly<{
@@ -38,6 +39,7 @@ export default function DashboardLayout({
           {children}
         </div>
       </div>
+      <PusherListener />
       </UserProvider>
   
   );

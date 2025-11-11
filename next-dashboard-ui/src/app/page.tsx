@@ -1,3 +1,5 @@
+
+
 import Link from "next/link"
 import Image from "next/image"
 import { Metadata } from "next"
@@ -210,6 +212,7 @@ export default function Home() {
                 </svg>
                 Xem Demo
               </Link>
+         
             </div>
 
             <div className="text-center">

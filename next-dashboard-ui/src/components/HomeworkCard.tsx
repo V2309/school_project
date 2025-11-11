@@ -122,7 +122,7 @@ export function HomeworkCard({ homework, role }: HomeworkCardProps) {
         {role === "student" && currentGrade !== null && shouldShowScore && (
           <div className="flex-shrink-0 ml-4">
             <div className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-              {currentGrade}/{maxPoints} điểm
+            {currentGrade.toFixed(2)}/{maxPoints} điểm
             </div>
           </div>
         )}

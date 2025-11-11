@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     return new Response(JSON.stringify({ 
       success: true, 
       isTeacher: true,
-      totalPoints,
+      totalPoints: Math.round(totalPoints * 100) / 100, // Làm tròn 2 chữ số thập phân
       questionAnswers,
       message: "Kết quả làm thử của giáo viên (không lưu vào hệ thống)"
     }), {
@@ -84,7 +84,7 @@ export async function POST(req: Request) {
       timeSpent: body.timeSpent, // Thời gian làm bài (tính bằng giây)
       homework: { connect: { id: homeworkId } },
       student: { connect: { id: studentId } },
-      grade: totalPoints,
+      grade: Math.round(totalPoints * 100) / 100, // Làm tròn 2 chữ số thập phân
       questionAnswers: {
         create: questionAnswers,
       },

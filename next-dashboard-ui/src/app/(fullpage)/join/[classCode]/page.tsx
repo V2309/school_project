@@ -1,3 +1,5 @@
+
+// join/[classCode]/page.tsx
 import prisma from "@/lib/prisma";
 import { getCurrentUser } from "@/hooks/auth";
 import { redirect } from "next/navigation";

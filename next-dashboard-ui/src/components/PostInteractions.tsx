@@ -1,226 +1,145 @@
 "use client";
 
 import {
-  likePost,
-  addComment as addCommentAction,
+  likePost,
+  addComment as addCommentAction,
 } from "@/lib/actions/post.action";
-
-import { socket } from "@/socket";
-
+// ĐÃ XÓA: import { socket } from "@/socket";
 import { useUser } from "@/hooks/useUser";
-
-// BƯỚC 1: Import thêm useCallback
-
 import { useOptimistic, useState, useEffect, useCallback } from "react";
-
 import SimpleComments from "./SimpleComments";
 
+// ... (Giữ nguyên Interfaces và state) ...
 const PostInteractions = ({
-  username,
-
-  postId,
-
-  count,
-
-  isLiked,
-
-  classCode,
+  username,
+  postId,
+  count,
+  isLiked,
+  classCode,
 }: {
-  username: string;
-
-  postId: number;
-
-  count: { likes: number; comments: number };
-
-  isLiked: boolean;
-
-  classCode?: string;
+  username: string;
+  postId: number;
+  count: { likes: number; comments: number };
+  isLiked: boolean;
+  classCode?: string;
 }) => {
-  const [state, setState] = useState({
-    likes: count.likes,
+  const [state, setState] = useState({
+    likes: count.likes,
+    isLiked: isLiked,
+    comments: count.comments,
+  });
+  const [showComments, setShowComments] = useState(false);
+  const [commentsList, setCommentsList] = useState<any[]>([]);
+  const [commentsLoaded, setCommentsLoaded] = useState(false);
 
-    isLiked: isLiked,
-
-    comments: count.comments,
-  });
-
-  const [showComments, setShowComments] = useState(false);
-
-  const [commentsList, setCommentsList] = useState<any[]>([]);
-
-  const [commentsLoaded, setCommentsLoaded] = useState(false);
-
-  // BƯỚC 2: Bọc fetchComments trong useCallback
-
+  // ... (Giữ nguyên fetchComments và useEffect) ...
   const fetchComments = useCallback(async () => {
-    try {
-      const response = await fetch(`/api/posts/${postId}/comments`);
+    try {
+      const response = await fetch(`/api/posts/${postId}/comments`);
+      if (response.ok) {
+        const comments = await response.json();
+        setCommentsList(comments);
+        setCommentsLoaded(true);
+      }
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+    }
+  }, [postId]); 
 
-      if (response.ok) {
-        const comments = await response.json();
+  useEffect(() => {
+    if (showComments && !commentsLoaded) {
+      fetchComments();
+    }
+  }, [showComments, commentsLoaded, fetchComments]); 
 
-        setCommentsList(comments);
+  const { user } = useUser();
 
-        setCommentsLoaded(true);
-      }
-    } catch (error) {
-      console.error("Error fetching comments:", error);
-    }
-  }, [postId]); // Thêm dependency
+  const likeAction = async () => {
+    if (!user) return;
 
-  // BƯỚC 3: Cập nhật useEffect (thêm [fetchComments])
+    // === ĐÃ XÓA LOGIC SOCKET.EMIT ===
+    // (Toàn bộ logic gửi thông báo
+    //  đã được chuyển vào Server Action 'likePost')
+    // === ===
 
-  // Load comments when user opens comment section for the first time
+    addOptimisticCount("like");
+    
+    // Gọi Server Action
+    await likePost(postId); 
 
-  useEffect(() => {
-    if (showComments && !commentsLoaded) {
-      fetchComments();
-    }
-  }, [showComments, commentsLoaded, fetchComments]); // <-- ĐÃ SỬA
+    setState((prev) => {
+      return {
+        ...prev,
+        likes: prev.isLiked ? prev.likes - 1 : prev.likes + 1,
+        isLiked: !prev.isLiked,
+      };
+    });
+  };
 
-  const { user } = useUser();
-
-  const likeAction = async () => {
-    // ... (logic likeAction không đổi)
-
-    if (!user) return;
-
-    if (!optimisticCount.isLiked) {
-      const notificationData = {
-        receiverUsername: username,
-
-        data: {
-          senderUsername: user.username,
-
-          type: "like",
-
-          link: `/${username}/status/${postId}`,
-        },
-      };
-
-      console.log("Sending notification:", notificationData);
-
-      socket.emit("sendNotification", notificationData);
-    }
-
-    addOptimisticCount("like");
-
-    await likePost(postId);
-
-    setState((prev) => {
-      return {
-        ...prev,
-
-        likes: prev.isLiked ? prev.likes - 1 : prev.likes + 1,
-
-        isLiked: !prev.isLiked,
-      };
-    });
-  };
-
-  // BƯỚC 4: Bọc addComment trong useCallback
+  // ... (Giữ nguyên addComment, addCommentOptimistic, useOptimistic, và JSX) ...
+  // (Không cần thay đổi gì ở phần comment)
 
   const addComment = useCallback(
-    async (postId: number, commentText: string) => {
-      try {
-        // Call the actual server action to save comment
+    async (postId: number, commentText: string) => {
+      try {
+        const formData = new FormData();
+        formData.append("postId", postId.toString());
+        formData.append("username", username);
+        formData.append("desc", commentText);
+        if (classCode) {
+          formData.append("classCode", classCode);
+        }
+        const result = await addCommentAction(
+          { success: false, error: false },
+          formData
+        );
+        if (result.success) {
+          await fetchComments(); 
+        } else {
+          console.error("Failed to save comment to server");
+        }
+      } catch (error) {
+        console.error("Failed to add comment:", error);
+      }
+    },
+    [username, classCode, fetchComments]
+  ); 
 
-        const formData = new FormData();
+  const addCommentOptimistic = useCallback(
+    (commentText: string) => {
+      if (!user) return;
+      const newComment = {
+        id: Date.now(),
+        desc: commentText,
+        createdAt: new Date(),
+        user: {
+          username: user.username,
+          img: user.img || null, // Cập nhật để dùng ảnh user
+        },
+      };
+      setCommentsList((prev) => [...prev, newComment]);
+      setState((prev) => ({
+        ...prev,
+        comments: prev.comments + 1,
+      }));
+      addComment(postId, commentText); 
+    },
+    [user, postId, addComment]
+  ); 
 
-        formData.append("postId", postId.toString());
-
-        formData.append("username", username);
-
-        formData.append("desc", commentText);
-
-        if (classCode) {
-          formData.append("classCode", classCode);
-        }
-
-        const result = await addCommentAction(
-          { success: false, error: false },
-          formData
-        );
-
-        if (result.success) {
-          // Optionally refresh comments from server to get real IDs
-
-          await fetchComments(); // Dùng hàm fetchComments đã được bọc
-        } else {
-          console.error("Failed to save comment to server");
-
-          // Could revert optimistic update here
-        }
-      } catch (error) {
-        console.error("Failed to add comment:", error);
-
-        // On error, you could revert the optimistic update
-      }
-    },
-    [username, classCode, fetchComments]
-  ); // Thêm dependencies
-
-  // BƯỚC 5: Bọc addCommentOptimistic trong useCallback
-
-  const addCommentOptimistic = useCallback(
-    (commentText: string) => {
-      if (!user) return;
-
-      // Tạo comment mới optimistically
-
-      const newComment = {
-        id: Date.now(), // temporary ID
-
-        desc: commentText,
-
-        createdAt: new Date(),
-
-        user: {
-          username: user.username,
-
-          img: null, // (Nên dùng user.img nếu có)
-        },
-      };
-
-      // Add to comments list
-
-      setCommentsList((prev) => [...prev, newComment]);
-
-      // Update comment count
-
-      setState((prev) => ({
-        ...prev,
-
-        comments: prev.comments + 1,
-      }));
-
-      // Submit to server in background
-
-      addComment(postId, commentText); // Dùng hàm addComment đã được bọc
-    },
-    [user, postId, addComment]
-  ); // Thêm dependencies
-
-  const [optimisticCount, addOptimisticCount] = useOptimistic(
-    // ... (logic optimisticCount không đổi)
-
-    state,
-
-    (prev, type: "like") => {
-      if (type === "like") {
-        return {
-          ...prev,
-
-          likes: prev.isLiked ? prev.likes - 1 : prev.likes + 1,
-
-          isLiked: !prev.isLiked,
-        };
-      }
-
-      return prev;
-    }
-  );
-
+  const [optimisticCount, addOptimisticCount] = useOptimistic(
+    state,
+    (prev, type: "like") => {
+      if (type === "like") {
+        return {
+          ...prev,
+          likes: prev.isLiked ? prev.likes - 1 : prev.likes + 1,
+          isLiked: !prev.isLiked,
+        };
+      }
+      return prev;
+    }
+  );
   return (
     <div>
       {/* INTERACTION BUTTONS */}

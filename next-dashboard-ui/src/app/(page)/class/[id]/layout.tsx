@@ -96,11 +96,20 @@ export default async function ClassLayout({
       </div>
     );
   }
-
+let pendingRequestCount = 0;
+if (user.role === 'teacher') {
+    // Chỉ giáo viên mới cần đếm yêu cầu chờ
+    pendingRequestCount = await prisma.classJoinRequest.count({
+        where: {
+            classCode: classDetail.class_code,
+            status: 'PENDING'
+        }
+    });
+}
   // 5. Gửi dữ liệu đã được tối ưu xuống Client Component
   return (
    <QueryProvider>
-     <ClassLayoutWrapper classDetail={classDetail} role={user.role as string}>
+     <ClassLayoutWrapper classDetail={classDetail} role={user.role as string} pendingRequestCount={pendingRequestCount}>
       {children}
      </ClassLayoutWrapper>
    </QueryProvider>

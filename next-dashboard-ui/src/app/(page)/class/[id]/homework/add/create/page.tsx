@@ -1,9 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createHomeworkFromExtractedQuestions } from '@/lib/actions/actions';
-import { homeworkSchema } from '@/lib/formValidationSchema';
+import { createHomeworkFromExtractedQuestions } from "@/lib/actions/actions";
 import Breadcrumb from "@/components/Breadcrumb";
+import HomeworkSettings from "@/components/HomeworkSettings";
+import QuestionCardGrid from "@/components/QuestionCardGrid";
+import ExtractedQuestionGrid from "@/components/ExtractedQuestionGrid";
+import { useHomeworkForm } from "@/hooks/useHomeworkForm";
 
 interface QuizQuestion {
   question_number: number;
@@ -19,8 +22,6 @@ interface QuizData {
   quiz_data: QuizQuestion[];
   total_questions: number;
   originalFile?: {
-    file?: File; // File object để upload S3 sau
-    tempUrl?: string; // URL tạm thời để preview
     url?: string; // URL S3 sau khi upload
     name: string;
     type: string;
@@ -37,72 +38,32 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
   const [quizData, setQuizData] = useState<QuizData | null>(null);
   const [selectedQuestions, setSelectedQuestions] = useState<number[]>([]);
   const [isCreating, setIsCreating] = useState(false);
-  
-  // Thêm step state giống original
   const [step, setStep] = useState(1);
-  
-  // State cho chức năng đảo câu hỏi và đáp án
-  const [isShuffleQuestionsEnabled, setIsShuffleQuestionsEnabled] = useState(false);
-  const [isShuffleAnswersEnabled, setIsShuffleAnswersEnabled] = useState(false);
-  
-  // State giống như trang original
-  const [numQuestions, setNumQuestions] = useState<number>(0);
-  const [answers, setAnswers] = useState<string[]>(Array(1).fill(''));
-  const [quickAnswers, setQuickAnswers] = useState<string>("");
-  const [points, setPoints] = useState<number>(100);
-  
-  // Bước 2: thiết lập bài tập
-  const [title, setTitle] = useState<string>("");
-  const [duration, setDuration] = useState<number>(60);
-  const [startTime, setStartTime] = useState<string>("");
-  const [deadline, setDeadline] = useState<string>("");
-  const [attempts, setAttempts] = useState<number>(1);
   const [error, setError] = useState<string>("");
   
-  // Thêm các trường mới cho quyền học sinh
-  const [studentViewPermission, setStudentViewPermission] = useState<'NO_VIEW' | 'SCORE_ONLY' | 'SCORE_AND_RESULT'>('NO_VIEW');
-  const [blockViewAfterSubmit, setBlockViewAfterSubmit] = useState<boolean>(false);
+
   
-  // Thêm thiết lập bảng điểm
-  const [gradingMethod, setGradingMethod] = useState<'FIRST_ATTEMPT' | 'LATEST_ATTEMPT' | 'HIGHEST_ATTEMPT'>('FIRST_ATTEMPT');
+  // Sử dụng hook giống trang original
+  const {
+    formData,
+    updateFormData,
+    validationErrors,
+    validateForm,
+    calculateQuestionPoints
+  } = useHomeworkForm();
   
-  // State cho validation errors
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  // State cho câu hỏi và đáp án
+  const [numQuestions, setNumQuestions] = useState<number>(0);
+  const [answers, setAnswers] = useState<string[]>([]);
 
   useEffect(() => {
     if (type === 'extracted') {
       const savedData = localStorage.getItem('extractedQuiz');
       if (savedData) {
         const data = JSON.parse(savedData);
+        setQuizData(data);
         
-        // Lấy File object từ sessionStorage hoặc tạo lại từ temp file
-        const fileInfo = sessionStorage.getItem('extractedQuizFile');
-        if (fileInfo) {
-          const fileData = JSON.parse(fileInfo);
-          // Tạo lại File object từ temp URL
-          if (data.originalFile?.tempUrl) {
-            fetch(data.originalFile.tempUrl)
-              .then(response => response.blob())
-              .then(blob => {
-                const file = new File([blob], fileData.name, { 
-                  type: fileData.type,
-                  lastModified: fileData.lastModified 
-                });
-                data.originalFile.file = file;
-                setQuizData(data);
-              })
-              .catch(() => {
-                // Nếu không lấy được file, vẫn set data nhưng không có file
-                setQuizData(data);
-              });
-          } else {
-            setQuizData(data);
-          }
-        } else {
-          setQuizData(data);
-        }
-        
-        setTitle(`Bài tập từ ${data.filename}`);
+        updateFormData({ title: `Bài tập từ ${data.filename}` });
         
         // Chọn tất cả câu hỏi mặc định
         const questionNumbers = data.quiz_data
@@ -120,9 +81,12 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
           }
         });
         setAnswers(initialAnswers);
+        
+        // Chuyển thẳng đến step 2 (tùy chỉnh đáp án) thay vì step 1
+        setStep(2);
       }
     }
-  }, [type]);
+  }, [type,updateFormData]); // Bỏ updateFormData để tránh infinite loop
 
   const toggleQuestionSelection = (questionNumber: number) => {
     setSelectedQuestions(prev => 
@@ -144,150 +108,70 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
     setSelectedQuestions([]);
   };
 
-  // Logic giống trang original
   const handleNumQuestionsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const num = parseInt(e.target.value) || 1;
     setNumQuestions(num);
-    setAnswers((prev) => {
-      const newArr = [...prev];
-      newArr.length = num;
-      return newArr.fill('', prev.length, num);
+    setAnswers(prev => {
+      const newAnswers = new Array(num).fill('');
+      // Copy existing answers if available
+      for (let i = 0; i < Math.min(prev.length, num); i++) {
+        newAnswers[i] = prev[i] || '';
+      }
+      return newAnswers;
     });
   };
 
   const handleAnswerChange = (index: number, value: string) => {
-    const newAnswers = [...answers];
-    newAnswers[index] = value;
-    setAnswers(newAnswers);
-  };
-
-  const handleQuickAnswers = () => {
-    const arr = quickAnswers.trim().split("").slice(0, numQuestions);
-    setAnswers((prev) => {
-      const newArr = [...prev];
-      for (let i = 0; i < arr.length; i++) {
-        newArr[i] = arr[i];
-      }
-      return newArr;
+    setAnswers(prev => {
+      const newAnswers = [...prev];
+      newAnswers[index] = value;
+      return newAnswers;
     });
   };
 
+  const handleBulkAnswerChange = (newAnswers: string[]) => {
+    setAnswers(newAnswers);
+  };
+
   const handlePointsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPoints(parseInt(e.target.value) || 0);
-    // Clear validation error
-    if (validationErrors.points) {
-      setValidationErrors(prev => ({ ...prev, points: '' }));
-    }
-  };
-
-  // Validation handlers
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTitle(e.target.value);
-    if (validationErrors.title) {
-      setValidationErrors(prev => ({ ...prev, title: '' }));
-    }
-  };
-
-  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDuration(Number(e.target.value));
-    if (validationErrors.duration) {
-      setValidationErrors(prev => ({ ...prev, duration: '' }));
-    }
-  };
-
-  const handleStartTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setStartTime(e.target.value);
-    if (validationErrors.startTime) {
-      setValidationErrors(prev => ({ ...prev, startTime: '' }));
-    }
-  };
-
-  const handleDeadlineChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDeadline(e.target.value);
-    if (validationErrors.endTime) {
-      setValidationErrors(prev => ({ ...prev, endTime: '' }));
-    }
-  };
-
-  const handleAttemptsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAttempts(Number(e.target.value));
-    if (validationErrors.maxAttempts) {
-      setValidationErrors(prev => ({ ...prev, maxAttempts: '' }));
-    }
+    const points = parseInt(e.target.value) || 0;
+    updateFormData({ points });
   };
 
   const handleCreateHomework = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsCreating(true);
     setError('');
-    setValidationErrors({});
     
     try {
       if (!quizData) throw new Error('Vui lòng chọn file bài tập');
       
-      // Validation với homeworkSchema - sử dụng điểm gốc thay vì tính lại
-      const totalPoints = points;
-      const formData = {
-        title,
-        startTime,
-        endTime: deadline,
-        duration,
-        maxAttempts: attempts,
-        points: totalPoints,
-        numQuestions,
-        classCode: classId,
-      };
-      
-      const validationResult = homeworkSchema.safeParse(formData);
-      
-      if (!validationResult.success) {
-        const errors: Record<string, string> = {};
-        validationResult.error.errors.forEach((error) => {
-          const path = error.path[0];
-          if (path && typeof path === 'string') {
-            errors[path] = error.message;
-          }
-        });
-        setValidationErrors(errors);
-        setError('Vui lòng kiểm tra lại thông tin đã nhập');
-        return;
+      // Validate form
+      if (!validateForm({ classCode: classId, numQuestions })) {
+        throw new Error('Vui lòng kiểm tra lại thông tin đã nhập');
       }
       
       let originalFileUrl = quizData.originalFile?.url;
       
-      // Nếu có file tạm thời, upload lên S3 (giống như original)
-      if (quizData.originalFile?.file && !originalFileUrl) {
-        const uploadFormData = new FormData();
-        uploadFormData.append('file', quizData.originalFile.file);
-        uploadFormData.append('classCode', classId);
-        
-        const uploadResponse = await fetch('/api/upload', {
-          method: 'POST',
-          body: uploadFormData,
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error('Failed to upload file to S3');
-        }
-
-        const uploadResult = await uploadResponse.json();
-        originalFileUrl = uploadResult.fileUrl;
+      // File đã được upload lên S3 từ trang auto
+      if (!originalFileUrl) {
+        throw new Error('Không tìm thấy file đã upload');
       }
       
       // Chuẩn bị dữ liệu từ quiz_data gốc
       let processedQuizData = [...quizData.quiz_data];
 
       // Nếu có bật đảo, gọi API Flask để xử lý
-      if (isShuffleQuestionsEnabled || isShuffleAnswersEnabled) {
-        const shuffleResponse = await fetch('http://localhost:5000/api/shuffle-quiz', {
+      if (formData.isShuffleQuestions || formData.isShuffleAnswers) {
+        const shuffleResponse = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/shuffle-quiz`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
             quiz_data: processedQuizData,
-            shuffle_questions: isShuffleQuestionsEnabled,
-            shuffle_answers: isShuffleAnswersEnabled,
+            shuffle_questions: formData.isShuffleQuestions,
+            shuffle_answers: formData.isShuffleAnswers,
           }),
         });
 
@@ -301,52 +185,43 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
         }
       }
 
-      // Chuẩn bị dữ liệu cho homework dạng extracted với điểm chính xác
-      const basePointPerQuestion = Number((points / numQuestions).toFixed(2));
-      let totalAssigned = 0;
-
+      // Tạo questions với điểm số
+      const questionsWithPoints = calculateQuestionPoints(numQuestions, formData.points);
+      
       const extractedQuestions = answers.map((answer, index) => {
         const originalQuestion = processedQuizData[index];
         
-        let pointForThis;
-        if (index === numQuestions - 1) {
-          // Câu cuối cùng: gán phần còn lại để đảm bảo tổng = points
-          pointForThis = Math.round((points - totalAssigned) * 100) / 100;
-        } else {
-          pointForThis = basePointPerQuestion;
-          totalAssigned = Math.round((totalAssigned + pointForThis) * 100) / 100;
-        }
-
         return {
           question_number: index + 1,
           question_text: originalQuestion?.question_text || `Câu ${index + 1}`,
           options: originalQuestion?.options || [],
           correct_answer_char: originalQuestion?.correct_answer_char || answer,
           correct_answer_index: originalQuestion?.correct_answer_index || 0,
-          point: pointForThis,
+          point: questionsWithPoints[index]?.point || 0,
         };
       });
 
       // Gọi function mới cho homework dạng extracted
       await createHomeworkFromExtractedQuestions({
-        title,
+        title: formData.title,
         class_code: classId,
         originalFileUrl,
         originalFileName: quizData.originalFile?.name,
         originalFileType: quizData.originalFile?.type,
         extractedQuestions,
-        duration,
-        startTime,
-        deadline,
-        attempts,
-        studentViewPermission,
-        blockViewAfterSubmit,
-        gradingMethod,
+        duration: formData.duration,
+        startTime: formData.startTime,
+        deadline: formData.endTime,
+        attempts: formData.maxAttempts,
+        studentViewPermission: formData.studentViewPermission,
+        blockViewAfterSubmit: formData.blockViewAfterSubmit,
+        gradingMethod: formData.gradingMethod,
+        isShuffleQuestions: formData.isShuffleQuestions,
+        isShuffleAnswers: formData.isShuffleAnswers,
       });
       
       // Xóa dữ liệu đã lưu và chuyển về danh sách bài tập
       localStorage.removeItem('extractedQuiz');
-      sessionStorage.removeItem('extractedQuizFile');
       router.push(`/class/${classId}/homework/list`);
       
     } catch (error) {
@@ -374,210 +249,61 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
   }
 
   return (
-    <div className="w-full mx-auto overflow-x-hidden">
-      <div className=" bg-white p-4 rounded-lg mb-4">
-        <Breadcrumb
-          items={[
-            { label: "Bài tập", href: `/class/${classId}/homework/list` },
-            { label: "Chọn dạng đề", href: `/class/${classId}/homework/add` },
-            { label: "Tách câu tự động", href: `/class/${classId}/homework/add/auto` },
-            { label: "Tạo bài tập", active: true }
-          ]}
-        />
-      </div>
-
-    
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-4">
-        {/* Bên trái: Danh sách câu hỏi đã tách */}
-        <div className="border rounded-lg p-4">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold">
-              Câu Hỏi Đã Tách ({quizData.total_questions} câu)
-            </h2>
-            
-            {/* Các nút đảo câu hỏi và đáp án */}
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setIsShuffleQuestionsEnabled(!isShuffleQuestionsEnabled)}
-                className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
-                  isShuffleQuestionsEnabled
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                {isShuffleQuestionsEnabled ? '✓ Đảo câu' : 'Đảo câu'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsShuffleAnswersEnabled(!isShuffleAnswersEnabled)}
-                className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
-                  isShuffleAnswersEnabled
-                    ? 'bg-green-500 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                {isShuffleAnswersEnabled ? '✓ Đảo đáp án' : 'Đảo đáp án'}
-              </button>
-            </div>
-          </div>
-          
-          <div className="border rounded p-4 min-h-[600px] h-[80vh] overflow-auto">
-            <div className="space-y-4">
-              {quizData.quiz_data
-                .filter((item: any) => typeof item.question_number === 'number')
-                .map((question: any, index: number) => (
-                  <div 
-                    key={index}
-                    className={`border rounded-lg p-4 ${
-                      selectedQuestions.includes(question.question_number)
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200'
-                    }`}
-                  >
-                    <div className="flex items-start">
-                      <input
-                        type="checkbox"
-                        checked={selectedQuestions.includes(question.question_number)}
-                        onChange={() => toggleQuestionSelection(question.question_number)}
-                        className="mt-1 mr-3"
-                      />
-                      <div className="flex-1">
-                        <h4 className="font-bold text-lg mb-3">
-                        {question.question_text}
-                        </h4>
-                        <div className="grid grid-cols-1 gap-2">
-                          {question.options.map((option: string, optIndex: number) => (
-                            <div 
-                              key={optIndex}
-                              className={`p-2 rounded text-sm ${
-                                question.correct_answer_index === optIndex
-                                  ? 'bg-green-100 border border-green-300'
-                                  : 'bg-white border border-gray-200'
-                              }`}
-                            >
-                              {option}
-                              {question.correct_answer_index === optIndex && (
-                                <span className="ml-2 text-green-600 font-bold">(Đáp án)</span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </div>
+    <div className="w-full mx-auto h-full">
+      <div className="flex flex-col h-full">
+        <div className="w-full bg-white p-4 rounded-lg mb-4">
+          <Breadcrumb
+            items={[
+              { label: "Bài tập", href: `/class/${classId}/homework/list` },
+              { label: "Chọn dạng đề", href: `/class/${classId}/homework/add` },
+              { label: "Tách câu tự động", href: `/class/${classId}/homework/add/auto` },
+              { label: "Tạo bài tập", active: true }
+            ]}
+          />
         </div>
 
-        {/* Bên phải: Logic 2 step giống original */}
-        <div className="border rounded-lg p-4 ">
+        <div className="bg-white flex-1 px-4 py-8">
           {step === 1 ? (
+            // Step 1: Review Extracted Questions  
             <>
-              <h2 className="text-lg font-semibold mb-4">Câu Hỏi</h2>
+              <h1 className="text-2xl font-bold mb-6 text-center">Xem Lại Câu Hỏi Đã Tách</h1>
               
-              {/* Số lượng câu hỏi và tổng điểm */}
-              <div className="mb-4 flex gap-4 items-end overflow-x-auto">
-                <div>
-                  <label className="block mb-2">Số lượng câu hỏi:</label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={numQuestions}
-                    onChange={(e) => {
-                      const value = parseInt(e.target.value) || 0;
-                      setNumQuestions(value);
-                      setAnswers((prev) => {
-                        const newArr = [...prev];
-                        newArr.length = value;
-                        return newArr.fill('', prev.length, value);
-                      });
-                      // Clear validation error
-                      if (validationErrors.numQuestions) {
-                        setValidationErrors(prev => ({ ...prev, numQuestions: '' }));
-                      }
-                    }}
-                    className={`border rounded px-3 py-2 w-20 ${validationErrors.numQuestions ? 'border-red-500' : ''}`}
-                  />
-                  {validationErrors.numQuestions && (
-                    <p className="text-red-500 text-sm mt-1">{validationErrors.numQuestions}</p>
-                  )}
-                </div>
-                <div>
-                  <label className="block mb-2">Tổng điểm:</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="1000"
-                    value={points}
-                    onChange={handlePointsChange}
-                    className={`border rounded px-3 py-2 w-24 ${validationErrors.points ? 'border-red-500' : ''}`}
-                  />
-                  {validationErrors.points && (
-                    <p className="text-red-500 text-sm mt-1">{validationErrors.points}</p>
-                  )}
-                </div>
-              </div>
-              
-              {/* Nhập nhanh đáp án */}
-              <div className="mb-4 flex gap-2 items-center">
-                <input
-                  type="text"
-                  placeholder="Nhập chuỗi đáp án (VD: ACDABCAD)"
-                  value={quickAnswers}
-                  onChange={e => setQuickAnswers(e.target.value.toUpperCase())}
-                  className="border rounded px-3 py-2 w-64"
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Bên trái: Danh sách câu hỏi đã tách */}
+                <ExtractedQuestionGrid
+                  questions={quizData.quiz_data}
+                  selectedQuestions={selectedQuestions}
+                  onToggleQuestion={toggleQuestionSelection}
+                  onSelectAll={selectAllQuestions}
+                  onDeselectAll={deselectAllQuestions}
                 />
-                <button
-                  type="button"
-                  onClick={handleQuickAnswers}
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                >
-                  Nhập nhanh đáp án
-                </button>
-              </div>
-              
-              <p className='mb-4'>Số lượng đáp án đã nhập: <b className='text-red-600'>{quickAnswers.length}</b></p>
-              
-              {/* Grid đáp án và điểm số */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                {Array.from({ length: numQuestions }).map((_, index) => (
-                  <div key={index} className="border rounded p-3 bg-blue-50">
-                    <div className="font-semibold text-blue-700 mb-2">Câu {index + 1}</div>
-                    <div className="mb-2">
-                      <label className="block text-sm mb-1">Đáp án</label>
-                      <input
-                        type="text"
-                        value={answers[index] || ''}
-                        onChange={(e) => handleAnswerChange(index, e.target.value)}
-                        className="w-full border rounded px-3 py-2"
-                      />
+
+                {/* Bên phải: Thông tin file */}
+                <div className="border rounded-lg p-4">
+                  <h2 className="text-lg font-semibold mb-4">Thông Tin File</h2>
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
+                      </svg>
+                      <span className="font-medium text-gray-700">
+                        {quizData.originalFile?.name || 'Unknown'}
+                      </span>
                     </div>
-                    <div>
-                      <label className="block text-sm mb-1">Điểm</label>
-                      <input
-                        type="number"
-                        value={
-                          numQuestions > 0 
-                            ? index === numQuestions - 1 
-                              ? (points - (Number((points / numQuestions).toFixed(2)) * (numQuestions - 1))).toFixed(2)
-                              : (Number((points / numQuestions).toFixed(2))).toFixed(2)
-                            : '0'
-                        }
-                        readOnly
-                        className="w-full border rounded px-3 py-2 bg-gray-100 text-gray-700"
-                      />
+                    <div className="text-sm text-gray-600">
+                      Tổng số câu hỏi: <span className="font-bold text-blue-600">{quizData.total_questions}</span>
+                    </div>
+                    <div className="text-sm text-gray-600">
+                      Đã chọn: <span className="font-bold text-green-600">{selectedQuestions.length}</span> câu
                     </div>
                   </div>
-                ))}
+                </div>
               </div>
 
-              {/* Nút hành động Step 1 */}
-              <div className="mt-6 flex gap-4">
+              <div className="mt-6 flex gap-4 justify-center">
                 <button
                   type="button"
-                  className="bg-gray-400 text-white px-6 py-2 rounded"
+                  className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500"
                   onClick={() => router.back()}
                 >
                   Quay lại
@@ -586,197 +312,172 @@ export default function CreateHomeworkPage({ params }: { params: { id: string } 
                   type="button"
                   className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
                   onClick={() => setStep(2)}
-                  disabled={numQuestions === 0}
+                  disabled={selectedQuestions.length === 0}
                 >
-                  Tiếp theo
+                  Tùy chỉnh đáp án ({selectedQuestions.length} câu)
+                </button>
+              </div>
+            </>
+          ) : step === 2 ? (
+            // Step 2: Customize Answers - Layout như trong ảnh
+            <>
+              <h1 className="text-2xl font-bold mb-6 text-center">Tạo Bài Tập Từ Câu Hỏi Đã Tách</h1>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Bên trái: Danh sách câu hỏi đã tách (như trong ảnh) */}
+                <div className="border rounded-lg p-4 bg-red-50 border-red-300">
+                  <h2 className="text-lg font-semibold mb-4 text-red-700">Câu Hỏi Đã Tách ({quizData.total_questions} câu)</h2>
+                  <p className="text-red-600 text-sm mb-4 font-medium">
+                    Các câu hỏi đã được tách từ file đề thi
+                  </p>
+                  
+                  <div className="space-y-4 max-h-[500px] overflow-y-auto">
+                    {quizData.quiz_data
+                      .filter((item: any) => typeof item.question_number === 'number')
+                      .map((question: any, index: number) => (
+                        <div 
+                          key={index}
+                          className={`border rounded-lg p-4 bg-white ${
+                            selectedQuestions.includes(question.question_number)
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedQuestions.includes(question.question_number)}
+                              onChange={() => toggleQuestionSelection(question.question_number)}
+                              className="mt-1 w-4 h-4 text-blue-600"
+                            />
+                            <div className="flex-1">
+                              <h4 className="font-bold text-base mb-2">
+                                {question.question_text}
+                              </h4>
+                              
+                              <div className="space-y-1 text-sm">
+                                {question.options?.map((option: string, optIndex: number) => {
+                                  const optionLabel = String.fromCharCode(65 + optIndex);
+                                  const isCorrect = question.correct_answer_char === optionLabel ||
+                                    (option && question.correct_answer_char && option.trim().startsWith(question.correct_answer_char));
+                                  
+                                  return (
+                                    <div 
+                                      key={optIndex}
+                                      className={`p-2 rounded ${isCorrect ? 'bg-green-100 text-green-800 font-medium' : 'bg-gray-50 text-gray-700'}`}
+                                    >
+                                      {option.trim().match(/^[A-D]\./i) ? option : `${optionLabel}. ${option}`}
+                                      {isCorrect && (
+                                        <span className="ml-2 text-green-600 font-bold">(Đáp án)</span>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+
+                {/* Bên phải: Tùy chỉnh đáp án */}
+                <QuestionCardGrid
+                  numQuestions={numQuestions}
+                  answers={answers}
+                  totalPoints={formData.points}
+                  onNumQuestionsChange={handleNumQuestionsChange}
+                  onAnswerChange={handleAnswerChange}
+                  onPointsChange={handlePointsChange}
+                  onBulkAnswerChange={handleBulkAnswerChange}
+                />
+              </div>
+
+              {/* Thông báo trạng thái đảo */}
+              {(formData.isShuffleQuestions || formData.isShuffleAnswers) && (
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800 font-medium mb-1">⚠️ Chế độ đảo đề đã được bật:</p>
+                  <ul className="text-sm text-yellow-700 space-y-1">
+                    {formData.isShuffleQuestions && <li>• Thứ tự câu hỏi sẽ được đảo ngẫu nhiên</li>}
+                    {formData.isShuffleAnswers && <li>• Thứ tự đáp án sẽ được đảo ngẫu nhiên</li>}
+                  </ul>
+                </div>
+              )}
+
+              <div className="mt-6 flex gap-4 justify-center">
+                <button
+                  type="button"
+                  className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500"
+                  onClick={() => router.back()}
+                >
+                  Quay lại
+                </button>
+                <button
+                  type="button"
+                  className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+                  onClick={() => setStep(3)}
+                >
+                  Cài đặt bài tập
                 </button>
               </div>
             </>
           ) : (
+            // Step 3: Homework Settings
             <>
-              <h2 className="text-lg font-semibold mb-4">Thiết lập bài tập</h2>
+              <h1 className="text-2xl font-bold mb-6 text-center">Cài Đặt Bài Tập</h1>
               
-              {/* Thông báo trạng thái đảo */}
-              {(isShuffleQuestionsEnabled || isShuffleAnswersEnabled) && (
-                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="text-sm text-yellow-800 font-medium mb-1">⚠️ Chế độ đảo đề đã được bật:</p>
-                  <ul className="text-sm text-yellow-700 space-y-1">
-                    {isShuffleQuestionsEnabled && <li>• Câu hỏi sẽ được đảo thứ tự ngẫu nhiên</li>}
-                    {isShuffleAnswersEnabled && <li>• Đáp án trong mỗi câu sẽ được đảo thứ tự ngẫu nhiên</li>}
-                  </ul>
-                </div>
-              )}
-              
-              <form onSubmit={handleCreateHomework}>
-                <div className="mb-4">
-                  <label className="block mb-2">Tên bài tập</label>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={handleTitleChange}
-                    className={`border rounded px-3 py-2 w-full ${validationErrors.title ? 'border-red-500' : ''}`}
-                    required
-                  />
-                  {validationErrors.title && (
-                    <p className="text-red-500 text-sm mt-1">{validationErrors.title}</p>
-                  )}
-                </div>
-                
-                <div className="mb-4">
-                  <label className="block mb-2">Thời lượng làm bài (phút):</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="600"
-                    value={duration}
-                    onChange={handleDurationChange}
-                    className={`border rounded px-3 py-2 w-32 ${validationErrors.duration ? 'border-red-500' : ''}`}
-                  />
-                  {validationErrors.duration && (
-                    <p className="text-red-500 text-sm mt-1">{validationErrors.duration}</p>
-                  )}
-                </div>
-                
-                <div className="mb-4">
-                  <label className="block mb-2">Thời gian bắt đầu:</label>
-                  <input
-                    type="datetime-local"
-                    value={startTime}
-                    onChange={handleStartTimeChange}
-                    className={`border rounded px-3 py-2 w-64 ${validationErrors.startTime ? 'border-red-500' : ''}`}
-                  />
-                  {validationErrors.startTime && (
-                    <p className="text-red-500 text-sm mt-1">{validationErrors.startTime}</p>
-                  )}
-                  <p className="text-gray-500 text-xs mt-1">Thời gian bắt đầu phải sau thời điểm hiện tại</p>
-                </div>
-                
-                <div className="mb-4">
-                  <label className="block mb-2">Hạn chót nộp bài:</label>
-                  <input
-                    type="datetime-local"
-                    value={deadline}
-                    onChange={handleDeadlineChange}
-                    className={`border rounded px-3 py-2 w-64 ${validationErrors.endTime ? 'border-red-500' : ''}`}
-                  />
-                  {validationErrors.endTime && (
-                    <p className="text-red-500 text-sm mt-1">{validationErrors.endTime}</p>
-                  )}
-                  <p className="text-gray-500 text-xs mt-1">Hạn chót phải sau thời gian bắt đầu</p>
-                </div>
-                
-                <div className="mb-4">
-                  <label className="block mb-2">Số lần làm bài:</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    value={attempts}
-                    onChange={handleAttemptsChange}
-                    className={`border rounded px-3 py-2 w-32 ${validationErrors.maxAttempts ? 'border-red-500' : ''}`}
-                  />
-                  {validationErrors.maxAttempts && (
-                    <p className="text-red-500 text-sm mt-1">{validationErrors.maxAttempts}</p>
-                  )}
-                </div>
-                
-                {/* Thiết lập bảng điểm */}
-                <div className="mb-4">
-                  <label className="block mb-2">Thiết lập bảng điểm:</label>
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="gradingMethod"
-                        value="FIRST_ATTEMPT"
-                        checked={gradingMethod === 'FIRST_ATTEMPT'}
-                        onChange={e => setGradingMethod(e.target.value as 'FIRST_ATTEMPT' | 'LATEST_ATTEMPT' | 'HIGHEST_ATTEMPT')}
-                        className="w-4 h-4 text-blue-600"
-                      />
-                      <div>
-                        <span className="text-sm font-medium">Lấy điểm lần làm bài đầu tiên</span>
-                        <p className="text-xs text-gray-500">Điểm cuối cùng sẽ là điểm của lần làm bài đầu tiên</p>
-                      </div>
-                    </label>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Bên trái: Câu hỏi đã tách (hiển thị trong phần cài đặt như yêu cầu) */}
+                <ExtractedQuestionGrid
+                  questions={quizData.quiz_data}
+                  selectedQuestions={selectedQuestions}
+                  onToggleQuestion={toggleQuestionSelection}
+                  onSelectAll={selectAllQuestions}
+                  onDeselectAll={deselectAllQuestions}
+                />
 
-                    <label className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="gradingMethod"
-                        value="LATEST_ATTEMPT"
-                        checked={gradingMethod === 'LATEST_ATTEMPT'}
-                        onChange={e => setGradingMethod(e.target.value as 'FIRST_ATTEMPT' | 'LATEST_ATTEMPT' | 'HIGHEST_ATTEMPT')}
-                        className="w-4 h-4 text-blue-600"
-                      />
-                      <div>
-                        <span className="text-sm font-medium">Lấy điểm lần làm bài mới nhất</span>
-                        <p className="text-xs text-gray-500">Điểm cuối cùng sẽ là điểm của lần làm bài gần đây nhất</p>
-                      </div>
-                    </label>
-
-                    <label className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="gradingMethod"
-                        value="HIGHEST_ATTEMPT"
-                        checked={gradingMethod === 'HIGHEST_ATTEMPT'}
-                        onChange={e => setGradingMethod(e.target.value as 'FIRST_ATTEMPT' | 'LATEST_ATTEMPT' | 'HIGHEST_ATTEMPT')}
-                        className="w-4 h-4 text-blue-600"
-                      />
-                      <div>
-                        <span className="text-sm font-medium">Lấy điểm lần làm bài cao nhất</span>
-                        <p className="text-xs text-gray-500">Điểm cuối cùng sẽ là điểm cao nhất trong tất cả các lần làm</p>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Quyền của học sinh */}
-                <div className="mb-4">
-                  <label className="block mb-2">Quyền xem điểm của học sinh:</label>
-                  <select
-                    value={studentViewPermission}
-                    onChange={e => setStudentViewPermission(e.target.value as 'NO_VIEW' | 'SCORE_ONLY' | 'SCORE_AND_RESULT')}
-                    className="border rounded px-3 py-2 w-64"
-                  >
-                    <option value="NO_VIEW">Không được xem điểm</option>
-                    <option value="SCORE_ONLY">Chỉ xem điểm tổng</option>
-                    <option value="SCORE_AND_RESULT">Xem điểm và kết quả chi tiết</option>
-                  </select>
-                </div>
-                
-                <div className="mb-4">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={blockViewAfterSubmit}
-                      onChange={e => setBlockViewAfterSubmit(e.target.checked)}
-                      className="w-4 h-4"
+                {/* Bên phải: Cài đặt homework */}
+                <div className="border rounded-lg p-4">
+                  <form onSubmit={handleCreateHomework} className="space-y-6">
+                    <h2 className="text-lg font-semibold mb-4">Cài Đặt Bài Tập</h2>
+                    
+                    <HomeworkSettings
+                      data={formData}
+                      onChange={updateFormData}
+                      validationErrors={validationErrors}
+                      disabled={isCreating}
+                      type="extracted"
                     />
-                    <span>Chặn học sinh xem lại đề sau khi nộp bài</span>
-                  </label>
-                </div>
 
-                {/* Nút hành động Step 2 */}
-                <div className="flex gap-4 mt-6">
-                  <button
-                    type="button"
-                    className="bg-gray-400 text-white px-6 py-2 rounded"
-                    onClick={() => setStep(1)}
-                  >
-                    Quay lại
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isCreating}
-                    className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {isCreating ? 'Đang tạo...' : 'Tạo Bài Tập'}
-                  </button>
+                    {error && (
+                      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-red-700">{error}</p>
+                      </div>
+                    )}
+
+                    <div className="flex gap-4">
+                      <button
+                        type="button"
+                        className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500"
+                        onClick={() => setStep(2)}
+                        disabled={isCreating}
+                      >
+                        Quay lại
+                      </button>
+                      <button
+                        type="submit"
+                        className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 disabled:opacity-50 flex items-center gap-2"
+                        disabled={isCreating}
+                      >
+                        {isCreating && (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        )}
+                        {isCreating ? 'Đang tạo...' : 'Tạo bài tập'}
+                      </button>
+                    </div>
+                  </form>
                 </div>
-                
-                {error && <p className="text-red-500 mt-2">{error}</p>}
-              </form>
+              </div>
             </>
           )}
         </div>

@@ -1,9 +1,10 @@
+
+// menu-class.tsx
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import Image from "next/image"; // Vẫn giữ cho Avatar (nếu bạn có)
 import Link from "next/link";
-import { useState } from "react";
+import { RefAttributes, useState , ForwardRefExoticComponent } from "react";
 import LeaveClassDialog from "./LeaveClassDialog";
 import { toast } from 'react-toastify'; 
 import QRCodeModal from './modals/QRCodeModal'; // Import Modal QR Code
@@ -21,8 +22,12 @@ import {
   Settings,
   UserCircle, // Icon fallback
   Copy, 
-  QrCode, 
+  QrCode,
+  HeartOff, 
+  Group,
+  LucideProps,
 } from "lucide-react";
+import { group } from "console";
 
 interface MenuClassProps {
   classDetail: {
@@ -38,7 +43,17 @@ interface MenuClassProps {
     grade?: { level?: string } | null;
   };
   role: "teacher" | "student";
+  pendingRequestCount: number ;
 }
+
+type IconComponent = ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>;
+
+type MenuLink = {
+  href: string;
+  label: string;
+  icon: IconComponent;
+  badge: number; // Quan trọng: Khai báo badge là 'number'
+};
 
 // Map icon tới component
 const menuIcons = {
@@ -49,9 +64,10 @@ const menuIcons = {
   scoretable: BarChart3,
   lectures: Clapperboard,
   documents: Files,
+  groupchat: Group,
 };
 
-export default function MenuClass({ classDetail, role }: MenuClassProps) {
+export default function MenuClass({ classDetail, role, pendingRequestCount }: MenuClassProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
@@ -64,15 +80,21 @@ export default function MenuClass({ classDetail, role }: MenuClassProps) {
     ? `${window.location.origin}/join/${class_code}` 
     : '';
 
-  const links = [
-    { href: `/class/${class_code}/newsfeed`, label: "Bảng tin", icon: menuIcons.newsfeed },
-    { href: `/class/${class_code}/schedule`, label: "Lịch học", icon: menuIcons.schedule },
-    { href: `/class/${class_code}/member`, label: "Thành viên", icon: menuIcons.members },
-    { href: `/class/${class_code}/homework/list`, label: "Bài tập", icon: menuIcons.homework },
-    { href: `/class/${class_code}/scoretable`, label: "Bảng điểm", icon: menuIcons.scoretable },
-    { href: `/class/${class_code}/video`, label: "Bài giảng", icon: menuIcons.lectures },
-    { href: `/class/${class_code}/documents`, label: "Tài liệu", icon: menuIcons.documents },
-  ];
+  const links: MenuLink[] = [
+    { href: `/class/${class_code}/newsfeed`, label: "Bảng tin", icon: menuIcons.newsfeed, badge: 0 },
+    { href: `/class/${class_code}/schedule`, label: "Lịch học", icon: menuIcons.schedule, badge: 0 },
+    { 
+      href: `/class/${class_code}/member`, 
+      label: "Thành viên", 
+      icon: menuIcons.members, 
+      badge: role === 'teacher' ? pendingRequestCount : 0 
+    }, 
+    { href: `/class/${class_code}/groupchat`, label: "Nhóm chat", icon: menuIcons.groupchat, badge: 0 },
+    { href: `/class/${class_code}/homework/list`, label: "Bài tập", icon: menuIcons.homework, badge: 0 },
+    { href: `/class/${class_code}/scoretable`, label: "Bảng điểm", icon: menuIcons.scoretable, badge: 0 },
+    { href: `/class/${class_code}/video`, label: "Bài giảng", icon: menuIcons.lectures, badge: 0 },
+    { href: `/class/${class_code}/documents`, label: "Tài liệu", icon: menuIcons.documents, badge: 0 },
+  ];
   
   const handleCopy = () => {
     if (!joinLink) return;
@@ -171,7 +193,7 @@ export default function MenuClass({ classDetail, role }: MenuClassProps) {
               key={link.href}
               href={link.href}
               title={link.label} // Tooltip cho mobile
-              className={`flex items-center gap-3 p-2 md:p-3 justify-center md:justify-start rounded-lg transition-colors duration-200 ${
+              className={` relative flex items-center gap-3 p-2 md:p-3 justify-center md:justify-start rounded-lg transition-colors duration-200 ${
                 isActive
                   ? "bg-blue-50 text-blue-700 font-bold"
                   : "text-gray-600 hover:text-blue-700 hover:bg-gray-50"
@@ -184,6 +206,12 @@ export default function MenuClass({ classDetail, role }: MenuClassProps) {
               />
               {/* Responsive: Ẩn chữ trên mobile */}
               <span className="hidden md:inline text-sm md:text-sm">{link.label}</span>
+               {/* 5. LOGIC HIỂN THỊ CHẤM ĐỎ */}
+              {link.badge > 0 && (
+                <span className="absolute top-1 right-1 md:top-1/2 md:-translate-y-1/2 md:right-3 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                  {link.badge > 9 ? '9+' : link.badge}
+                </span>
+              )}
             </Link>
           );
         })}

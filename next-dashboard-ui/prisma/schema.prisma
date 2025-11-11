@@ -52,6 +52,11 @@ model User {
   fileViews FileView[]
   courseViews CourseView[]
   videoViews VideoView[]
+
+  notificationsReceived Notification[]  @relation("recipient")
+  notificationsActed    Notification[]  @relation("actor")
+
+  messages  Message[]
 }
 
 model Student {
@@ -154,6 +159,8 @@ model Class {
   
   // Join requests relation
   joinRequests ClassJoinRequest[]
+
+  messages  Message[]
 }
 
 model Subject {
@@ -331,6 +338,13 @@ model Homework {
   
   // thiết lập điểm
   gradingMethod GradingMethod @default(FIRST_ATTEMPT)
+
+  // có đảo đề không
+  isShuffleQuestions Boolean @default(false)
+
+  // có đảo đáp án không
+
+  isShuffleAnswers   Boolean @default(false)
 
   // Thêm field mới: Chặn xem lại đề sau khi nộp bài
   blockViewAfterSubmit Boolean @default(false)
@@ -688,4 +702,60 @@ enum RequestStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+
+model Notification {
+  id        Int   @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  // Người nhận thông báo
+  recipientId String
+  recipient   User     @relation("recipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  // Người thực hiện hành động (ví dụ: người like)
+  actorId     String
+  actor       User     @relation("actor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  // Loại thông báo
+  type        NotificationType
+
+  // Nội dung (ví dụ: "đã bình luận về bài đăng của bạn")
+  // Bạn có thể tạo tự động ở frontend dựa trên 'type'
+  content   String?
+
+  // Đường link khi bấm vào thông báo
+  link      String
+
+  // Trạng thái đã đọc/chưa đọc
+  isRead    Boolean  @default(false)
+
+  // Index để query nhanh
+  @@index([recipientId, isRead])
+}
+
+enum NotificationType {
+  POST_LIKE       // Có người like bài viết
+  POST_COMMENT    // Có người bình luận
+  CLASS_APPROVAL  // Yêu cầu tham gia lớp được duyệt
+  NEW_HOMEWORK    // Có bài tập mới
+  NEW_POST        // Có bài đăng mới trong lớp
+  SUBMISSION_GRADED // Bài nộp đã được chấm điểm
+  STUDENT_JOINED_CLASS // Có học sinh mới tham gia lớp
+}
+
+model Message {
+  id        Int   @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  content   String   @db.Text // Nội dung tin nhắn
+
+  // Người gửi
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Phòng chat (lớp học)
+  classCode String   @map("class_code")
+  class     Class    @relation(fields: [classCode], references: [class_code], onDelete: Cascade)
+
+  @@index([classCode, createdAt])
 }

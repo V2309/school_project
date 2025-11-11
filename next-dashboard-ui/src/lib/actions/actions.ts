@@ -132,6 +132,8 @@ export async function createHomeworkFromExtractedQuestions({
   studentViewPermission = "NO_VIEW",
   blockViewAfterSubmit = false,
   gradingMethod = "FIRST_ATTEMPT",
+  isShuffleQuestions = false,
+  isShuffleAnswers = false,
 }: {
   title: string;
   class_code: string;
@@ -153,6 +155,8 @@ export async function createHomeworkFromExtractedQuestions({
   studentViewPermission?: 'NO_VIEW' | 'SCORE_ONLY' | 'SCORE_AND_RESULT';
   blockViewAfterSubmit?: boolean;
   gradingMethod?: 'FIRST_ATTEMPT' | 'LATEST_ATTEMPT' | 'HIGHEST_ATTEMPT';
+  isShuffleQuestions?: boolean;
+  isShuffleAnswers?: boolean;
 }) {
   // Validation với homeworkSchema
   const totalPoints = Math.round(extractedQuestions.reduce((sum, q) => sum + q.point, 0) * 100) / 100;
@@ -210,6 +214,8 @@ export async function createHomeworkFromExtractedQuestions({
         studentViewPermission, // Thêm quyền xem điểm
         blockViewAfterSubmit, // Thêm chặn xem lại đề
         gradingMethod, // Thêm thiết lập bảng điểm
+        isShuffleQuestions, // Lưu trạng thái đảo câu hỏi
+        isShuffleAnswers, // Lưu trạng thái đảo đáp án
         classCode: classRecord.class_code,
         teacherId: teacher.id,
       },

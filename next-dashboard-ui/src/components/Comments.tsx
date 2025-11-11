@@ -7,7 +7,6 @@ import { Post as PostType } from "@prisma/client";
 import { useFormState, useFormStatus } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import { addComment } from "@/lib/actions/post.action";
-import { socket } from "@/socket";
 import Image from "next/image";
 
 type CommentWithDetails = PostType & {
@@ -57,27 +56,7 @@ const Comments = ({
     formAction(formData);
   };
 
-  useEffect(() => {
-    if (state.success) {
-      setSubmitting(false);
-      socket.emit("sendNotification", {
-        receiverUsername: username,
-        data: {
-          senderUsername: user?.username,
-          type: "comment",
-          link: `/${username}/status/${postId}`,
-        },
-      });
-      
-      // Refresh comments từ API để có data mới nhất
-      if (onCommentSuccess) {
-        onCommentSuccess();
-      }
-    }
-    if (state.error) {
-      setSubmitting(false);
-    }
-  }, [state.success, state.error, username, user?.username, postId, onCommentSuccess]);
+
 
   // Component để hiển thị trạng thái submit
   function SubmitButton() {

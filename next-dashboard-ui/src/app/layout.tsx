@@ -5,11 +5,14 @@ import "./globals.css";
 import { ToastContainer } from "react-toastify";
 import "react-datepicker/dist/react-datepicker.css";
 import "react-toastify/dist/ReactToastify.css";
+
 const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Docus School - Quản lý lớp học trực tuyến",
   description: "Next.js School Management System",
 };
+
+
 
 export default function RootLayout({
   children,
@@ -19,6 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
+     
 
         {children}
 
@@ -34,6 +38,7 @@ export default function RootLayout({
           pauseOnHover
           theme="light"
         />
+ 
       </body>
     </html>
   );

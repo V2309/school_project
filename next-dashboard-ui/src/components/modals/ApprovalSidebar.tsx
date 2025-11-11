@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from "next/image";
 import { PendingRequest } from "@/app/(page)/class/[id]/member/page";
-import { approveJoinRequest, rejectJoinRequest } from '@/lib/actions/class.action'; // Import actions
+import { approveJoinRequest, rejectJoinRequest , approveAllRequests, rejectAllRequests} from '@/lib/actions/class.action'; // Import actions
 import { toast } from 'react-toastify';
 import { useRouter } from 'next/navigation';
 
@@ -39,12 +39,47 @@ export default function ApprovalSidebar({ requests, classCode }: ApprovalSidebar
   };
   
   // TODO: Implement approveAll/rejectAll
-  const handleApproveAll = () => {
-     toast.info("Chức năng đang phát triển");
-  }
-  const handleRejectAll = () => {
-     toast.info("Chức năng đang phát triển");
-  }
+// --- ĐÃ CẬP NHẬT HÀM NÀY ---
+  const handleApproveAll = async () => {
+    if (requests.length === 0) {
+      toast.info("Không có yêu cầu nào để phê duyệt.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await approveAllRequests(classCode);
+      if (result.success) {
+        toast.success(result.message || "Đã phê duyệt tất cả!");
+        router.refresh();
+      } else {
+        toast.error(result.error || "Lỗi khi phê duyệt hàng loạt.");
+      }
+    } catch (err) {
+      toast.error("Lỗi máy chủ, vui lòng thử lại.");
+    }
+    setLoading(false);
+  }
+
+  // --- ĐÃ CẬP NHẬT HÀM NÀY ---
+  const handleRejectAll = async () => {
+    if (requests.length === 0) {
+      toast.info("Không có yêu cầu nào để từ chối.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const result = await rejectAllRequests(classCode);
+      if (result.success) {
+        toast.success(result.message || "Đã từ chối tất cả!");
+        router.refresh();
+      } else {
+        toast.error(result.error || "Lỗi khi từ chối hàng loạt.");
+      }
+    } catch (err) {
+      toast.error("Lỗi máy chủ, vui lòng thử lại.");
+    }
+    setLoading(false);
+  }
 
   return (
     <div className="bg-white p-4 border-l  shadow-sm h-full">
