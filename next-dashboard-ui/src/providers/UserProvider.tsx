@@ -56,9 +56,10 @@ export function UserProvider({ children }: UserProviderProps) {
     };
 
     window.addEventListener("user-logged-in", handleLogin);
-
+window.addEventListener("profile-updated", handleLogin);
     return () => {
       window.removeEventListener("user-logged-in", handleLogin);
+window.removeEventListener("profile-updated", handleLogin);
     };
   }, [fetchUser]);
 

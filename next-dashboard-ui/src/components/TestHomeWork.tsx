@@ -55,12 +55,36 @@ export function TestHomeWork({
   const [submission, setSubmission] = useState<any>(null); // Lưu kết quả bài làm
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const questionRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
-  // 1. Định nghĩa handleSubmit (bằng useCallback)
-  const handleSubmit = useCallback(async () => {
+  // 1. Function để hiện modal xác nhận
+  const handleSubmitClick = useCallback(() => {
+    if (!homework) return;
+    
+    const currentAnswers =
+      role === "teacher" ? answers : sessionDataRef.current?.answers || {};
+
+    // Chỉ validate cho học sinh
+    if (role === "student") {
+      const questionIds = questions.map((q) => q.id);
+      const unanswered = questionIds.filter((id) => !currentAnswers[id]);
+      if (unanswered.length > 0) {
+        toast.error(`Bạn chưa trả lời các câu: ${unanswered.join(", ")}`);
+        return; // Ngăn hiện modal
+      }
+    }
+
+    // Hiện modal xác nhận
+    setShowConfirmModal(true);
+  }, [homework, role, answers, questions]);
+
+  // 2. Function thực hiện nộp bài (sau khi xác nhận)
+  const handleConfirmSubmit = useCallback(async () => {
     // Phải kiểm tra homework bên trong
     if (!homework) return;
+
+    setShowConfirmModal(false); // Đóng modal
 
     // Dùng 'sessionDataRef' để lấy giá trị mới nhất
     const currentAnswers =
@@ -73,49 +97,44 @@ export function TestHomeWork({
       role,
     });
 
-    // Chỉ validate cho học sinh
-    if (role === "student") {
-      const questionIds = questions.map((q) => q.id);
-      const unanswered = questionIds.filter((id) => !currentAnswers[id]);
-      if (unanswered.length > 0) {
-        toast.error(`Bạn chưa trả lời các câu: ${unanswered.join(", ")}`);
-        return; // Ngăn nộp bài
-      }
-    }
-
     const timeSpent =
       role === "teacher" ? 0 : sessionDataRef.current?.getTimeSpent() || 0;
 
-    const response = await fetch("/api/homework/submissions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        homeworkId: homework.id,
-        studentId: userId,
-        answers: currentAnswers,
-        role,
-        timeSpent,
-        file: {
-          name: homework.fileName,
-          type: homework.fileType,
-          url: homework.fileUrl,
-          size: homework.fileSize || 0,
-        },
-      }),
-    });
-    const result = await response.json();
+    try {
+      const response = await fetch("/api/homework/submissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          homeworkId: homework.id,
+          studentId: userId,
+          answers: currentAnswers,
+          role,
+          timeSpent,
+          file: {
+            name: homework.fileName,
+            type: homework.fileType,
+            url: homework.fileUrl,
+            size: homework.fileSize || 0,
+          },
+        }),
+      });
+      const result = await response.json();
 
-    if (result.success && role === "student") {
-      toast.success("Đã nộp bài!");
-      sessionDataRef.current?.clearSession(); // Xóa trạng thái
-      router.push(
-        `/class/${classCode}/homework/${homework.id}/detail?utid=${result.submission.id}`
-      );
-    } else if (result.success && role === "teacher") {
-      toast.success("Đã nộp bài!");
-      router.push(`/class/${classCode}/homework/list`);
-    } else {
-      toast.error(result.error || "Có lỗi xảy ra khi nộp bài.");
+      if (result.success && role === "student") {
+        toast.success("Đã nộp bài!");
+        sessionDataRef.current?.clearSession(); // Xóa trạng thái
+        router.push(
+          `/class/${classCode}/homework/${homework.id}/detail?utid=${result.submission.id}`
+        );
+      } else if (result.success && role === "teacher") {
+        toast.success("Đã nộp bài!");
+        router.push(`/class/${classCode}/homework/list`);
+      } else {
+        toast.error(result.error || "Có lỗi xảy ra khi nộp bài.");
+      }
+    } catch (error) {
+      toast.error("Có lỗi xảy ra khi nộp bài.");
+      console.error("Submit error:", error);
     }
   }, [homework, role, answers, userId, questions, classCode, router]);
 
@@ -123,7 +142,7 @@ export function TestHomeWork({
   const sessionData = useHomeworkSession({
     homeworkId: homework?.id || 0,
     duration,
-    onTimeUp: handleSubmit, // Truyền hàm đã bọc
+    onTimeUp: handleConfirmSubmit, // Truyền hàm đã bọc
     role,
   });
 
@@ -373,13 +392,58 @@ export function TestHomeWork({
           </button>
           <button
             className="bg-blue-600 text-white px-4 py-2 rounded"
-            onClick={handleSubmit}
+            onClick={handleSubmitClick}
           >
             Nộp bài
           </button>
         </div>
         <ToastContainer position="top-right" autoClose={2000} />
       </div>
+
+      {/* Modal xác nhận nộp bài */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Xác nhận nộp bài
+            </h3>
+            
+            <div className="mb-6">
+              <p className="text-gray-600 mb-3">
+                {role === "student" 
+                  ? "Bạn có chắc chắn muốn nộp bài? Sau khi nộp bài, bạn sẽ không thể chỉnh sửa lại."
+                  : "Xác nhận hoàn thành xem trước bài tập này?"
+                }
+              </p>
+              
+              {role === "student" && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+                  <div className="text-sm text-yellow-800">
+                    <div className="font-medium mb-1">Thông tin bài làm:</div>
+                    <div>• Số câu đã trả lời: {Object.keys(getAnswers()).length}/{questions.length}</div>
+                    <div>• Thời gian làm bài: {Math.floor(getTimeSpent() / 60)} phút {getTimeSpent() % 60} giây</div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <button
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded hover:bg-gray-300 transition-colors"
+                onClick={() => setShowConfirmModal(false)}
+              >
+                Hủy bỏ
+              </button>
+              <button
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                onClick={handleConfirmSubmit}
+              >
+                {role === "student" ? "Nộp bài" : "Hoàn thành"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

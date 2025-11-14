@@ -116,6 +116,40 @@ export function HomeWorkInfo({
     }
   };
 
+  const handleDownload = async () => {
+    try {
+      toast.info("Đang chuẩn bị file để tải...");
+      
+      const response = await fetch(`/api/homework/${homework.id}/download`);
+      const data = await response.json();
+      
+      if (data.success && data.fileUrl) {
+        // Tạo link download
+        const link = document.createElement('a');
+        link.href = data.fileUrl;
+        
+        // Tạo tên file từ title homework nếu không có originalFileName
+        const fileName = data.fileName || `${homework.title.replace(/[^a-zA-Z0-9\s]/g, '')}.pdf`;
+        link.download = fileName;
+        
+        // Mở trong tab mới để đảm bảo download được
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast.success(`Đã tải file: ${fileName}`);
+      } else {
+        toast.error(data.error || "Không tìm thấy file để tải về");
+      }
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Có lỗi xảy ra khi tải file");
+    }
+  };
+
 
 
   // trạng thái bài tập (student)
@@ -276,7 +310,11 @@ export function HomeWorkInfo({
                 label="Xuất dữ liệu"
                 onClick={() => setShowExport(true)}
               />
-              <MenuItem icon={<Download size={18} />} label="Tải về" />
+              <MenuItem 
+                icon={<Download size={18} />} 
+                label="Tải về" 
+                onClick={handleDownload}
+              />
               <DeleteButton homeworkId={homework.id} homeworkData={homework} />
             </>
           ) : role === "student" ? (

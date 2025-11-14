@@ -25,7 +25,7 @@ export default function PusherListener() {
 
     // 2. Tên kênh phải là duy nhất cho mỗi user.
     const channelName = `private-user-${user.id}`;
-
+    console.log("User online", user.username, "subscribing to channel:", channelName);
     // BƯỚC 2: Gán kiểu 'Channel' cho biến
     let channel: Channel | undefined;
 

@@ -26,9 +26,9 @@ export default async function StudentProfilePage() {
   const profileData = {
     username: user.username,
     phoneNumber: user.phone ?? '',
-    isPhoneVerified: false, // Nếu có trường xác thực thì lấy, không thì để false
+    isPhoneVerified: user.isPhoneVerified ?? false,
     email: user.email ?? '',
-    isEmailVerified: false, // Nếu có trường xác thực thì lấy, không thì để false
+    isEmailVerified: user.isEmailVerified ?? false,
     password: '********',
     facebookLinked: false, // Nếu có trường thì lấy, không thì để false
     name: user.student?.username || user.teacher?.username || user.username,

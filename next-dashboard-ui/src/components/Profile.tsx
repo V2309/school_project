@@ -3,14 +3,28 @@
 import Link from "next/link";
 import React, { useState, useEffect, useCallback } from "react";
 import {
-  User, Phone, Mail, Lock, Facebook, FileText, Calendar, MapPin,
-  School, Copy, Shield, CheckCircle, XCircle, Pencil,
+  User,
+  Phone,
+  Mail,
+  Lock,
+  Facebook,
+  FileText,
+  Calendar,
+  MapPin,
+  School,
+  Copy,
+  Shield,
+  CheckCircle,
+  XCircle,
+  Pencil,
+  Loader2,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import EditProfileModal from "@/components/forms/EditProfileModal"; // Import Modal
 import UploadAvatarModal from "@/components/forms/UploadAvatarModal"; // Import Avatar Modal
 import Image from "next/image"; // Import Next.js Image
-
+// 2. IMPORT ACTION MỚI
+import { sendVerificationEmail } from "@/lib/actions/auth.action";
 // Định nghĩa kiểu dữ liệu
 interface ProfileData {
   username: string;
@@ -32,19 +46,28 @@ interface ProfileData {
 // Kiểu dữ liệu cho field đang được sửa
 type EditingField = {
   label: string;
-  key: "phone" | "email" | "name" | "schoolname" | "address" | "birthday" | "password";
+  key:
+    | "phone"
+    | "email"
+    | "name"
+    | "schoolname"
+    | "address"
+    | "birthday"
+    | "password";
   value: string;
-}
+};
+// === 3. CẬP NHẬT COMPONENT CON ProfileInfoRow ===
+type VerificationState = "idle" | "loading" | "verified" | "sent";
 
-// Component con ProfileInfoRow (Đã sửa CSS)
 const ProfileInfoRow = ({
   label,
   value,
   actionLabel = "Chỉnh sửa",
   onActionClick,
+  onVerifyClick, // Thêm prop cho nút "Xác minh"
+  verificationState, // Thêm state cho nút "Xác minh"
   showVerified = false,
   isVerified = false,
-  highlightVerified = false,
   copyable = false,
   icon: Icon,
 }: {
@@ -52,9 +75,10 @@ const ProfileInfoRow = ({
   value: string;
   actionLabel?: string;
   onActionClick?: () => void;
+  onVerifyClick?: () => void;
+  verificationState?: VerificationState;
   showVerified?: boolean;
   isVerified?: boolean;
-  highlightVerified?: boolean;
   copyable?: boolean;
   icon: React.ElementType;
 }) => (
@@ -87,11 +111,19 @@ const ProfileInfoRow = ({
             className={`flex items-center space-x-1.5 px-3 py-1 rounded-full text-xs font-medium ${
               isVerified
                 ? "bg-green-100 text-green-700"
-                : "bg-red-100 text-red-700"
+                : value
+                ? "bg-red-100 text-red-700"
+                : "bg-gray-100 text-gray-600"
             }`}
           >
-            {isVerified ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-            <span>{isVerified ? "Đã xác minh" : "Chưa xác minh"}</span>
+            {isVerified ? (
+              <CheckCircle className="w-4 h-4" />
+            ) : (
+              <XCircle className="w-4 h-4" />
+            )}
+            <span>
+              {isVerified ? "Đã xác minh" : value ? "Chưa xác minh" : "Chưa có"}
+            </span>
           </div>
         )}
         {onActionClick && (
@@ -100,6 +132,35 @@ const ProfileInfoRow = ({
             className="px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-medium text-sm transition-all duration-300 shadow-sm hover:shadow-md"
           >
             {actionLabel}
+          </button>
+        )}
+        {/* Nút Xác Minh (mới) */}
+        {onVerifyClick && (
+          <button
+            onClick={onVerifyClick}
+            disabled={
+              verificationState === "loading" ||
+              verificationState === "verified" ||
+              verificationState === "sent"
+            }
+            className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 shadow-sm flex items-center gap-2 ${
+              verificationState === "verified"
+                ? "bg-green-100 text-green-700 cursor-not-allowed"
+                : verificationState === "loading"
+                ? "bg-gray-200 text-gray-500 cursor-wait"
+                : verificationState === "sent"
+                ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                : "bg-orange-500 text-white hover:bg-orange-600"
+            }`}
+          >
+            {verificationState === "loading" && (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            )}
+            {verificationState === "verified"
+              ? "Đã xác minh"
+              : verificationState === "sent"
+              ? "Đã gửi"
+              : "Xác minh"}
           </button>
         )}
       </div>
@@ -113,103 +174,187 @@ interface ProfilePageProps {
   type?: string;
 }
 
-export default function ProfilePage({ user: initialUser, type }: ProfilePageProps = {}) {
+export default function ProfilePage({
+  user: initialUser,
+  type,
+}: ProfilePageProps = {}) {
   const [user, setUser] = useState<ProfileData | null>(initialUser || null);
   const [loading, setLoading] = useState(!initialUser);
   const [error, setError] = useState<string | null>(null);
-  
+
   // State để quản lý modal đang mở
   const [modalField, setModalField] = useState<EditingField | null>(null);
   // State để quản lý modal upload avatar
   const [showAvatarModal, setShowAvatarModal] = useState(false);
 
+  // --- 4. THÊM STATE CHO VIỆC GỬI EMAIL/SĐT ---
+  const [emailVerificationState, setEmailVerificationState] =
+    useState<VerificationState>("idle");
+  const [phoneVerificationState, setPhoneVerificationState] =
+    useState<VerificationState>("idle");
   // Hàm fetch data, dùng useCallback để không tạo lại
   const fetchProfileData = useCallback(async () => {
     try {
       setLoading(true);
       // Gọi API route để lấy thông tin user v  ới full data
-      const response = await fetch("/api/user?full=true", { cache: "no-store" });
-      
+      const response = await fetch("/api/user?full=true", {
+        cache: "no-store",
+      });
+
       if (!response.ok) throw new Error("Không thể tải thông tin.");
-      
+
       const data = await response.json();
       if (data.error) throw new Error(data.error);
 
       // Chuẩn hóa dữ liệu
       const birthday = data.birthday ? new Date(data.birthday) : null;
       const profileData = {
-        username: data.username ?? 'N/A',
-        phoneNumber: data.phone ?? '',
-        isPhoneVerified: data.isPhoneVerified ?? false, 
-        email: data.email ?? '',
+        username: data.username ?? "N/A",
+        phoneNumber: data.phone ?? "",
+        isPhoneVerified: data.isPhoneVerified ?? false,
+        email: data.email ?? "",
         isEmailVerified: data.isEmailVerified ?? false,
-        password: '********',
-        facebookLinked: data.facebookLinked ?? false, 
-        name: data.name || data.username || 'N/A',
+        password: "********",
+        facebookLinked: data.facebookLinked ?? false,
+        name: data.name || data.username || "N/A",
         // Hiển thị ngày sinh theo định dạng Việt Nam
-        dateOfBirth: birthday ? birthday.toLocaleDateString('vi-VN') : '',
+        dateOfBirth: birthday ? birthday.toLocaleDateString("vi-VN") : "",
         // Giá trị cho input date (ISO format)
-        dateOfBirthValue: birthday ? birthday.toISOString().split('T')[0] : '',
-        province: data.address || '',
-        school: data.schoolname || '',
-        role: data.role || 'student',
-        avatar: data.img || undefined // Thêm avatar
+        dateOfBirthValue: birthday ? birthday.toISOString().split("T")[0] : "",
+        province: data.address || "",
+        school: data.schoolname || "",
+        role: data.role || "student",
+        avatar: data.img || undefined, // Thêm avatar
       };
-      
+
       setUser(profileData);
+      // Cập nhật state xác minh
+      setEmailVerificationState(
+        profileData.isEmailVerified ? "verified" : "idle"
+      );
+      setPhoneVerificationState(
+        profileData.isPhoneVerified ? "verified" : "idle"
+      );
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Có lỗi xảy ra');
+      setError(err instanceof Error ? err.message : "Có lỗi xảy ra");
     } finally {
       setLoading(false);
     }
   }, []); // useCallback với dependency rỗng
-
   // Chạy fetch data khi component mount (chỉ khi không có initialUser)
+  // Chạy fetch data khi component mount
   useEffect(() => {
     if (!initialUser) {
       fetchProfileData();
+    } else {
+      // Cập nhật state nếu có initialUser
+      setUser(initialUser);
+      setEmailVerificationState(
+        initialUser.isEmailVerified ? "verified" : "idle"
+      );
+      setPhoneVerificationState(
+        initialUser.isPhoneVerified ? "verified" : "idle"
+      );
     }
   }, [fetchProfileData, initialUser]);
-
   // Hàm wrapper để mở modal
-  const handleEditClick = (label: string, key: EditingField['key'], value: string) => {
+  const handleEditClick = (
+    label: string,
+    key: EditingField["key"],
+    value: string
+  ) => {
     // Nếu là ngày sinh, sử dụng giá trị ISO cho input date
-    const modalValue = key === 'birthday' ? user?.dateOfBirthValue || '' : value;
+    const modalValue =
+      key === "birthday" ? user?.dateOfBirthValue || "" : value;
     setModalField({ label, key, value: modalValue });
   };
+  // --- 5. HÀM MỚI ĐỂ GỬI EMAIL XÁC MINH ---
+  const handleSendVerification = async () => {
+    if (!user || !user.email) {
+      toast.error("Bạn cần cập nhật email trước.");
+      return;
+    }
+
+    setEmailVerificationState("loading");
+    try {
+      const result = await sendVerificationEmail();
+      if (result.success) {
+        toast.success(result.success);
+        setEmailVerificationState("sent"); // Chuyển sang trạng thái "Đã gửi"
+      } else {
+        toast.error(result.error || "Gửi email thất bại.");
+        setEmailVerificationState("idle"); // Cho phép thử lại
+      }
+    } catch (err) {
+      toast.error("Lỗi máy chủ.");
+      setEmailVerificationState("idle"); // Cho phép thử lại
+    }
+  };
+  // HÀM MỚI ĐỂ XỬ LÝ KHI UPDATE THÀNH CÔNG
+  const handleUpdateSuccess = useCallback(() => {
+    // 1. Fetch lại data cho trang Profile (như cũ)
+    fetchProfileData();
+    
+    // 2. BẮN SỰ KIỆN ĐỂ BÁO CHO NAVIGATION
+    window.dispatchEvent(new Event("profile-updated"));
+    
+  }, [fetchProfileData]); // Thêm fetchProfileData vào dependency
+
 
   // Xử lý trạng thái Loading
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[calc(100vh-200px)] ">
-         <svg className="animate-spin h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
+        <svg
+          className="animate-spin h-8 w-8 text-blue-600"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          ></circle>
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
+        </svg>
       </div>
     );
   }
 
   // Xử lý trạng thái Lỗi
   if (error || !user) {
-    return <div className="p-8 text-center text-red-500">{error || "Không tải được hồ sơ."}</div>;
+    return (
+      <div className="p-8 text-center text-red-500">
+        {error || "Không tải được hồ sơ."}
+      </div>
+    );
   }
-  
+
   // Render giao diện chính
   return (
     <div className=" font-sans min-h-screen">
       <div className="relative overflow-hidden">
         <main className="relative py-12 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
-            
             {/* Card Header (Avatar, Title) */}
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 mb-8 overflow-hidden">
               <div className="relative p-8">
                 <div className="flex flex-col sm:flex-row justify-between sm:items-start mb-8">
                   <div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2 text-balance">Hồ sơ của tôi</h1>
-                    <p className="text-gray-600 text-base">Quản lý thông tin cá nhân và cài đặt tài khoản</p>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2 text-balance">
+                      Hồ sơ của tôi
+                    </h1>
+                    <p className="text-gray-600 text-base">
+                      Quản lý thông tin cá nhân và cài đặt tài khoản
+                    </p>
                   </div>
                   <Link
                     href="#"
@@ -232,11 +377,13 @@ export default function ProfilePage({ user: initialUser, type }: ProfilePageProp
                         />
                       ) : (
                         <div className="w-full h-full bg-blue-100 flex items-center justify-center text-6xl font-bold text-blue-600">
-                          <span>{user.name ? user.name[0].toUpperCase() : "A"}</span>
+                          <span>
+                            {user.name ? user.name[0].toUpperCase() : "A"}
+                          </span>
                         </div>
                       )}
                     </div>
-                    <button 
+                    <button
                       onClick={() => setShowAvatarModal(true)}
                       className="absolute bottom-1 right-1 w-10 h-10 bg-white text-blue-600 rounded-full flex items-center justify-center shadow-md border border-gray-200 hover:bg-gray-100 transition-all duration-300 transform hover:scale-110"
                     >
@@ -255,8 +402,12 @@ export default function ProfilePage({ user: initialUser, type }: ProfilePageProp
                     <User className="w-6 h-6 text-blue-600" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Thông tin tài khoản</h2>
-                    <p className="text-gray-500">Quản lý thông tin đăng nhập và bảo mật</p>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      Thông tin tài khoản
+                    </h2>
+                    <p className="text-gray-500">
+                      Quản lý thông tin đăng nhập và bảo mật
+                    </p>
                   </div>
                 </div>
 
@@ -264,40 +415,73 @@ export default function ProfilePage({ user: initialUser, type }: ProfilePageProp
                   <ProfileInfoRow
                     label="Tên đăng nhập"
                     value={user.username || ""}
-                    onActionClick={() => navigator.clipboard.writeText(user.username)}
+                    onActionClick={() =>
+                      navigator.clipboard.writeText(user.username)
+                    }
                     actionLabel="Sao chép"
                     copyable={true}
                     icon={User}
                   />
                   <ProfileInfoRow
                     label="Số điện thoại"
-                    value={user.phoneNumber || "Chưa cập nhật"}
-                    onActionClick={() => handleEditClick("Số điện thoại", "phone", user.phoneNumber)}
+                    value={user.phoneNumber}
+                    onActionClick={() =>
+                      handleEditClick(
+                        "Số điện thoại",
+                        "phone",
+                        user.phoneNumber
+                      )
+                    }
                     showVerified={true}
                     isVerified={user.isPhoneVerified}
-                    highlightVerified={true}
+                    // Logic xác minh SĐT (tạm thời)
+                    onVerifyClick={
+                      user.phoneNumber && !user.isPhoneVerified
+                        ? () =>
+                            toast.info("Chức năng xác minh SĐT đang phát triển")
+                        : undefined
+                    }
+                    verificationState={phoneVerificationState}
                     icon={Phone}
                   />
+                  {/* --- 7. CẬP NHẬT DÒNG EMAIL --- */}
+                                   {" "}
                   <ProfileInfoRow
                     label="Email"
-                    value={user.email || "Chưa cập nhật"}
-                    onActionClick={() => handleEditClick("Email", "email", user.email)}
+                    value={user.email}
+                    onActionClick={() =>
+                      handleEditClick("Email", "email", user.email)
+                    }
+                    // Chỉ hiện nút "Xác minh" nếu email đã có VÀ chưa được xác minh
+                    onVerifyClick={
+                      user.email && !user.isEmailVerified
+                        ? handleSendVerification
+                        : undefined
+                    }
+                    verificationState={emailVerificationState}
                     showVerified={true}
                     isVerified={user.isEmailVerified}
-                    highlightVerified={true}
                     icon={Mail}
                   />
                   <ProfileInfoRow
                     label="Mật khẩu"
                     value={user.password || "********"}
-                    onActionClick={() => handleEditClick("Mật khẩu", "password", "")}
+                    onActionClick={() =>
+                      handleEditClick("Mật khẩu", "password", "")
+                    }
                     icon={Lock}
                   />
                   <ProfileInfoRow
                     label="Liên kết Facebook"
-                    value={user.facebookLinked ? "Đã liên kết" : "Chưa liên kết"}
-                    actionLabel={user.facebookLinked ? "Hủy liên kết" : "Liên kết"}
-                    onActionClick={() => toast.info("Chức năng đang phát triển")}
+                    value={
+                      user.facebookLinked ? "Đã liên kết" : "Chưa liên kết"
+                    }
+                    actionLabel={
+                      user.facebookLinked ? "Hủy liên kết" : "Liên kết"
+                    }
+                    onActionClick={() =>
+                      toast.info("Chức năng đang phát triển")
+                    }
                     icon={Facebook}
                   />
                 </div>
@@ -312,7 +496,9 @@ export default function ProfilePage({ user: initialUser, type }: ProfilePageProp
                     <FileText className="w-6 h-6 text-green-600" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Thông tin cá nhân</h2>
+                    <h2 className="text-2xl font-bold text-gray-900">
+                      Thông tin cá nhân
+                    </h2>
                     <p className="text-gray-500">
                       Cập nhật thông tin để không bị nhầm lẫn
                     </p>
@@ -323,25 +509,33 @@ export default function ProfilePage({ user: initialUser, type }: ProfilePageProp
                   <ProfileInfoRow
                     label="Tên"
                     value={user.name || "Chưa cập nhật"}
-                    onActionClick={() => handleEditClick("Tên", "name", user.name)}
+                    onActionClick={() =>
+                      handleEditClick("Tên", "name", user.name)
+                    }
                     icon={FileText}
                   />
                   <ProfileInfoRow
                     label="Ngày sinh"
                     value={user.dateOfBirth || "Chưa cập nhật"}
-                    onActionClick={() => handleEditClick("Ngày sinh", "birthday", user.dateOfBirth)}
+                    onActionClick={() =>
+                      handleEditClick("Ngày sinh", "birthday", user.dateOfBirth)
+                    }
                     icon={Calendar}
                   />
                   <ProfileInfoRow
                     label="Tỉnh"
                     value={user.province || "Chưa cập nhật"}
-                    onActionClick={() => handleEditClick("Tỉnh", "address", user.province)}
+                    onActionClick={() =>
+                      handleEditClick("Tỉnh", "address", user.province)
+                    }
                     icon={MapPin}
                   />
                   <ProfileInfoRow
                     label="Trường"
                     value={user.school || "Chưa cập nhật"}
-                    onActionClick={() => handleEditClick("Trường", "schoolname", user.school)}
+                    onActionClick={() =>
+                      handleEditClick("Trường", "schoolname", user.school)
+                    }
                     icon={School}
                   />
                 </div>
@@ -358,15 +552,15 @@ export default function ProfilePage({ user: initialUser, type }: ProfilePageProp
           fieldKey={modalField.key}
           currentValue={modalField.value}
           onClose={() => setModalField(null)}
-          onSuccess={fetchProfileData} // Truyền hàm fetch data để làm mới
+          onSuccess={handleUpdateSuccess} // Truyền hàm fetch data để làm mới
         />
       )}
 
       {/* RENDER MODAL UPLOAD AVATAR */}
       {showAvatarModal && (
-        <UploadAvatarModal
+        <UploadAvatarModal  
           onClose={() => setShowAvatarModal(false)}
-          onSuccess={fetchProfileData} // Truyền hàm fetch data để làm mới
+          onSuccess={handleUpdateSuccess  } // Truyền hàm fetch data để làm mới
         />
       )}
     </div>

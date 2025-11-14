@@ -36,7 +36,10 @@ model User {
   updatedAt DateTime @updatedAt @default(now())
   password  String
 
- 
+ // --- THÊM CÁC TRƯỜNG NÀY ---
+  isEmailVerified    Boolean @default(false)
+  isPhoneVerified    Boolean @default(false)
+  verificationTokens VerificationToken[] // Quan hệ
 
   // RELATIONS
   student Student?
@@ -57,6 +60,19 @@ model User {
   notificationsActed    Notification[]  @relation("actor")
 
   messages  Message[]
+}
+// --- THÊM MODEL MỚI NÀY ---
+model VerificationToken {
+  id        String   @id @default(cuid())
+  token     String   @unique // Token duy nhất
+  expires   DateTime // Thời gian hết hạn
+
+  // Liên kết với user
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Đảm bảo 1 user chỉ có 1 token 1 lúc
+  @@unique([userId, token])
 }
 
 model Student {
@@ -757,5 +773,16 @@ model Message {
   classCode String   @map("class_code")
   class     Class    @relation(fields: [classCode], references: [class_code], onDelete: Cascade)
 
+  // Reply functionality
+  replyToId       Int?    @map("reply_to_id")
+  replyToContent  String? @map("reply_to_content") @db.Text
+  replyToUsername String? @map("reply_to_username")
+
+  // Pin functionality
+  isPinned      Boolean @default(false) @map("is_pinned")
+  pinnedAt      DateTime? @map("pinned_at")
+  pinnedByUserId String? @map("pinned_by_user_id")
+
   @@index([classCode, createdAt])
+  @@index([classCode, isPinned, pinnedAt])
 }

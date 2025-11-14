@@ -15,8 +15,13 @@ export const pusherClient = new PusherClient(
   process.env.NEXT_PUBLIC_PUSHER_KEY,
   {
     cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
-    // Đây là phần quan trọng để xác thực kênh riêng tư
+    // Cấu hình cho Private channels
     authEndpoint: "/api/pusher/auth",
     authTransport: "ajax",
+    // Cấu hình cho Presence channels (User Authentication)
+    userAuthentication: {
+      endpoint: "/api/pusher/auth",
+      transport: "ajax",
+    },
   }
 );

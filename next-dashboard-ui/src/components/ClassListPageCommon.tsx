@@ -279,7 +279,7 @@ export default function ClassListPageCommon({
 
                   <div className="p-4">
                     <Link href={`/class/${item.class_code || item.id}/newsfeed`}>
-                      <h3 className="text-lg font-semibold line-clamp-2 group-hover:text-blue-600 transition-colors duration-200">
+                      <h3 className="text-lg font-semibold line-clamp-2 group-hover:text-blue-600 transition-colors duration-200 min-w-0 min-h-[3.5rem]" >
                         {item.name}
                       </h3>
                     </Link>

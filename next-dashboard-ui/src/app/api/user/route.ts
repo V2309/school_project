@@ -1,5 +1,5 @@
 
-// api/user/route.ts - GỘPED VERSION
+// api/user/route.ts - 
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import { cookies } from "next/headers";
@@ -61,8 +61,8 @@ export async function GET(request: NextRequest) {
       role: user.role,
       img: user.img, // Thêm field img
       name: user.student?.username || user.teacher?.username || user.username,
-      isPhoneVerified: false,
-      isEmailVerified: false,
+      isPhoneVerified: user.isPhoneVerified || false,
+      isEmailVerified: user.isEmailVerified || false,
       facebookLinked: false,
     };
 
