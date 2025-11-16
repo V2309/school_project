@@ -9,7 +9,9 @@ import {
   Clock, 
   Calendar, 
   Users, 
-  AlignLeft 
+  AlignLeft,
+  Video,
+  ExternalLink 
 } from "lucide-react";
 
 // --- ĐỊNH NGHĨA TYPESCRIPT ---
@@ -23,6 +25,7 @@ type ScheduleEvent = {
   startTime: Date;
   endTime: Date;
   color: EventColor;
+  meetingLink?: string | null;
   classInfo?: {
     id: number;
     name: string;
@@ -214,6 +217,64 @@ const EventItem = ({ event, onEdit, onDelete, role }: {
                   <div>
                     <p className="text-sm font-medium text-gray-700 mb-1">Mô tả:</p>
                     <p className="text-sm text-gray-600 leading-relaxed">{event.description}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Meeting Link */}
+            {event.meetingLink && (
+              <div className="border-t border-gray-100 pt-3">
+                <div className="flex items-start gap-2 text-purple-600">
+                  <Video className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-700 mb-2">Cuộc họp trực tuyến:</p>
+                    {(() => {
+                      const now = new Date();
+                      const endTime = new Date(event.endTime);
+                      const isMeetingExpired = now > endTime;
+                      const timeLeft = endTime.getTime() - now.getTime();
+                      const minutesLeft = Math.floor(timeLeft / (1000 * 60));
+                      
+                      return (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            {isMeetingExpired ? (
+                              <div className="flex items-center gap-1 px-3 py-2 bg-gray-400 text-white text-sm rounded-lg cursor-not-allowed">
+                                <Video className="w-4 h-4" />
+                                Cuộc họp đã kết thúc
+                              </div>
+                            ) : (
+                              <a
+                                href={event.meetingLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 px-3 py-2 bg-gradient-to-r from-purple-500 to-blue-600 text-white text-sm rounded-lg hover:from-purple-600 hover:to-blue-700 transition-all duration-200"
+                                onClick={() => setShowTooltip(false)}
+                              >
+                                <Video className="w-4 h-4" />
+                                Tham gia cuộc họp
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                          </div>
+                          
+                          {isMeetingExpired ? (
+                            <p className="text-xs text-red-500">
+                              Cuộc họp đã kết thúc lúc {endTime.toLocaleString('vi-VN')}
+                            </p>
+                          ) : minutesLeft <= 10 && minutesLeft > 0 ? (
+                            <p className="text-xs text-yellow-600">
+                              ⚠️ Cuộc họp sẽ kết thúc trong {minutesLeft} phút
+                            </p>
+                          ) : (
+                            <p className="text-xs text-gray-500">
+                              Click để tham gia cuộc họp trực tuyến
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>

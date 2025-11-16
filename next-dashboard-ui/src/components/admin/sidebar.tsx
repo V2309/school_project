@@ -17,9 +17,6 @@ import { Button } from "@/components/ui/button";
 // Danh sách các link điều hướng
 const navItems = [
   { href: "/", label: "Dashboard", icon: Home },
-  { href: "/orders", label: "Orders", icon: ShoppingCart },
-  { href: "/products", label: "Products", icon: Package },
-  { href: "/customers", label: "Customers", icon: Users },
   { href: "/analytics", label: "Analytics", icon: LineChart },
 ];
 

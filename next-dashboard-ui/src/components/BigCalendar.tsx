@@ -28,6 +28,7 @@ interface BigCalendarProps {
     description: string | null; // Sửa: cho phép null
     startTime: Date;
     endTime: Date;
+    meetingLink?: string | null;
     class: {
       id: number;
       name: string;
@@ -87,6 +88,7 @@ const AllDaySchedule = ({ schedules = [], role, classId, teacherClasses = [] }: 
       date: new Date(schedule.startTime),
       startTime: new Date(schedule.startTime),
       endTime: new Date(schedule.endTime),
+      meetingLink: schedule.meetingLink || null,
       color: (["blue", "green", "yellow"][index % 3]) as EventColor,
       classInfo: schedule.class ? {
         id: schedule.class.id,

@@ -22,7 +22,9 @@ const StreamVideoProvider = ({ children }: { children: ReactNode }) => {
       user: {
         id: user?.id,
         name: user?.username || user?.id,
-        image: user?.img || undefined,
+        image: user?.img 
+          ? `${process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT}${user.img}`
+          : undefined,
       },
       tokenProvider,
     });

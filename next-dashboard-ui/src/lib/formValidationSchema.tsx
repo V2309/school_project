@@ -37,6 +37,15 @@ export const scheduleSchema = z.object({
 
 export type ScheduleSchema = z.infer<typeof scheduleSchema>;
 
+// Schema cho Meeting Schedule (kế thừa từ ScheduleSchema và thêm meeting fields)
+export const meetingScheduleSchema = scheduleSchema.extend({
+  isMeeting: z.boolean().default(true),
+  meetingId: z.string().optional(),
+  meetingLink: z.string().optional(),
+});
+
+export type MeetingScheduleSchema = z.infer<typeof meetingScheduleSchema>;
+
 export const examSchema = z.object({
   id: z.coerce.number().optional(),
   title: z.string().min(1, { message: "Title name is required!" }),

@@ -15,6 +15,7 @@ type ScheduleEvent = {
   startTime: Date;
   endTime: Date;
   color: EventColor;
+  meetingLink?: string | null;
   classInfo?: {
     id: number;
     name: string;

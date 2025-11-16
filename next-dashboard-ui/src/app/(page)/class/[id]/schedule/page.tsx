@@ -94,6 +94,7 @@ export default async function ClassSchedulePage({
     description: event.description || 'Không có mô tả',
     startTime: event.startTime,
     endTime: event.endTime,
+    meetingLink: event.meetingLink,
     class: event.class ? {
       id: event.class.id,
       name: event.class.name,

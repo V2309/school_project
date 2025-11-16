@@ -1,13 +1,15 @@
 /* eslint-disable camelcase */
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 import HomeCard from '@/components/HomeCard';
 import MeetingModal from '@/components/MeetingModal';
+import MeetingScheduleForm from '@/components/forms/MeetingScheduleForm';
 import { Call, useStreamVideoClient } from '@stream-io/video-react-sdk';
 import { useUser } from "@/hooks/useUser";
+import { getTeacherClasses } from '@/lib/actions/class.action';
 import Loader from '@/components/Loader';
 import { Textarea } from './ui/textarea';
 import ReactDatePicker from 'react-datepicker';
@@ -28,9 +30,27 @@ const MeetingTypeList = () => {
   >(undefined);
   const [values, setValues] = useState(initialValues);
   const [callDetail, setCallDetail] = useState<Call>();
+  const [teacherClasses, setTeacherClasses] = useState<any[]>([]);
+  const [showMeetingScheduleForm, setShowMeetingScheduleForm] = useState(false);
   const client = useStreamVideoClient();
   const { user } = useUser();
   const { toast } = useToast();
+
+  // Load teacher classes when component mounts
+  useEffect(() => {
+    const loadTeacherClasses = async () => {
+      if (user?.role === 'teacher') {
+        try {
+          const classes = await getTeacherClasses();
+          setTeacherClasses(classes);
+        } catch (error) {
+          console.error('Error loading teacher classes:', error);
+        }
+      }
+    };
+
+    loadTeacherClasses();
+  }, [user]);
 
   const createMeeting = async () => {
     if (!client || !user) return;
@@ -90,7 +110,7 @@ const MeetingTypeList = () => {
         title="Lên lịch "
         description="Đặt lịch cho cuộc họp"
         className="bg-purple-500"
-        handleClick={() => setMeetingState('isScheduleMeeting')}
+        handleClick={() => setShowMeetingScheduleForm(true)}
       />
       <HomeCard
         img="/icons/recordings.svg"
@@ -173,6 +193,26 @@ const MeetingTypeList = () => {
         buttonText="Bắt đầu cuộc họp"
         handleClick={createMeeting}
       />
+
+      {/* Meeting Schedule Form */}
+      {showMeetingScheduleForm && (
+        <MeetingScheduleForm
+          type="create"
+          setOpen={setShowMeetingScheduleForm}
+          onSuccess={() => {
+            setShowMeetingScheduleForm(false);
+            toast({ title: 'Lịch cuộc họp đã được tạo thành công!' });
+          }}
+          teacherClasses={teacherClasses.map((cls: any) => ({
+            id: cls.id.toString(),
+            name: cls.name,
+            img: cls.img || '#3B82F6',
+            class_code: cls.class_code || '',
+            studentCount: cls._count?.students || 0,
+            color: cls.img || '#3B82F6',
+          }))}
+        />
+      )}
     </section>
   );
 };

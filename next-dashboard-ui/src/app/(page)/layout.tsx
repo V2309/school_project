@@ -25,24 +25,26 @@ export default function DashboardLayout({
   return (  
     
       <UserProvider>
-        <div className="h-screen w-screen flex flex-col overflow-x-hidden">
-          {/* Cấp 1: Navigation trên cùng */}
-          {!isAddPage && !isTestPage && !isResultPage && (
-            <div className="w-full flex-shrink-0 border-2 border-gray-200">
-              <Navigation />
-            </div>
-          )}
-        {/* Cấp 2: Nội dung chính */}
-        <div className={
-          isAddPage || isTestPage || isResultPage  || isGroupChatPage
-            ? "flex-grow flex flex-col bg-gray-100 overflow-hidden"
-            : "flex-grow  flex flex-col bg-gray-100 overflow-y-auto"
-        }>
-          {children}
+        
+          <div className="h-screen w-screen flex flex-col overflow-x-hidden">
+            {/* Cấp 1: Navigation trên cùng */}
+            {!isAddPage && !isTestPage && !isResultPage && (
+              <div className="w-full flex-shrink-0 border-2 border-gray-200">
+                <Navigation />
+              </div>
+            )}
+          {/* Cấp 2: Nội dung chính */}
+          <div className={
+            isAddPage || isTestPage || isResultPage  || isGroupChatPage
+              ? "flex-grow flex flex-col bg-gray-100 overflow-hidden"
+              : "flex-grow  flex flex-col bg-gray-100 overflow-y-auto"
+          }>
+            {children}
+          </div>
         </div>
-      </div>
-      <PusherListener />
-      <PresenceManager />
+        <PusherListener />
+        <PresenceManager />
+        
       </UserProvider>
   
   );

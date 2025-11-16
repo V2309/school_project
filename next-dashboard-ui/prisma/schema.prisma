@@ -289,6 +289,10 @@ model Event {
   // Ví dụ: 1 = tuần đầu, -1 = tuần cuối
   weekOfMonth    Int?
 
+  // === MEETING FIELDS ===
+  // Link cuộc họp (nếu sự kiện này là một cuộc họp)
+  meetingLink String?
+  
   // === RELATIONS ===
   classId Int?
   class   Class? @relation(fields: [classId], references: [id])
