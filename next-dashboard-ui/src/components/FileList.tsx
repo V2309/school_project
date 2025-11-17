@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "react-toastify";
 import { Download, FileText, Trash2, Eye, Loader2 } from "lucide-react";
@@ -99,12 +99,55 @@ const FileList = ({
   const [showViewersModal, setShowViewersModal] = useState(false);
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const classCode = propClassCode || (params?.id as string);
+
+  // Chỉ fetch khi thực sự cần thiết (upload file mới hoặc refresh manual)
+  const fetchFiles = useCallback(async () => {
+    if (!classCode) return;
+    
+    try {
+      setLoading(true);
+      
+      // Lấy search param từ URL hiện tại
+      const currentSearch = searchParams.get('search');
+      const url = currentSearch 
+        ? `/api/files?classCode=${classCode}&search=${encodeURIComponent(currentSearch)}`
+        : `/api/files?classCode=${classCode}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Failed to fetch files");
+      }
+      const data = await response.json();
+      const newFiles = data.files || [];
+      setFiles(newFiles);
+      
+      // Gọi callback để cập nhật parent component
+      if (onFilesUpdate) {
+        onFilesUpdate(newFiles);
+      }
+    } catch (error) {
+      console.error("Error fetching files:", error);
+      toast.error("Lỗi khi tải danh sách tài liệu");
+    } finally {
+      setLoading(false);
+    }
+  }, [classCode, onFilesUpdate, searchParams]);
 
   // Cập nhật files khi initialFiles thay đổi (từ server)
   useEffect(() => {
     setFiles(initialFiles);
   }, [initialFiles]);
+
+  // Fetch files mới khi search params thay đổi hoặc khi cần search
+  useEffect(() => {
+    const currentSearch = searchParams.get('search');
+    // Fetch khi có search hoặc khi search được clear (về empty)
+    if (currentSearch !== null) {
+      fetchFiles();
+    }
+  }, [searchParams, fetchFiles]);
 
   // TỐI ƯU: Dùng useMemo để 'columns' chỉ tính toán lại khi 'role' thay đổi
   const columns = useMemo(
@@ -139,32 +182,6 @@ const FileList = ({
     ],
     [role]
   );
-
-  // Chỉ fetch khi thực sự cần thiết (upload file mới hoặc refresh manual)
-  const fetchFiles = useCallback(async () => {
-    if (!classCode) return;
-    
-    try {
-      setLoading(true);
-      const response = await fetch(`/api/files?classCode=${classCode}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch files");
-      }
-      const data = await response.json();
-      const newFiles = data.files || [];
-      setFiles(newFiles);
-      
-      // Gọi callback để cập nhật parent component
-      if (onFilesUpdate) {
-        onFilesUpdate(newFiles);
-      }
-    } catch (error) {
-      console.error("Error fetching files:", error);
-      toast.error("Lỗi khi tải danh sách tài liệu");
-    } finally {
-      setLoading(false);
-    }
-  }, [classCode, onFilesUpdate]);
 
   // Chỉ fetch khi có refreshTrigger thay đổi (do upload file mới)
   useEffect(() => {

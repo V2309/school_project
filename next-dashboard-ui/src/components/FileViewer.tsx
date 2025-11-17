@@ -13,7 +13,7 @@ interface FileViewerProps {
 export default function FileViewer({ fileUrl, fileName, className = "" }: FileViewerProps) {
   if (!fileUrl) {
     return (
-      <div className={`border rounded p-4 min-h-[600px] h-[80vh] flex items-center justify-center ${className}`}>
+      <div className={`flex items-center justify-center h-full min-h-[600px] ${className}`}>
         <p className="text-gray-500">Chưa có file được chọn</p>
       </div>
     );
@@ -23,14 +23,14 @@ export default function FileViewer({ fileUrl, fileName, className = "" }: FileVi
   const isWord = fileUrl.toLowerCase().includes('.doc');
 
   return (
-    <div className={`border rounded p-4 min-h-[600px] h-[80vh] overflow-hidden ${className}`}>
-      {fileName && (
-        <div className="mb-2 p-2 bg-gray-50 rounded text-sm">
+    <div className={`h-full min-h-[600px] ${className}`}>
+      {/* {fileName && (
+        <div className="mb-2 p-2 bg-gray-50 text-sm font-medium">
           <strong>File:</strong> {fileName}
         </div>
-      )}
+      )} */}
       
-      <div className="h-full">
+      <div className="h-full w-full">
         {isPDF ? (
           <PDFViewer fileUrl={fileUrl} />
         ) : isWord ? (

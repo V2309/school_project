@@ -2,6 +2,7 @@
 "use client";
 import FileUpload from "@/components/FileUpload";
 import FileList from "@/components/FileList";
+import Pagination from "@/components/Pagination";
 import { useState, useCallback } from "react"; // Import useCallback
 
 interface FileData {
@@ -36,12 +37,16 @@ interface DocumentPageClientProps {
   userRole?: string;
   initialFiles: FileData[];
   classCode: string;
+  count: number;
+  page: number;
 }
 
 export default function DocumentPageClient({
   userRole,
   initialFiles,
   classCode,
+  count,
+  page,
 }: DocumentPageClientProps) {
   const [files, setFiles] = useState(initialFiles);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -79,6 +84,11 @@ export default function DocumentPageClient({
           classCode={classCode}
           onFilesUpdate={handleFilesUpdate}
         />
+      </div>
+
+      {/* Pagination */}
+      <div className="mt-4">
+        {files.length > 0 && <Pagination page={page} count={count} />}
       </div>
     </div>
   );

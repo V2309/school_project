@@ -138,7 +138,7 @@ export default function AddHomeworkPage({ params }: { params: { id: string } }) 
           />
         </div>
 
-        <div className="bg-white flex-1 px-4 py-8">
+        <div className="bg-white flex-1 px-4 overflow-y-auto">
           {step === 1 ? (
             // Step 1: Upload File
             <>
@@ -175,8 +175,25 @@ export default function AddHomeworkPage({ params }: { params: { id: string } }) 
           ) : step === 2 ? (
             // Step 2: Customize Answers
             <>
+
+                 <div className="mt-4 flex gap-4 align-items-end justify-end">
+                    <button
+                      type="button"
+                      className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500"
+                      onClick={() => setStep(1)}
+                    >
+                      Quay lại
+                    </button>
+                    <button
+                      type="button"
+                      className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+                      onClick={() => setStep(3)}
+                    >
+                      Tiếp theo
+                    </button>
+                  </div>
               <h1 className="text-2xl font-bold mb-6 text-center">Tùy Chỉnh Đáp Án</h1>
-              
+            
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Bên trái: File preview */}
                 <div className="border rounded-lg p-4">
@@ -202,22 +219,7 @@ export default function AddHomeworkPage({ params }: { params: { id: string } }) 
                     onBulkAnswerChange={handleBulkAnswerChange}
                   />
 
-                  <div className="mt-6 flex gap-4">
-                    <button
-                      type="button"
-                      className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500"
-                      onClick={() => setStep(1)}
-                    >
-                      Quay lại
-                    </button>
-                    <button
-                      type="button"
-                      className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
-                      onClick={() => setStep(3)}
-                    >
-                      Tiếp theo
-                    </button>
-                  </div>
+               
                 </div>
               </div>
             </>

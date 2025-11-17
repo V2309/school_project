@@ -76,7 +76,7 @@ const ClassForm = ({
     defaultValues: {
       // Set default values để form hoạt động tốt hơn với RHF
       name: data?.name || "",
-      capacity: data?.capacity || 0,
+      capacity: data?.capacity || 50,
       id: data?.id || undefined,
       supervisorId: data?.supervisorId || undefined,
       gradeId: data?.gradeId || undefined,
@@ -169,13 +169,15 @@ const ClassForm = ({
             label="Số lượng học sinh"
             name="capacity"
             type="number"
-            defaultValue={data?.capacity}
+            defaultValue={data?.capacity || 50}
             register={register}
             error={errors?.capacity}
             inputProps={{
-              placeholder: "Nhập số lượng (VD: 30, 35)",
+              placeholder: "Số lượng học sinh tối đa",
               min: "1",
-              max: "50"
+              max: "50",
+              readOnly: true,
+            
             }}
           />
         </div>

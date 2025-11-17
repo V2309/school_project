@@ -1,6 +1,8 @@
 // components/HomeworkSettings.tsx
 "use client";
 
+import { useState, useEffect } from 'react';
+
 // Giả định bạn có type này ở "@/types/homework"
 interface HomeworkFormData {
   title: string;
@@ -13,15 +15,19 @@ interface HomeworkFormData {
   blockViewAfterSubmit: boolean;
   isShuffleQuestions?: boolean;
   isShuffleAnswers?: boolean;
-  // Thêm các trường khác nếu có
 }
 
 interface HomeworkSettingsProps {
-  data: HomeworkFormData;
-  onChange: (data: Partial<HomeworkFormData>) => void;
+  data?: HomeworkFormData;
+  onChange?: (data: Partial<HomeworkFormData>) => void;
   validationErrors?: Record<string, string>;
   disabled?: boolean;
-  type?: 'original' | 'extracted'; // Thêm prop để phân biệt loại bài tập
+  type?: 'original' | 'extracted';
+  // Edit mode props
+  currentData?: HomeworkFormData;
+  isEditMode?: boolean;
+  onSave?: (data: any) => Promise<void>;
+  isLoading?: boolean;
 }
 
 // Icon ? (Dùng SVG cho đẹp và linh hoạt)
@@ -46,23 +52,18 @@ const HelpIcon = () => (
 // Component ToggleSwitch để thay thế checkbox
 const ToggleSwitch = ({
   checked,
-  onChange,
-  disabled = false
+  onChange
 }: {
   checked: boolean;
   onChange: (checked: boolean) => void;
-  disabled?: boolean;
 }) => (
   <button
     type="button"
     role="switch"
     aria-checked={checked}
     onClick={() => onChange(!checked)}
-    disabled={disabled}
     className={`relative inline-flex items-center h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent ${
       checked ? 'bg-blue-600' : 'bg-gray-200'
-    } ${
-      disabled ? 'opacity-50 cursor-not-allowed' : ''
     } transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
   >
     <span
@@ -79,8 +80,79 @@ export default function HomeworkSettings({
   onChange,
   validationErrors = {},
   disabled = false,
-  type = 'original' // Mặc định là original
+  type = 'original',
+  // Edit mode props
+  currentData,
+  isEditMode = false,
+  onSave,
+  isLoading = false
 }: HomeworkSettingsProps) {
+  // Debug logs
+  console.log('HomeworkSettings props:', {
+    disabled,
+    isEditMode,
+    isLoading,
+    currentData: !!currentData
+  });
+
+  const [formData, setFormData] = useState<HomeworkFormData>(
+    currentData || data || {
+      title: '',
+      duration: 60,
+      startTime: '',
+      endTime: '',
+      maxAttempts: 1,
+      studentViewPermission: 'NO_VIEW',
+      gradingMethod: 'FIRST_ATTEMPT',
+      blockViewAfterSubmit: false,
+      isShuffleQuestions: false,
+      isShuffleAnswers: false
+    }
+  );
+
+  // Remove auto-sync to prevent infinite re-renders
+  // useEffect(() => {
+  //   if (currentData) {
+  //     console.log('Syncing formData with currentData:', currentData);
+  //     setFormData(currentData);
+  //   }
+  // }, [currentData?.title, currentData?.duration, currentData?.startTime, currentData?.endTime, currentData?.maxAttempts]);
+
+  console.log('Current formData state:', formData);
+
+  const handleChange = (updates: Partial<HomeworkFormData>) => {
+    console.log('HomeworkSettings handleChange called with:', updates);
+    console.log('Current formData before update:', formData);
+    
+    const newData = { ...formData, ...updates };
+    console.log('New formData after update:', newData);
+    
+    setFormData(newData);
+    
+    // Always call onChange to notify parent
+    if (onChange) {
+      // Convert datetime-local to proper format for backend
+      const processedUpdates = { ...updates };
+      if (updates.startTime) {
+        processedUpdates.startTime = updates.startTime;
+      }
+      if (updates.endTime) {
+        processedUpdates.endTime = updates.endTime;
+      }
+      
+      console.log('Calling parent onChange with:', processedUpdates);
+      onChange(processedUpdates);
+    } else {
+      console.log('No onChange callback provided');
+    }
+  };
+
+  const handleSave = async () => {
+    if (isEditMode && onSave) {
+      await onSave(formData);
+    }
+  };
+
   return (
     // Card container
     <div className="bg-white p-6 rounded-lg shadow-md max-w-2xl mx-auto">
@@ -93,12 +165,14 @@ export default function HomeworkSettings({
         </label>
         <input
           type="text"
-
-          onChange={(e) => onChange({ title: e.target.value })}
+          value={formData.title}
+          onChange={(e) => {
+            console.log('Title input onChange:', e.target.value);
+            handleChange({ title: e.target.value });
+          }}
           className={`border rounded px-3 py-2 w-full ${
             validationErrors.title ? 'border-red-500' : ''
           }`}
-          disabled={disabled}
           required
         />
         {validationErrors.title && (
@@ -122,12 +196,14 @@ export default function HomeworkSettings({
             <input
               type="number"
               min="1"
-              value={data.duration}
-              onChange={(e) => onChange({ duration: Number(e.target.value) })}
+              value={formData.duration}
+              onChange={(e) => {
+                console.log('Duration input onChange:', e.target.value);
+                handleChange({ duration: Number(e.target.value) });
+              }}
               className={`border rounded px-3 py-2 w-full ${
                 validationErrors.duration ? 'border-red-500' : ''
               }`}
-              disabled={disabled}
             />
             {validationErrors.duration && (
               <p className="text-red-500 text-sm mt-1">
@@ -148,12 +224,14 @@ export default function HomeworkSettings({
           <div className="flex-shrink-0 w-64">
             <input
               type="datetime-local"
-              value={data.startTime}
-              onChange={(e) => onChange({ startTime: e.target.value })}
+              value={formData.startTime}
+              onChange={(e) => {
+                console.log('StartTime input onChange:', e.target.value);
+                handleChange({ startTime: e.target.value });
+              }}
               className={`border rounded px-3 py-2 w-full ${
                 validationErrors.startTime ? 'border-red-500' : ''
               }`}
-              disabled={disabled}
             />
             {validationErrors.startTime && (
               <p className="text-red-500 text-sm mt-1">
@@ -174,12 +252,14 @@ export default function HomeworkSettings({
           <div className="flex-shrink-0 w-64">
             <input
               type="datetime-local"
-              value={data.endTime}
-              onChange={(e) => onChange({ endTime: e.target.value })}
+              value={formData.endTime}
+              onChange={(e) => {
+                console.log('EndTime input onChange:', e.target.value);
+                handleChange({ endTime: e.target.value });
+              }}
               className={`border rounded px-3 py-2 w-full ${
                 validationErrors.endTime ? 'border-red-500' : ''
               }`}
-              disabled={disabled}
             />
             {validationErrors.endTime && (
               <p className="text-red-500 text-sm mt-1">
@@ -197,16 +277,18 @@ export default function HomeworkSettings({
               Số lần làm bài tối đa *
             </label>
           </div>
-          <div className="flex-shrink-0 w-64"> {/* <-- Đổi w-48 thành w-64 cho đồng bộ */}
+          <div className="flex-shrink-0 w-64">
             <input
               type="number"
               min="1"
-              value={data.maxAttempts}
-              onChange={(e) => onChange({ maxAttempts: Number(e.target.value) })}
+              value={formData.maxAttempts}
+              onChange={(e) => {
+                console.log('MaxAttempts input onChange:', e.target.value);
+                handleChange({ maxAttempts: Number(e.target.value) });
+              }}
               className={`border rounded px-3 py-2 w-full ${
                 validationErrors.maxAttempts ? 'border-red-500' : ''
               }`}
-              disabled={disabled}
             />
             {validationErrors.maxAttempts && (
               <p className="text-red-500 text-sm mt-1">
@@ -226,12 +308,12 @@ export default function HomeworkSettings({
           </div>
           <div className="flex-shrink-0 w-64 relative"> {/* <-- Thêm w-64 và relative */}
             <select
-              value={data.studentViewPermission}
-              onChange={(e) =>
-                onChange({ studentViewPermission: e.target.value as any })
-              }
-              disabled={disabled}
-              className="border rounded px-3 py-2 text-sm font-medium bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full appearance-none" /* <-- Thêm w-full và appearance-none */
+              value={formData.studentViewPermission}
+              onChange={(e) => {
+                console.log('StudentViewPermission select onChange:', e.target.value);
+                handleChange({ studentViewPermission: e.target.value as any });
+              }}
+              className="border rounded px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full appearance-none"
             >
               <option value="NO_VIEW">Không được xem điểm</option>
               <option value="SCORE_ONLY">Chỉ xem điểm tổng</option>
@@ -256,12 +338,11 @@ export default function HomeworkSettings({
           </div>
           <div className="flex-shrink-0 w-64 relative"> {/* <-- Thêm w-64 và relative */}
             <select
-              value={data.gradingMethod}
+              value={formData.gradingMethod}
               onChange={(e) =>
-                onChange({ gradingMethod: e.target.value as any })
+                handleChange({ gradingMethod: e.target.value as any })
               }
-              disabled={disabled}
-              className="border rounded px-3 py-2 text-sm font-medium bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full appearance-none" /* <-- Thêm w-full và appearance-none */
+              className="border rounded px-3 py-2 text-sm font-medium bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 w-full appearance-none"
             >
               <option value="FIRST_ATTEMPT">Lấy điểm lần làm bài đầu tiên</option>
               <option value="LATEST_ATTEMPT">Lấy điểm lần làm bài mới nhất</option>
@@ -286,11 +367,10 @@ export default function HomeworkSettings({
           </div>
           <div className="flex-shrink-0">
             <ToggleSwitch
-              checked={data.blockViewAfterSubmit}
+              checked={formData.blockViewAfterSubmit}
               onChange={(checked) =>
-                onChange({ blockViewAfterSubmit: checked })
+                handleChange({ blockViewAfterSubmit: checked })
               }
-              disabled={disabled}
             />
           </div>
         </div>
@@ -311,11 +391,10 @@ export default function HomeworkSettings({
               </div>
               <div className="flex-shrink-0">
                 <ToggleSwitch
-                  checked={data.isShuffleQuestions || false}
+                  checked={formData.isShuffleQuestions || false}
                   onChange={(checked) =>
-                    onChange({ isShuffleQuestions: checked })
+                    handleChange({ isShuffleQuestions: checked })
                   }
-                  disabled={disabled}
                 />
               </div>
             </div>
@@ -332,11 +411,10 @@ export default function HomeworkSettings({
               </div>
               <div className="flex-shrink-0">
                 <ToggleSwitch
-                  checked={data.isShuffleAnswers || false}
+                  checked={formData.isShuffleAnswers || false}
                   onChange={(checked) =>
-                    onChange({ isShuffleAnswers: checked })
+                    handleChange({ isShuffleAnswers: checked })
                   }
-                  disabled={disabled}
                 />
               </div>
             </div>

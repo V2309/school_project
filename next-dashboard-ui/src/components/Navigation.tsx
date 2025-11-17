@@ -79,7 +79,7 @@ export default function Navigation() {
     : [];
 
   return (
-    <nav className="relative flex items-center justify-between p-4 h-[70px] bg-white shadow">
+    <nav className="relative flex items-center justify-between p-4 h-[70px] bg-white  border-b border-gray-400">
       {/* Left side: Logo & Site Name */}
       <div className="flex items-center space-x-2">
         <svg

@@ -243,15 +243,15 @@ export default function VideoList({
     <div className="flex flex-col md:flex-row bg-white font-sans min-h-screen">
       {/* Sidebar */}
       {/* RESPONSIVE: w-full trên di động, md:w-64 trên desktop */}
-      <aside className="w-full md:w-64 bg-slate-50 border-b md:border-r border-slate-200 p-4 shrink-0">
+      <aside className="w-full md:w-64 border-b md:border-r border-slate-200 p-4 shrink-0">
         {/* RESPONSIVE: flex-row + cuộn ngang trên di động, md:flex-col trên desktop */}
         <nav className="flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-x-visible md:space-y-1">
           <Link
             href={`/class/${classCode}/video`}
             // RESPONSIVE: Thêm shrink-0 để không bị co lại khi cuộn ngang
-            className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium shrink-0 ${
+            className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium shrink-0 relative transition-colors ${
               !activeFolderId
-                ? "bg-blue-100 text-blue-700"
+                ? "text-blue-700 before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1 before:h-6 before:bg-blue-600 before:rounded-r-full"
                 : "text-slate-700 hover:bg-slate-200"
             }`}
           >
@@ -269,9 +269,9 @@ export default function VideoList({
             >
               <Link
                 href={`/class/${classCode}/video?folderId=${folder.id}`}
-                className={`flex-1 relative overflow-hidden flex items-center gap-3 pl-3 pr-1 py-2 rounded-md text-sm font-medium ${
+                className={`flex-1 relative overflow-hidden flex items-center gap-3 pl-3 pr-1 py-2 rounded-md text-sm font-medium transition-colors ${
                   activeFolderId === folder.id
-                    ? "bg-blue-100 text-blue-700"
+                    ? "text-blue-700 before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1 before:h-6 before:bg-blue-600 before:rounded-r-full"
                     : "text-slate-700 hover:bg-slate-200"
                 }`}
               >

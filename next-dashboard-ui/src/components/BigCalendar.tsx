@@ -265,9 +265,9 @@ const AllDaySchedule = ({ schedules = [], role, classId, teacherClasses = [] }: 
   };
 
   return (
-    <div className="bg-white border border-gray-200 overflow-hidden print:border-0 print:shadow-none">
+    <div className="bg-white overflow-hidden print:border-0 print:shadow-none">
       {/* 1. Header Điều Hướng */}
-      <div className="px-4 py-3 border-b border-gray-200 print:hidden">
+      <div className="px-4 py-3 border-b border-gray-400 print:hidden">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
 
 

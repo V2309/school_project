@@ -1,5 +1,3 @@
-
-
 import Link from "next/link"
 import Image from "next/image"
 import { Metadata } from "next"
@@ -17,8 +15,9 @@ export const metadata: Metadata = {
 
 // --- MODERN COMPONENT REDESIGNS ---
 
+// ĐÃ THÊM: transition-all duration-300 group-hover:scale-110
 const FeatureIcon = ({ emoji }: { emoji: string }) => (
-  <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl mb-6 text-3xl animate-float">
+  <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl mb-6 text-3xl animate-float transition-all duration-300 group-hover:scale-110">
     {emoji}
   </div>
 )
@@ -27,7 +26,8 @@ const HowItWorksStep = ({ number, title, description }: { number: number; title:
   <div className="relative group">
     <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
     <div className="relative bg-card/80 backdrop-blur-sm p-8 rounded-2xl border border-border/50 hover:border-primary/20 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-      <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-primary to-secondary text-primary-foreground rounded-xl font-bold text-xl mb-6 shadow-lg">
+      {/* ĐÃ THÊM: transition-all duration-300 group-hover:scale-110 group-hover:shadow-primary/20 */}
+      <div className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-primary to-secondary text-primary-foreground rounded-xl font-bold text-xl mb-6 shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:shadow-primary/20">
         {number}
       </div>
       <h3 className="text-xl font-semibold text-foreground mb-3 text-balance">{title}</h3>
@@ -48,7 +48,8 @@ const TestimonialCard = ({
       <div className="absolute top-4 left-4 text-primary/20 text-6xl font-serif"></div>
       <p className="text-muted-foreground italic mb-8 pt-8 leading-relaxed text-balance">{quote}</p>
       <div className="flex items-center">
-        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 mr-4 flex-shrink-0 flex items-center justify-center">
+        {/* ĐÃ THÊM: transition-all duration-300 group-hover:scale-110 */}
+        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 mr-4 flex-shrink-0 flex items-center justify-center transition-all duration-300 group-hover:scale-110">
           <div className="w-12 h-12 rounded-full bg-muted"></div>
         </div>
         <div>
@@ -267,7 +268,7 @@ export default function Home() {
 
         {/* Interactive Demo/Product Tour Section (NEW) */}
         {/* Video Feature Showcase (NEW) */}
-        <section className="py-24 px-6">
+        <section id="demo-video" className="py-24 px-6">
           <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-16 items-center">
             <div className="relative group">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl blur-2xl group-hover:blur-3xl transition-all duration-300"></div>
@@ -301,7 +302,7 @@ export default function Home() {
         {/* Visual Feature Showcase (Existing) */}
         <section className="py-20 px-6">
           <div className="max-w-7xl mx-auto space-y-24">
-            {/* Feature 1 */}
+            {/* Feature 1 - ĐÃ NÂNG CẤP */}
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <div>
                 <span className="inline-block px-3 py-1 bg-secondary/10 text-secondary font-semibold text-sm rounded-full mb-4">
@@ -313,24 +314,29 @@ export default function Home() {
                   chính. Tiết kiệm thời gian và không bao giờ bỏ lỡ thông tin.
                 </p>
               </div>
-              <div className="bg-gray-200 rounded-lg h-80 flex items-center justify-center">
+              {/* KHỐI ĐÃ SỬA: Bỏ bg-gray-200, thêm hiệu ứng hiện đại */}
+              <div className="relative rounded-2xl border border-border/50 shadow-xl overflow-hidden group">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10 opacity-30 blur-lg group-hover:opacity-50 group-hover:blur-xl transition-all duration-500"></div>
                 <Image
                   src="/nen1.png"
                   alt="Ảnh chụp màn hình ứng dụng"
-                  className="object-fit h-full w-full"
+                  className="relative rounded-lg object-cover h-full w-full transition-all duration-500 group-hover:scale-105"
                   width={500}
                   height={300}
                   priority
                 />
               </div>
             </div>
-            {/* Feature 2 */}
+            
+            {/* Feature 2 - ĐÃ NÂNG CẤP */}
             <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div className="bg-gray-200 rounded-lg h-80 flex items-center justify-center md:order-last">
+              {/* KHỐI ĐÃ SỬA: Bỏ bg-gray-200, thêm hiệu ứng hiện đại */}
+              <div className="relative rounded-2xl border border-border/50 shadow-xl overflow-hidden group md:order-last">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-secondary/10 opacity-30 blur-lg group-hover:opacity-50 group-hover:blur-xl transition-all duration-500"></div>
                 <Image
                   src="/nen2.png"
                   alt="Ảnh chụp màn hình ứng dụng"
-                  className="object-fit h-full w-full"
+                  className="relative rounded-lg object-cover h-full w-full transition-all duration-500 group-hover:scale-105"
                   width={500}
                   height={300}
                   priority

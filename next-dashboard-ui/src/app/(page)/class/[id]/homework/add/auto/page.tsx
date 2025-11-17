@@ -43,7 +43,7 @@ export default function AutoExtractPage({ params }: { params: { id: string } }) 
       const extractFormData = new FormData();
       extractFormData.append('file', selectedFile);
 
-      const extractResponse = await fetch('http://localhost:5000/api/extract-quiz', {
+      const extractResponse = await fetch(`${process.env.NEXT_PUBLIC_FLASK_API_URL}/api/extract-quiz`, {
         method: 'POST',
         body: extractFormData,
       });

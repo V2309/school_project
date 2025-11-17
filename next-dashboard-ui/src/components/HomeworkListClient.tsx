@@ -94,7 +94,7 @@ export default function HomeworkListClient({
         {/* Cột danh sách */}
         <div className="flex-1 md:w-2/3 overflow-y-auto border-r border-gray-400">
           {/* Thanh công cụ NẰM TRONG danh sách + sticky */}
-          <div className="sticky top-0 z-10 bg-white/90 backdrop-blur px-4 py-3 border-b">
+          <div className="sticky top-0 z-10 bg-white/90 backdrop-blur px-4 py-3 border-b  border-gray-400" >
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2 items-center">
               {/* Search (trung tâm/đầu hàng) */}
               <div className="sm:order-1">
@@ -182,7 +182,7 @@ export default function HomeworkListClient({
         </div>
 
         {/* Cột chi tiết nếu không có bài tập thì ẩn */}
-        <div className="w-full md:w-1/3 overflow-y-auto p-4 bg-gray-50 flex-shrink-0">
+        <div className="w-full md:w-1/3 overflow-y-auto p-4  flex-shrink-0">
           {selected ? (
             <HomeWorkInfo homework={selected} role={role} />
           ) : (

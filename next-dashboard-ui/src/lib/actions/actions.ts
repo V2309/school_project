@@ -330,3 +330,161 @@ export const removeStudentFromClass = async (
     return { success: false, error: true };
   }
 };
+
+// Get homework for editing
+export async function getHomeworkById(homeworkId: number) {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "teacher") {
+    throw new Error("Unauthorized");
+  }
+
+  const teacher = await prisma.teacher.findUnique({
+    where: { userId: user.id as string },
+  });
+  if (!teacher) {
+    throw new Error("Teacher not found");
+  }
+
+  const homework = await prisma.homework.findUnique({
+    where: { id: homeworkId },
+    include: {
+      questions: {
+        orderBy: { questionNumber: 'asc' }
+      },
+      attachments: true,
+      class: true
+    }
+  });
+
+  if (!homework) {
+    throw new Error("Homework not found");
+  }
+
+  // Check if teacher owns this homework
+  if (homework.teacherId !== teacher.id) {
+    throw new Error("Unauthorized to edit this homework");
+  }
+
+  return homework;
+}
+
+// Update homework with questions
+export async function updateHomeworkWithQuestions(
+  homeworkId: number,
+  questions: Array<{
+    id?: number;
+    questionNumber: number;
+    content?: string;
+    answer: string;
+    point?: number;
+    options?: string[];
+  }>
+) {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "teacher") {
+    throw new Error("Unauthorized");
+  }
+
+  const teacher = await prisma.teacher.findUnique({
+    where: { userId: user.id as string },
+  });
+  if (!teacher) {
+    throw new Error("Teacher not found");
+  }
+
+  return await prisma.$transaction(async (prisma) => {
+    // Verify homework ownership
+    const homework = await prisma.homework.findUnique({
+      where: { id: homeworkId },
+      include: { questions: true }
+    });
+
+    if (!homework || homework.teacherId !== teacher.id) {
+      throw new Error("Unauthorized to edit this homework");
+    }
+
+    // Delete existing questions
+    await prisma.question.deleteMany({
+      where: { homeworkId: homeworkId }
+    });
+
+    // Create new questions
+    await prisma.question.createMany({
+      data: questions.map((q) => ({
+        questionNumber: q.questionNumber,
+        content: q.content || `Câu ${q.questionNumber}`,
+        answer: q.answer,
+        point: q.point ?? undefined,
+        options: q.options ?? undefined,
+        homeworkId: homeworkId,
+        questionType: homework.type === "original" ? "manual" : "multiple_choice",
+      })),
+    });
+
+    // Update total points
+    const totalPoints = questions.reduce((sum, q) => sum + (q.point || 0), 0);
+    await prisma.homework.update({
+      where: { id: homeworkId },
+      data: { points: totalPoints }
+    });
+
+    return { success: true };
+  });
+}
+
+// Update homework settings
+export async function updateHomeworkSettings(
+  homeworkId: number,
+  data: {
+    title: string;
+    startTime: string;
+    endTime: string;
+    duration: number;
+    maxAttempts: number;
+    studentViewPermission: 'NO_VIEW' | 'SCORE_ONLY' | 'SCORE_AND_RESULT';
+    blockViewAfterSubmit: boolean;
+    gradingMethod: 'FIRST_ATTEMPT' | 'LATEST_ATTEMPT' | 'HIGHEST_ATTEMPT';
+    isShuffleQuestions?: boolean;
+    isShuffleAnswers?: boolean;
+  }
+) {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "teacher") {
+    throw new Error("Unauthorized");
+  }
+
+  const teacher = await prisma.teacher.findUnique({
+    where: { userId: user.id as string },
+  });
+  if (!teacher) {
+    throw new Error("Teacher not found");
+  }
+
+  // Verify homework ownership
+  const homework = await prisma.homework.findUnique({
+    where: { id: homeworkId },
+  });
+
+  if (!homework || homework.teacherId !== teacher.id) {
+    throw new Error("Unauthorized to edit this homework");
+  }
+
+  await prisma.homework.update({
+    where: { id: homeworkId },
+    data: {
+      title: data.title,
+      startTime: new Date(data.startTime),
+      endTime: new Date(data.endTime),
+      duration: data.duration,
+      maxAttempts: data.maxAttempts,
+      studentViewPermission: data.studentViewPermission,
+      blockViewAfterSubmit: data.blockViewAfterSubmit,
+      gradingMethod: data.gradingMethod,
+      isShuffleQuestions: data.isShuffleQuestions ?? homework.isShuffleQuestions,
+      isShuffleAnswers: data.isShuffleAnswers ?? homework.isShuffleAnswers,
+    }
+  });
+
+  revalidatePath(`/class/${homework.classCode}/homework`);
+  return { success: true };
+}

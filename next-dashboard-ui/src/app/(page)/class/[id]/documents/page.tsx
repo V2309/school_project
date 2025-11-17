@@ -2,7 +2,7 @@
 import { getCurrentUser } from "@/hooks/auth";
 import DocumentPageClient from "@/components/DocumentPageClient";
 import prisma from "@/lib/prisma";
-
+import { ITEM_PER_PAGE } from "@/lib/setting";
 interface DocumentPageProps {
   params: { id: string };
   searchParams: { [key: string]: string | undefined };
@@ -18,6 +18,9 @@ export default async function Document({ params, searchParams }: DocumentPagePro
   }
 
   // Lấy danh sách tài liệu từ server
+  const { page, search } = searchParams;
+  const p = page ? parseInt(page) : 1;
+  
   let whereClause: any = { classCode };
   
   // Nếu là teacher, chỉ lấy files do họ upload
@@ -26,50 +29,59 @@ export default async function Document({ params, searchParams }: DocumentPagePro
   }
 
   // Thêm điều kiện search nếu có
-  if (searchParams?.search) {
+  if (search) {
     whereClause.name = {
-      contains: searchParams.search,
+      contains: search,
       mode: "insensitive",
     };
   }
 
-  const files = await prisma.file.findMany({
-    where: whereClause,
-    include: {
-      teacher: {
-        select: {
-          username: true,
-        },
-      },
-      class: {
-        select: {
-          name: true,
-          class_code: true,
-        },
-      },
-      views: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-            },
+  // Sử dụng transaction để lấy cả files và count
+  const [files, count] = await prisma.$transaction([
+    // Lấy danh sách files
+    prisma.file.findMany({
+      where: whereClause,
+      include: {
+        teacher: {
+          select: {
+            username: true,
           },
         },
-        orderBy: {
-          viewedAt: 'asc' // Sắp xếp theo thời gian xem để lấy lần đầu tiên
-        }
-      },
-      _count: {
-        select: {
-          views: true,
+        class: {
+          select: {
+            name: true,
+            class_code: true,
+          },
+        },
+        views: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+              },
+            },
+          },
+          orderBy: {
+            viewedAt: 'asc' // Sắp xếp theo thời gian xem để lấy lần đầu tiên
+          }
+        },
+        _count: {
+          select: {
+            views: true,
+          },
         },
       },
-    },
-    orderBy: {
-      uploadedAt: "desc",
-    },
-  });
+      orderBy: {
+        uploadedAt: "desc",
+      },
+      take: ITEM_PER_PAGE,
+      skip: ITEM_PER_PAGE * (p - 1),
+    }),
+    
+    // Đếm tổng số files
+    prisma.file.count({ where: whereClause }),
+  ]);
 
   // Thêm thông tin về việc user hiện tại đã xem file hay chưa và convert Date thành string
   const filesWithViewStatus = files.map(file => {
@@ -93,6 +105,8 @@ export default async function Document({ params, searchParams }: DocumentPagePro
         userRole={user?.role as string} 
         initialFiles={filesWithViewStatus}
         classCode={classCode}
+        count={count}
+        page={p}
       />
     </div>
   );

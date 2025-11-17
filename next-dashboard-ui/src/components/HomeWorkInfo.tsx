@@ -115,6 +115,14 @@ export function HomeWorkInfo({
       );
     }
   };
+  const handleViewEdit = () => {
+    const classCode = getClassCode();
+    if (classCode) {
+      router.push(`/class/${classCode}/homework/${homework.id}/edit`);
+    } else {
+      toast.error("Không tìm thấy mã lớp!");
+    }
+  };
 
   const handleDownload = async () => {
     try {
@@ -304,7 +312,7 @@ export function HomeWorkInfo({
               <MenuItem icon={<MonitorPlay size={18} />} onClick={handlePractice} label="Làm thử" />
               <MenuItem icon={<Info size={18} />} label="Chi tiết" active />
 
-              <MenuItem icon={<Pencil size={18} />} label="Chỉnh sửa" />
+              <MenuItem icon={<Pencil size={18} />} onClick={handleViewEdit} label="Chỉnh sửa" />
               <MenuItem
                 icon={<Printer size={18} />}
                 label="Xuất dữ liệu"
