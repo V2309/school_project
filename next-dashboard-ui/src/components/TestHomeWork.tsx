@@ -51,6 +51,13 @@ export function TestHomeWork({
 }: ExamTestProps) {
   const router = useRouter();
 
+  // DEBUG: Kiểm tra dữ liệu questions
+  console.log("TestHomeWork Debug:", {
+    questionsLength: questions.length,
+    questions: questions,
+    homework: homework
+  });
+
   // === BƯỚC 2: DI CHUYỂN TẤT CẢ HOOKS LÊN ĐẦU ===
   const [submission, setSubmission] = useState<any>(null); // Lưu kết quả bài làm
   const [current, setCurrent] = useState(0);
@@ -58,10 +65,52 @@ export function TestHomeWork({
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const questionRefs = useRef<Record<number, HTMLDivElement | null>>({});
 
+  // --- THÊM DÒNG NÀY: State đếm số lần chuyển tab ---
+  const [violationCount, setViolationCount] = useState(0);
+
+  // --- THÊM ĐOẠN NÀY: Lắng nghe sự kiện chuyển tab ---
+  useEffect(() => {
+    // 1. Nếu không phải học sinh hoặc đã nộp bài rồi thì không theo dõi
+    if (role !== "student" || submission) return;
+
+    const handleVisibilityChange = () => {
+      // 2. Nếu trạng thái là hidden (người dùng chuyển tab hoặc minimize)
+      if (document.visibilityState === "hidden") {
+        setViolationCount((prev) => {
+          const newCount = prev + 1;
+
+          // 3. Hiển thị cảnh báo
+          toast.warning(
+            `CẢNH BÁO: Hệ thống phát hiện bạn rời màn hình! (Lần ${newCount})`,
+            {
+              position: "top-center",
+              autoClose: 4000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: false,
+              draggable: false,
+              theme: "colored",
+            }
+          );
+
+          return newCount;
+        });
+      }
+    };
+
+    // 4. Gắn sự kiện
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // 5. Gỡ sự kiện khi thoát
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [role, submission]);
+
   // 1. Function để hiện modal xác nhận
   const handleSubmitClick = useCallback(() => {
     if (!homework) return;
-    
+
     const currentAnswers =
       role === "teacher" ? answers : sessionDataRef.current?.answers || {};
 
@@ -110,6 +159,7 @@ export function TestHomeWork({
           answers: currentAnswers,
           role,
           timeSpent,
+          violationCount: role === "student" ? violationCount : 0,
           file: {
             name: homework.fileName,
             type: homework.fileType,
@@ -136,7 +186,7 @@ export function TestHomeWork({
       toast.error("Có lỗi xảy ra khi nộp bài.");
       console.error("Submit error:", error);
     }
-  }, [homework, role, answers, userId, questions, classCode, router]);
+  }, [homework, role, answers, userId, classCode, router, violationCount]);
 
   // 2. Gọi useHomeworkSession (luôn gọi, không có điều kiện)
   const sessionData = useHomeworkSession({
@@ -312,6 +362,30 @@ export function TestHomeWork({
                 .toString()
                 .padStart(2, "0")}`}
         </div>
+        {/* --- THÊM ĐOẠN NÀY: Hiển thị cảnh báo nếu có vi phạm --- */}
+        {role === "student" && violationCount > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded p-3 animation-pulse">
+            <div className="flex items-center gap-2 text-red-700 font-bold text-sm mb-1">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              CẢNH BÁO GIAN LẬN
+            </div>
+            <div className="text-red-600 text-xs">
+              Hệ thống phát hiện bạn đã rời khỏi bài thi <b>{violationCount}</b>{" "}
+              lần. Giáo viên sẽ nhận được thông báo này.
+            </div>
+          </div>
+        )}
         <div className="mb-2">
           <div className="font-semibold mb-1">Phiếu trả lời</div>
           <div className="grid grid-cols-5 gap-2 mb-2">
@@ -334,40 +408,40 @@ export function TestHomeWork({
           </div>
           <div>
             <div className="mb-1">Đáp án câu {current + 1}:</div>
-            <div className="flex gap-2 mb-2">
-              {/* Tạo nút dựa trên số lượng options thực tế */}
-              {questions[current]?.options?.map((_, index) => {
-                const optionLetter = String.fromCharCode(65 + index);
-                return (
-                  <button
-                    key={optionLetter}
-                    className={`px-3 py-1 border rounded ${
-                      getAnswers()[questions[current].id] === optionLetter
-                        ? "bg-blue-500 text-white"
-                        : ""
-                    }`}
-                    onClick={() => handleSelect(questions[current].id, optionLetter)}
-                    type="button"
-                  >
-                    {optionLetter}
-                  </button>
-                );
-              }) || 
-              // Fallback nếu không có options
-              ["A", "B", "C", "D"].map((opt) => (
-                <button
-                  key={opt}
-                  className={`px-3 py-1 border rounded ${
-                    getAnswers()[questions[current].id] === opt
-                      ? "bg-blue-500 text-white"
-                      : ""
-                  }`}
-                  onClick={() => handleSelect(questions[current].id, opt)}
-                  type="button"
-                >
-                  {opt}
-                </button>
-              ))}
+            <div className="flex gap-2 mb-2 flex-wrap">
+              {(() => {
+                // Lấy options từ câu hỏi hiện tại
+                const currentOptions = questions[current]?.options;
+
+                // Kiểm tra: Nếu options tồn tại VÀ có dữ liệu (>0) thì dùng độ dài đó
+                // Nếu không (null, undefined, hoặc mảng rỗng []) -> Mặc định là 4
+                const count =
+                  currentOptions && currentOptions.length > 0
+                    ? currentOptions.length
+                    : 4;
+
+                // Tạo danh sách nút dựa trên count
+                return Array.from({ length: count }).map((_, index) => {
+                  const label = String.fromCharCode(65 + index); // 0->A, 1->B, 2->C...
+                  const isSelected =
+                    getAnswers()[questions[current].id] === label;
+
+                  return (
+                    <button
+                      key={label}
+                      className={`w-10 h-10 border rounded font-bold transition-all ${
+                        isSelected
+                          ? "bg-blue-600 text-white border-blue-600 shadow-md scale-105" // Style khi chọn
+                          : "bg-white text-gray-700 hover:bg-gray-50" // Style mặc định
+                      }`}
+                      onClick={() => handleSelect(questions[current].id, label)}
+                      type="button"
+                    >
+                      {label}
+                    </button>
+                  );
+                });
+              })()}
             </div>
             <input
               className="border px-2 py-1 rounded w-full"
@@ -407,21 +481,26 @@ export function TestHomeWork({
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               Xác nhận nộp bài
             </h3>
-            
+
             <div className="mb-6">
               <p className="text-gray-600 mb-3">
-                {role === "student" 
+                {role === "student"
                   ? "Bạn có chắc chắn muốn nộp bài? Sau khi nộp bài, bạn sẽ không thể chỉnh sửa lại."
-                  : "Xác nhận hoàn thành xem trước bài tập này?"
-                }
+                  : "Xác nhận hoàn thành xem trước bài tập này?"}
               </p>
-              
+
               {role === "student" && (
                 <div className="bg-yellow-50 border border-yellow-200 rounded p-3">
                   <div className="text-sm text-yellow-800">
                     <div className="font-medium mb-1">Thông tin bài làm:</div>
-                    <div>• Số câu đã trả lời: {Object.keys(getAnswers()).length}/{questions.length}</div>
-                    <div>• Thời gian làm bài: {Math.floor(getTimeSpent() / 60)} phút {getTimeSpent() % 60} giây</div>
+                    <div>
+                      • Số câu đã trả lời: {Object.keys(getAnswers()).length}/
+                      {questions.length}
+                    </div>
+                    <div>
+                      • Thời gian làm bài: {Math.floor(getTimeSpent() / 60)}{" "}
+                      phút {getTimeSpent() % 60} giây
+                    </div>
                   </div>
                 </div>
               )}

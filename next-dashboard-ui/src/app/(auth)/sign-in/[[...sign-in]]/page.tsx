@@ -38,8 +38,11 @@ export default function SignInPage() {
       window.dispatchEvent(new CustomEvent('user-logged-in'));
       
       // 3. TỐI ƯU: Dùng router.push() thay vì window.location.href
-      // Xóa bỏ setTimeout không cần thiết
-      if (state.role === "teacher") {
+      // Xóa bỏ setTimeout không cần thiết , nếu role là admin thì redirect về /dashboard
+
+      if (state.role === "admin") {
+        router.push("/dashboard");
+      } else if (state.role === "teacher") {
         router.push("/class");
       } else if (state.role === "student") {
         router.push("/overview");

@@ -6,12 +6,12 @@ const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET_KEY || "default_secret_key"
 );
 
-// Chỉ định nghĩa các route KHÔNG cần bảo vệ (public routes)
+// 1. BỎ "/dashboard" ra khỏi publicRoutes
 const publicRoutes = [
   "/",
   "/sign-in", 
   "/sign-up",
-  "/dashboard"
+  // "/dashboard" <--- Đã xóa dòng này
 ];
 
 export async function middleware(req: NextRequest) {
@@ -41,7 +41,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // Tất cả routes khác đều cần bảo vệ
+  // Tất cả routes khác đều cần bảo vệ (bao gồm /dashboard)
   const token = req.cookies.get("session")?.value;
 
   if (!token) {
@@ -50,7 +50,19 @@ export async function middleware(req: NextRequest) {
   }
 
   try {
-    await jwtVerify(token, JWT_SECRET);
+    // Giải mã token để lấy thông tin user (bao gồm role)
+    const { payload } = await jwtVerify(token, JWT_SECRET);
+
+    // 2. THÊM LOGIC CHECK QUYỀN ADMIN CHO DASHBOARD
+    // Nếu đang truy cập vào đường dẫn bắt đầu bằng /dashboard
+    if (pathname.startsWith("/dashboard")) {
+      // Kiểm tra role trong payload (giả sử bạn lưu role là 'admin')
+      if (payload.role !== "admin") {
+        // Nếu không phải admin -> Đẩy về trang chủ (hoặc trang báo lỗi 403)
+        return NextResponse.redirect(new URL("/", req.url));
+      }
+    }
+
     return NextResponse.next();
   } catch (err) {
     console.error("Lỗi xác thực JWT middleware:", err);
@@ -63,7 +75,6 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    // Áp dụng cho tất cả routes trừ file tĩnh và _next
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)$).*)",
   ],
 };

@@ -106,10 +106,12 @@ export function HomeWorkInfo({
     const classCode = getClassCode();
     if (!classCode) return toast.error("Không tìm thấy mã lớp!");
     if (bestSubmissionId) {
+      // utid = submission ID (ID của bài làm cụ thể)
       router.push(
         `/class/${classCode}/homework/${homework.id}/detail?utid=${bestSubmissionId}`
       );
     } else {
+      // Lấy bài làm có điểm cao nhất của student
       router.push(
         `/class/${classCode}/homework/${homework.id}/detail?homeworkId=${homework.id}&getBest=true`
       );
@@ -289,7 +291,7 @@ export function HomeWorkInfo({
                         homework.gradingMethod === 'HIGHEST_ATTEMPT' ? 'Điểm cao nhất' :
                           'Điểm hiện tại'
                   }
-                  value={`${currentGrade.toFixed(2)}/${homework.points || 10} điểm`}
+                  value={`${Math.round(currentGrade * 100) / 100}/${Math.round((homework.points || 10) * 100) / 100} điểm`}
                 />
               )}
               {/* Hiển thị thông báo khi không có quyền xem điểm và chưa hết hạn */}

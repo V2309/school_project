@@ -268,3 +268,25 @@ export async function changePassword(
     return { success: false, error: "Đổi mật khẩu thất bại. Vui lòng thử lại." };
   }
 }
+
+
+export const toggleUserBlock = async (userId: string, currentStatus: boolean) => {
+  try {
+    await prisma.user.update({
+      where: {
+        id: userId,
+      },
+      data: {
+        isBanned: !currentStatus, // Đảo ngược trạng thái hiện tại
+      },
+    });
+
+    // Làm mới lại dữ liệu trang dashboard user để UI cập nhật ngay lập tức
+    revalidatePath("/dashboard/user");
+    
+    return { success: true, message: "Cập nhật trạng thái thành công!" };
+  } catch (err) {
+    console.log(err);
+    return { success: false, message: "Có lỗi xảy ra!" };
+  }
+};

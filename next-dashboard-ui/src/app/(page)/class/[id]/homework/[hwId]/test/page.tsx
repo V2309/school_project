@@ -1,37 +1,56 @@
 import prisma from "@/lib/prisma";
-import { TestHomeWork } from "@/components/TestHomeWork";
+import { TestHomeWork } from "@/components/TestHomeWork"; //
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/hooks/auth";
 
 export default async function HomeworkTestPage({ params }: { params: { id: string; hwId: number } }) {
+  // 1. Lấy thông tin bài tập
   const homework = await prisma.homework.findUnique({
     where: { id: Number(params.hwId) },
     include: {
-      questions: true, // Sửa từ Question thành questions
-      attachments: true, // lấy luôn file đính kèm
+      questions: true,
+      attachments: true,
     },
   });
 
   if (!homework) {
-    redirect("/404"); // Redirect đến trang 404 nếu không tìm thấy bài tập
+    redirect("/404");
   }
-  
+
+  // 2. Map dữ liệu câu hỏi
   const questions = homework.questions.map((q: any) => ({
     id: q.id,
     content: q.content,
-    options: q.options || [], // Sử dụng trường options dạng JSON
+    options: q.options || [],
     point: q.point,
-    answer: q.answer, // Thêm đáp án đúng từ database
+    answer: q.answer,
   }));
+
+  // DEBUG: Kiểm tra dữ liệu
+  console.log("Test Page Debug:", {
+    homeworkId: homework.id,
+    homeworkType: homework.type,
+    questionsFromDB: homework.questions.length,
+    mappedQuestions: questions.length,
+    firstQuestion: questions[0] || null
+  });
 
   const duration = homework.duration || 30;
   const user = await getCurrentUser();
-  const userId = user?.id;
-  const role = user?.role;
   
-  // Kiểm tra số lần đã làm và quyền làm bài của học sinh
+  if (!user) {
+      redirect("/login"); // Handle case no user
+  }
+
+  const userId = user.id;
+  const role = user.role;
+
+  // Biến để xác định đây là lần làm bài thứ mấy
+  let currentAttempt = 1;
+
+  // 3. Logic kiểm tra quyền làm bài của học sinh
   if (role === 'student') {
-    // Đếm số lần đã làm bài
+    // Đếm số lần đã làm bài (chỉ đếm các bài đã nộp thành công hoặc đang làm)
     const submissionCount = await prisma.homeworkSubmission.count({
       where: {
         homeworkId: homework.id,
@@ -39,50 +58,50 @@ export default async function HomeworkTestPage({ params }: { params: { id: strin
       }
     });
 
+    // Cập nhật lần làm bài hiện tại (để truyền xuống client reset bộ đếm)
+    currentAttempt = submissionCount + 1;
+
     const maxAttempts = homework.maxAttempts || 1;
 
-    // Debug log
-    console.log(`DEBUG: submissionCount=${submissionCount}, maxAttempts=${maxAttempts}, blockViewAfterSubmit=${homework.blockViewAfterSubmit}`);
+    console.log(`CHECK QUYỀN: Đã làm ${submissionCount}/${maxAttempts} lần`);
 
-    // Kiểm tra đã hết lượt làm bài chưa
+    // A. Kiểm tra hết lượt
     if (submissionCount >= maxAttempts) {
-      console.log('REDIRECT: Đã hết lượt làm bài');
-      redirect(`/class/${params.id}/homework/list`);
+      // QUAN TRỌNG: Hết lượt thì về trang CHI TIẾT để xem kết quả, không về List
+      redirect(`/class/${params.id}/homework/${params.hwId}/detail?msg=max_attempts`);
     }
 
-    // Kiểm tra thời gian bắt đầu và kết thúc
+    // B. Kiểm tra thời gian
     const now = new Date();
     const startTime = homework.startTime ? new Date(homework.startTime) : null;
     const endTime = homework.endTime ? new Date(homework.endTime) : null;
 
     if (startTime && now < startTime) {
-      console.log('REDIRECT: Chưa đến thời gian làm bài');
-      redirect(`/class/${params.id}/homework/list`);
+      redirect(`/class/${params.id}/homework/${params.hwId}/detail?msg=not_started`);
     }
 
     if (endTime && now > endTime) {
-      console.log('REDIRECT: Đã hết thời gian làm bài');
-      redirect(`/class/${params.id}/homework/list`);
+      redirect(`/class/${params.id}/homework/${params.hwId}/detail?msg=expired`);
     }
 
-    // Chỉ kiểm tra blockViewAfterSubmit nếu có submission hoàn thành (có điểm)
+    // C. Kiểm tra chặn xem lại (Block View)
     if (homework.blockViewAfterSubmit) {
       const completedSubmission = await prisma.homeworkSubmission.findFirst({
         where: {
           homeworkId: homework.id,
           studentId: userId as string,
-          grade: { not: null } // Chỉ submission đã hoàn thành
+          grade: { not: null } // Đã có điểm
         }
       });
       
       if (completedSubmission) {
-        console.log('REDIRECT: Đã hoàn thành và bị chặn xem lại');
-        redirect(`/class/${params.id}/homework/list`);
+        // Nếu bị chặn xem lại thì mới về trang List
+        redirect(`/class/${params.id}/homework/list?msg=blocked`);
       }
     }
   }
   
-  // Xử lý file attachment hoặc originalFile tùy theo type
+  // 4. Xử lý file đề bài
   let fileInfo = {
     fileUrl: "",
     fileType: "",
@@ -90,7 +109,6 @@ export default async function HomeworkTestPage({ params }: { params: { id: strin
   };
 
   if (homework.type === "extracted") {
-    // Với dạng extracted, dùng originalFile nếu có
     if (homework.originalFileUrl) {
       fileInfo = {
         fileUrl: homework.originalFileUrl,
@@ -99,7 +117,6 @@ export default async function HomeworkTestPage({ params }: { params: { id: strin
       };
     }
   } else {
-    // Với dạng original, dùng attachment
     const file = homework.attachments?.[0];
     if (file) {
       fileInfo = {
@@ -110,7 +127,6 @@ export default async function HomeworkTestPage({ params }: { params: { id: strin
     }
   }
 
-
   return (
     <TestHomeWork
       homework={{
@@ -118,7 +134,7 @@ export default async function HomeworkTestPage({ params }: { params: { id: strin
         title: homework.title,
         description: homework.description ?? "",
         duration: homework.duration ?? 30,
-        type: homework.type ?? "original", // Thêm type để phân biệt
+        type: homework.type ?? "original",
         ...fileInfo,
       }}
       questions={questions}
@@ -126,6 +142,8 @@ export default async function HomeworkTestPage({ params }: { params: { id: strin
       userId={userId as string}
       classCode={params.id}
       role={role as string}
+      // [QUAN TRỌNG] Truyền key này để React biết đây là lần làm mới -> Reset state/cache
+      key={`attempt-${currentAttempt}`} 
     />
   );
 }

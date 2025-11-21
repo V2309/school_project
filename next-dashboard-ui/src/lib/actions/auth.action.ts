@@ -32,6 +32,9 @@ export async function loginAction(prevState: any, formData: FormData) {
     return { error: "Tài khoản không tồn tại." };
   }
 
+  if (user.isBanned) {
+    return { error: "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên." };
+  }
   const isMatch = await compare(password, user.password);
   if (!isMatch) {
     return { error: "Mật khẩu không đúng." };

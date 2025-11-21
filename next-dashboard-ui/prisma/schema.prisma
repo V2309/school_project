@@ -13,10 +13,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Admin {
-  id       String @id
-  username String @unique
-}
+
 
 model User {
 
@@ -35,6 +32,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt @default(now())
   password  String
+
+  isBanned   Boolean  @default(false)
 
  // --- THÊM CÁC TRƯỜNG NÀY ---
   isEmailVerified    Boolean @default(false)
@@ -331,6 +330,7 @@ enum Day {
 enum UserRole {
   teacher
   student
+  admin
 }
 
 
@@ -415,7 +415,7 @@ model HomeworkSubmission {
   homework   Homework @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
   studentId  String
   student    Student  @relation(fields: [studentId], references: [id])
-
+  violationCount Int      @default(0)
   attachments     HomeworkSubmissionAttachment[] 
   questions       Question[]                     
   questionAnswers QuestionAnswer[]               

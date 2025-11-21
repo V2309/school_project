@@ -55,25 +55,13 @@ export default function QuestionCardGrid({
     }
   }, [isEditMode, customTotalPoints, autoCalculatedPoints]);
   
-  // Update custom total points when questions change
-  useEffect(() => {
-    if (isEditMode) {
-      // Chỉ cập nhật customTotalPoints khi khởi tạo, không tự động cập nhật khi thay đổi
-      if (customTotalPoints === 0 && autoCalculatedPoints > 0) {
-        setCustomTotalPoints(autoCalculatedPoints);
-      }
-    }
-  }, [isEditMode, autoCalculatedPoints]); // Bỏ questions khỏi dependency
 
   // Nhập nhanh đáp án
   const handleQuickAnswers = () => {
     const inputString = quickAnswers.trim();
     const inputArray = inputString.split("");
     
-    console.log("Quick input:", inputString);
-    console.log("Input array:", inputArray);
-    console.log("Num questions:", displayNumQuestions);
-    console.log("Current answers:", displayAnswers);
+
     
     if (isEditMode && onQuestionsChange) {
       // Update questions in edit mode

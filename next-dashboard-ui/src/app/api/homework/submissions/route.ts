@@ -2,7 +2,7 @@ import prisma from "@/lib/prisma";
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { homeworkId, studentId, answers, file, role } = body;
+  const { homeworkId, studentId, answers, file, role, violationCount } = body;
 
   // Kiểm tra xem userId có tồn tại không (có thể là student hoặc teacher)
   let user = null;
@@ -85,6 +85,7 @@ export async function POST(req: Request) {
       homework: { connect: { id: homeworkId } },
       student: { connect: { id: studentId } },
       grade: Math.round(totalPoints * 100) / 100, // Làm tròn 2 chữ số thập phân
+      violationCount: violationCount || 0,
       questionAnswers: {
         create: questionAnswers,
       },

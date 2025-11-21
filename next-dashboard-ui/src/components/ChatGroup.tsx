@@ -154,7 +154,7 @@ export function ChatBox({
   useEffect(() => {
     if (!user || !classCode) return;
 
-    console.log(`[ChatGroup] User ${user.username} (ID: ${user.id}) setting up listeners for class: ${classCode}`);
+
 
     // Lấy channel từ globalPresenceManager hoặc đợi nó được tạo
     const setupChannelListeners = async () => {
@@ -163,34 +163,29 @@ export function ChatBox({
         let channel = globalPresenceManager.getChannel(classCode);
         
         if (!channel) {
-          console.log(`[ChatGroup] Channel not found, subscribing to class: ${classCode}`);
+        
           channel = await globalPresenceManager.subscribeToClass(classCode);
         }
         
         if (!channel) {
-          console.error(`[ChatGroup] Failed to get or create channel for class: ${classCode}`);
+         
           return;
         }
         
         channelRef.current = channel;
-        console.log(`[ChatGroup] Connected to channel for class: ${classCode}`);
+   
 
         // Lấy members hiện tại ngay lập tức
         const currentMembers = globalPresenceManager.getCurrentMembers(classCode);
         if (currentMembers.length > 0) {
           setOnlineMembers(currentMembers);
-          console.log(`[ChatGroup] Got current online members: ${currentMembers.length}`);
-          console.log("[ChatGroup] Online members from Pusher:", currentMembers.map(m => ({ 
-            id: m.id, 
-            idType: typeof m.id,
-            username: m.info.username 
-          })));
+        
 
           // Cập nhật trạng thái online cho class members
           setClassMembers((prev) => {
             return prev.map((m) => {
               const isOnline = currentMembers.some((om) => String(om.id) === String(m.id));
-              console.log(`[ChatGroup] Member ${m.username} (${m.id}) isOnline: ${isOnline}`);
+        
               return {
                 ...m,
                 isOnline,
@@ -212,7 +207,7 @@ export function ChatBox({
                   };
                 });
               });
-              console.log(`[ChatGroup] Got members on retry: ${retryMembers.length}`);
+             
             }
           }, 500);
         }

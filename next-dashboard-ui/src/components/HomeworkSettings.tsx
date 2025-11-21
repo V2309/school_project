@@ -22,7 +22,7 @@ interface HomeworkSettingsProps {
   onChange?: (data: Partial<HomeworkFormData>) => void;
   validationErrors?: Record<string, string>;
   disabled?: boolean;
-  type?: 'original' | 'extracted';
+  type?: 'original' | 'extracted' | 'essay';
   // Edit mode props
   currentData?: HomeworkFormData;
   isEditMode?: boolean;
@@ -88,12 +88,7 @@ export default function HomeworkSettings({
   isLoading = false
 }: HomeworkSettingsProps) {
   // Debug logs
-  console.log('HomeworkSettings props:', {
-    disabled,
-    isEditMode,
-    isLoading,
-    currentData: !!currentData
-  });
+ 
 
   const [formData, setFormData] = useState<HomeworkFormData>(
     currentData || data || {

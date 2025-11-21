@@ -16,8 +16,8 @@ import { Button } from "@/components/ui/button";
 
 // Danh sách các link điều hướng
 const navItems = [
-  { href: "/", label: "Dashboard", icon: Home },
-  { href: "/analytics", label: "Analytics", icon: LineChart },
+  { href: "/dashboard", label: "Dashboard", icon: Home },
+  { href: "/dashboard/user", label: "Users", icon: Users },
 ];
 
 export function Sidebar() {

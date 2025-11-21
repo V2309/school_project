@@ -7,7 +7,6 @@ export async function POST(request: NextRequest) {
   try {
     // Log request để debug
     const url = request.url;
-    console.log(`[Pusher Auth] Request received at: ${url}`);
     
     const user = await getCurrentUser();
     if (!user) {
@@ -28,22 +27,20 @@ export async function POST(request: NextRequest) {
         const body = await request.json();
         socketId = body.socket_id || null;
         channel = body.channel_name || null;
-        console.log("[Pusher Auth] Parsed from JSON:", { socketId, channel });
+       
       } else {
         // Mặc định dùng formData
         const data = await request.formData();
         socketId = data.get("socket_id") as string;
         channel = data.get("channel_name") as string;
-        console.log("[Pusher Auth] Parsed from FormData:", { socketId, channel });
+     
       }
     } catch (parseError) {
       console.error("[Pusher Auth] Error parsing request:", parseError);
       return new NextResponse("Bad Request", { status: 400 });
     }
 
-    console.log(`[Pusher Auth] Authenticating user ${user.username} (${user.id})`);
-    console.log(`[Pusher Auth] Socket ID: ${socketId}`);
-    console.log(`[Pusher Auth] Channel: ${channel || "(user authentication)"}`);
+    
 
     if (!socketId) {
       console.error("[Pusher Auth] Missing socket_id");
@@ -65,14 +62,14 @@ export async function POST(request: NextRequest) {
         id: String(user.id),
         user_info: userInfo,
       };
-      console.log("[Pusher Auth] User data:", JSON.stringify(userData, null, 2));
+    
       const authResponse = pusherServer.authenticateUser(socketId, userData);
-      console.log("[Pusher Auth] Authentication successful:", JSON.stringify(authResponse, null, 2));
+     
       return NextResponse.json(authResponse);
     }
 
     // Nếu có channel_name, đây là channel authorization request
-    console.log(`[Pusher Auth] Channel authorization request for: ${channel}`);
+  
 
     if (channel.startsWith('presence-')) {
       // Presence channel - dùng authorizeChannel với user data
@@ -89,10 +86,9 @@ export async function POST(request: NextRequest) {
         user_id: String(user.id), // Presence channel dùng user_id
         user_info: userInfo,
       };
-      console.log("[Pusher Auth] Using authorizeChannel for presence channel");
-      console.log("[Pusher Auth] User data:", JSON.stringify(presenceUserData, null, 2));
+    
       const authResponse = pusherServer.authorizeChannel(socketId, channel, presenceUserData);
-      console.log("[Pusher Auth] Authentication successful:", JSON.stringify(authResponse, null, 2));
+   
       
       return NextResponse.json(authResponse);
     } else {
@@ -109,10 +105,9 @@ export async function POST(request: NextRequest) {
         user_id: String(user.id),
         user_info: userInfo,
       };
-      console.log("[Pusher Auth] Using authorizeChannel for private channel");
-      console.log("[Pusher Auth] User data:", JSON.stringify(privateUserData, null, 2));
+    
       const authResponse = pusherServer.authorizeChannel(socketId, channel, privateUserData);
-      console.log("[Pusher Auth] Authentication successful:", JSON.stringify(authResponse, null, 2));
+    
       return NextResponse.json(authResponse);
     }
 

@@ -83,5 +83,14 @@ export default async function HomeworkDetail({ params, searchParams }: PageProps
     redirect("/404");
   }
 
+  // Debug log để kiểm tra dữ liệu
+  console.log("Detail Page Debug:", {
+    submissionId: submission.id,
+    questionAnswersCount: submission.questionAnswers?.length || 0,
+    hasQuestionAnswers: !!submission.questionAnswers,
+    searchParams,
+    homeworkId: submission.homeworkId
+  });
+
   return <HomeworkDetailClient submission={submission} />;
 }

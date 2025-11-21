@@ -53,7 +53,7 @@ const Notification = () => {
         const channel = pusherClient.subscribe(channelName);
         
         channel.bind("new-notification", (data: any) => {
-          console.log("Pusher received new notification:", data);
+       
           // Khi có thông báo mới, fetch lại danh sách
           // (Hoặc bạn có thể thêm trực tiếp vào state)
           fetchNotifications();

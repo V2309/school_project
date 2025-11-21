@@ -30,10 +30,23 @@ export default function HomeworkDetailClient({ submission }: HomeworkDetailClien
 
   const homework = submission.homework;
   
+  // Debug log để kiểm tra dữ liệu
+  console.log("Submission Debug:", {
+    submissionId: submission.id,
+    questionAnswers: submission.questionAnswers,
+    questionAnswersLength: submission.questionAnswers?.length || 0,
+    homework: {
+      id: homework.id,
+      title: homework.title,
+      studentViewPermission: homework.studentViewPermission,
+      endTime: homework.endTime
+    }
+  });
+  
   // Tính toán số câu đúng, sai, và chưa làm
-  const totalQuestions = submission.questionAnswers.length;
-  const correctAnswers = submission.questionAnswers.filter((qa: any) => qa.isCorrect).length;
-  const incorrectAnswers = submission.questionAnswers.filter((qa: any) => !qa.isCorrect && qa.answer).length;
+  const totalQuestions = submission.questionAnswers?.length || 0;
+  const correctAnswers = submission.questionAnswers?.filter((qa: any) => qa.isCorrect).length || 0;
+  const incorrectAnswers = submission.questionAnswers?.filter((qa: any) => !qa.isCorrect && qa.answer).length || 0;
   const unansweredQuestions = totalQuestions - correctAnswers - incorrectAnswers;
   
   // Kiểm tra quyền xem điểm và thời gian hết hạn
@@ -41,6 +54,18 @@ export default function HomeworkDetailClient({ submission }: HomeworkDetailClien
   const canViewScore = homework.studentViewPermission !== 'NO_VIEW';
   const shouldShowScore = canViewScore || isExpired;
   const canViewDetails = homework.studentViewPermission === 'SCORE_AND_RESULT' || isExpired;
+
+  // Debug logs
+  console.log('Debug Detail Page:', {
+    studentViewPermission: homework.studentViewPermission,
+    endTime: homework.endTime,
+    currentTime: new Date(),
+    isExpired,
+    canViewScore,
+    shouldShowScore,
+    canViewDetails,
+    questionAnswersLength: submission.questionAnswers?.length
+  });
 
 
 
@@ -251,7 +276,7 @@ export default function HomeworkDetailClient({ submission }: HomeworkDetailClien
                   </tr>
                 </thead>
                 <tbody>
-              {Array.isArray(submission.questionAnswers) ? (
+              {Array.isArray(submission.questionAnswers) && submission.questionAnswers.length > 0 ? (
                 submission.questionAnswers.map((qa: any, index: number) => (
                   <tr key={qa.id} className="text-center">
                     <td className="px-4 py-2 flex items-center gap-2">
@@ -267,14 +292,19 @@ export default function HomeworkDetailClient({ submission }: HomeworkDetailClien
                     {/* Hiển thị đáp án học sinh chọn */}
                     {qa.answer || "Chưa làm"}
                   </td>
-                  <td className="px-4 py-2">{qa.question.answer}</td>
-                  <td className="px-4 py-2">{qa.isCorrect ? qa.question.point : 0}</td>
+                  <td className="px-4 py-2">{qa.question?.answer || "N/A"}</td>
+                  <td className="px-4 py-2">{qa.isCorrect ? (qa.question?.point || 0) : 0}</td>
                 </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="border border-gray-300 px-4 py-2 text-center">
-                    Không có câu trả lời nào.
+                  <td colSpan={4} className="border border-gray-300 px-4 py-2 text-center text-red-500">
+                    <div className="py-4">
+                      <p className="font-medium">Không có dữ liệu câu trả lời!</p>
+                      <p className="text-xs mt-1">
+                        Submission ID: {submission.id} - QuestionAnswers: {submission.questionAnswers?.length || 0}
+                      </p>
+                    </div>
                   </td>
                 </tr>
               )}

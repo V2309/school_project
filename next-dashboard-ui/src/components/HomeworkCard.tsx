@@ -72,7 +72,7 @@ export function HomeworkCard({ homework, role }: HomeworkCardProps) {
       setIsLoading(false);
     }
   }, [homework.id, role]);
-  const maxPoints = homework.points || 0; // Điểm tối đa, mặc định 0
+  const maxPoints = Math.round((homework.points || 0) * 100) / 100; // Điểm tối đa, làm tròn 2 chữ số thập phân
   
   // Kiểm tra quyền xem điểm
   const canViewScore = homework.studentViewPermission !== 'NO_VIEW';
@@ -122,7 +122,7 @@ export function HomeworkCard({ homework, role }: HomeworkCardProps) {
         {role === "student" && currentGrade !== null && shouldShowScore && (
           <div className="flex-shrink-0 ml-4">
             <div className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-            {currentGrade.toFixed(2)}/{maxPoints} điểm
+            {Math.round(currentGrade * 100) / 100}/{maxPoints} điểm
             </div>
           </div>
         )}
