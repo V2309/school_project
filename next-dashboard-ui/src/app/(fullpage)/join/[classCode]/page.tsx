@@ -1,7 +1,7 @@
 
 // join/[classCode]/page.tsx
 import prisma from "@/lib/prisma";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import JoinClassConfirm from "@/components/JoinClassConfirm";
 import { Prisma } from "@prisma/client";

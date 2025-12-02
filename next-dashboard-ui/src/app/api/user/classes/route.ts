@@ -1,6 +1,6 @@
 // app/api/user/classes/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
 

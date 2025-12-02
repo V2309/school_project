@@ -1,6 +1,6 @@
 // app/api/notifications/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
 // --- GET: Lấy tất cả thông báo CHƯA ĐỌC ---

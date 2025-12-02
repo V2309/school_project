@@ -2,7 +2,7 @@
 import prisma from "@/lib/prisma";
 import Link from "next/link";
 import HomeworkListClient from "@/components/HomeworkListClient";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 
 export default async function HomeworkList({ params }: { params: { id: string } }) {
   // Lấy tổng số học sinh trong lớp

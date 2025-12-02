@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import Post from "@/components/Post";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 import InfiniteFeed from "./InfiniteFeed";
 
 const Feed = async ({ userProfileId, classCode }: { userProfileId?: string, classCode?: string }) => {

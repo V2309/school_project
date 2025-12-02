@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import Feed from "@/components/Feed";
 import Share from "@/components/Share";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { AcademicCapIcon } from '@heroicons/react/24/outline';;
 export default async function NewsfeedPage({ params }: { params: { id: string } }) {
   // Lấy thông tin lớp học từ class_code (vì params.id có thể là class_code)

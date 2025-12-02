@@ -5,7 +5,7 @@ import { ArrowLeft, Save, Trash2, Download } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import CollaborativeWhiteboard from "@/components/CollaborativeWhiteboard";
 
-import {getCurrentUser} from "@/hooks/auth";
+import {getCurrentUser} from "@/lib/auth";
 
 export default function WhiteboardPage({params}: {params: {id: string}}) {
 

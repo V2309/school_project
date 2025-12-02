@@ -2,7 +2,7 @@
 import prisma from "@/lib/prisma";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { pusherServer } from "@/lib/pusher-server";
 import { z } from "zod";
 import { UploadResponse } from "imagekit/dist/libs/interfaces";

@@ -156,7 +156,7 @@
 import prisma from "@/lib/prisma";
 import { Prisma, Teacher, Student, Class } from "@prisma/client";
 import { ITEM_PER_PAGE } from "@/lib/setting";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 import ClassListPageCommon from "@/components/ClassListPageCommon";
 import FormContainer from "@/components/FormContainer";
 import Link from "next/link";

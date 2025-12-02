@@ -1,7 +1,7 @@
 
 'use server';
 
-import { getCurrentUser } from '@/hooks/auth';
+import { getCurrentUser } from '@/lib/auth';
 import { StreamClient } from '@stream-io/node-sdk';
 
 const STREAM_API_KEY = process.env.NEXT_PUBLIC_STREAM_API_KEY;

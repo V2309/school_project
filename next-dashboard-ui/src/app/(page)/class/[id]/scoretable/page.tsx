@@ -1,7 +1,7 @@
 
 // page/scoretable.tsx
 import prisma from "@/lib/prisma";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import ScorePageClient from "@/components/ScorePageClient"; // 1. Import component client mới
 

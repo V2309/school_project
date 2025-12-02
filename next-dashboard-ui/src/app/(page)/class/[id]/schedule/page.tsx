@@ -1,5 +1,5 @@
 import BigCalendar from "@/components/BigCalendar";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { Prisma } from "@prisma/client"; // Import kiểu dữ liệu
 

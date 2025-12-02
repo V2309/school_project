@@ -1,6 +1,6 @@
 import BigCalendar from "@/components/BigCalendar";
 import { getTeacherSchedules, getStudentSchedules } from "@/lib/actions/schedule.action";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
 export default async function SchedulePage() {

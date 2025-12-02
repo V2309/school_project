@@ -5,7 +5,7 @@ import { SignJWT } from "jose";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { Resend } from 'resend';
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 import crypto from "crypto";
 import { revalidatePath } from 'next/cache';
 
