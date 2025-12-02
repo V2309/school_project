@@ -1,27 +1,27 @@
-// app/api/files/[docId]/view/route.ts
-
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-import { getCurrentUser } from "@/hooks/auth";
+import prisma from "@/lib/prisma"; // Import instance Prisma chuẩn của bạn
+import { getCurrentUser } from "@/hooks/auth"; // Import hàm xác thực bạn vừa sửa (check đúng đường dẫn nhé)
+
+// ⚠️ Dòng này CỰC KỲ QUAN TRỌNG để tránh lỗi "Failed to collect page data"
 export const dynamic = "force-dynamic";
-// Khởi tạo 1 instance (nếu bạn chưa có file prisma.ts)
-const prisma = new PrismaClient();
-// Nếu bạn đã có file lib/prisma.ts, hãy import từ đó:
-// import prisma from "@/lib/prisma";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { docId: string } }
 ) {
   try {
+    // 1. Xác thực người dùng (Code server-side an toàn)
     const user = await getCurrentUser();
 
-    // 1. Chỉ giáo viên mới có quyền xem thống kê
+    // Chỉ giáo viên mới được xem thống kê
     if (!user || user.role !== "teacher") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const fileId = params.docId;
+    if (!fileId) {
+       return NextResponse.json({ error: "Missing docId" }, { status: 400 });
+    }
 
     // 2. Lấy classCode từ file
     const file = await prisma.file.findUnique({
@@ -54,12 +54,13 @@ export async function GET(
 
     const currentStudentIds = classInfo.students.map((s) => s.id);
 
-    // 4. Tính toán số liệu thống kê (Dựa trên học sinh HIỆN TẠI)
+    // 4. Tính toán số liệu thống kê
+    // Sử dụng transaction để tối ưu query
     const [studentViewsCount, totalViewsCount] = await prisma.$transaction([
       // Đếm lượt xem chỉ từ học sinh HIỆN TẠI
       prisma.fileView.count({
         where: {
-          fileId: fileId, // <-- ĐÃ SỬA: từ documentId thành fileId
+          fileId: fileId,
           user: {
             student: {
               id: { in: currentStudentIds },
@@ -67,24 +68,24 @@ export async function GET(
           },
         },
       }),
-      // Đếm TẤT CẢ lượt xem (bao gồm cả giáo viên)
+      // Đếm TẤT CẢ lượt xem (bao gồm cả giáo viên, học sinh cũ...)
       prisma.fileView.count({
         where: {
-          fileId: fileId, // <-- ĐÃ SỬA: từ documentId thành fileId
+          fileId: fileId,
         },
       }),
     ]);
 
     const stats = {
       totalViews: totalViewsCount,
-      studentViews: studentViewsCount, // Chỉ đếm HS hiện tại
-      totalStudents: currentStudentIds.length, // Chỉ đếm HS hiện tại
+      studentViews: studentViewsCount,
+      totalStudents: currentStudentIds.length,
     };
 
-    // 5. Lấy TẤT CẢ người xem (kể cả người đã bị xóa)
+    // 5. Lấy danh sách chi tiết người xem
     const allViews = await prisma.fileView.findMany({
       where: {
-        fileId: fileId, // <-- ĐÃ SỬA: từ documentId thành fileId
+        fileId: fileId,
       },
       include: {
         user: {
@@ -93,7 +94,6 @@ export async function GET(
             username: true,
             role: true,
             student: {
-              // Lấy studentId để so sánh
               select: { id: true },
             },
           },
@@ -104,12 +104,12 @@ export async function GET(
       },
     });
 
-    // 6. Xử lý danh sách, thêm cờ 'isStillInClass'
+    // 6. Xử lý dữ liệu trả về
     const viewers = allViews.map((view) => {
       const isStudent = view.user.role === "student";
       const studentId = view.user.student?.id;
 
-      // Học sinh còn trong lớp = là học sinh VÀ studentId nằm trong danh sách hiện tại
+      // Kiểm tra xem học sinh này có còn trong lớp không
       const isStillInClass =
         view.user.role === "teacher" ||
         (isStudent && studentId && currentStudentIds.includes(studentId));
@@ -119,19 +119,22 @@ export async function GET(
         username: view.user.username,
         role: view.user.role,
         viewedAt: view.viewedAt,
-        isStillInClass: isStillInClass,
+        isStillInClass: isStillInClass, // boolean
       };
     });
 
-    // 7. Trả về kết quả
+    // 7. Trả về kết quả thành công
     return NextResponse.json({
       success: true,
       stats,
       viewers,
     });
-    
+
   } catch (error) {
-    console.error("Error fetching file viewers:", error);
+    // Log lỗi ra server console (Vercel logs)
+    console.error("[API_VIEW_ERROR]", error);
+    
+    // Trả về lỗi 500 chứ không để sập
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
