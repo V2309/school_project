@@ -1,3 +1,5 @@
+
+// api/files/[docId]/view/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma"; // Import instance Prisma chuẩn của bạn
 
