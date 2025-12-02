@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma"; // Import instance Prisma chuẩn của bạn
-import { getCurrentUser } from "@/lib/auth"; // Import hàm xác thực bạn vừa sửa (check đúng đường dẫn nhé)
 
 // ⚠️ Dòng này CỰC KỲ QUAN TRỌNG để tránh lỗi "Failed to collect page data"
 export const dynamic = "force-dynamic";
@@ -10,14 +9,6 @@ export async function GET(
   { params }: { params: { docId: string } }
 ) {
   try {
-    // 1. Xác thực người dùng (Code server-side an toàn)
-    const user = await getCurrentUser();
-
-    // Chỉ giáo viên mới được xem thống kê
-    if (!user || user.role !== "teacher") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const fileId = params.docId;
     if (!fileId) {
        return NextResponse.json({ error: "Missing docId" }, { status: 400 });
