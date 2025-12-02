@@ -17,7 +17,8 @@ export type FormContainerProps = {
     | "announcement"
     | "course"
     | "folder"
-    | "studentFromClass";
+    | "studentFromClass"
+    | "homework";
   type: "create" | "update" | "delete";
   data?: any;
   id?: number | string;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { CourseWithChaptersAndVideos } from "@/app/(page)/teacher/class/[id]/video/[videoId]/page";
+import { CourseWithChaptersAndVideos } from "@/app/(page)/class/[id]/video/[videoId]/page";
 import { Video } from "@prisma/client";
 import CourseContent from "@/components/CourseContent";
 import ProgressBar from "@/components/ProgressBar";
@@ -13,11 +13,13 @@ import { useRouter } from "next/navigation";
 interface CourseDetailClientProps {
   course: CourseWithChaptersAndVideos;
   classCode: string;
+  role?: string;
 }
 
 export default function CourseDetailClient({
   course,
   classCode,
+  role,
 }: CourseDetailClientProps) {
   const [currentVideo, setCurrentVideo] = useState<Video | null>(
     course.chapters[0]?.videos[0] || null

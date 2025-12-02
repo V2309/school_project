@@ -11,41 +11,13 @@ export type SubjectSchema = z.infer<typeof subjectSchema>;
 export const classSchema = z.object({
   id: z.coerce.number().optional(),
   name: z.string().min(1, { message: "name is required!" }),
-  capacity: z.coerce.number().min(1, { message: "Capacity name is required!" }),
+  capacity: z.coerce.number().min(1, { message: "Capacity is required!" }),
   gradeId: z.coerce.number().min(1, { message: "Grade name is required!" }),
   supervisorId: z.coerce.string().optional(),
 });
 
 export type ClassSchema = z.infer<typeof classSchema>;
 
-export const teacherSchema = z.object({
-  id: z.string().optional(),
-  username: z
-    .string()
-    .min(3, { message: "Username must be at least 3 characters long!" })
-    .max(20, { message: "Username must be at most 20 characters long!" }),
-  password: z
-    .string()
-    .min(8, { message: "Password must be at least 8 characters long!" })
-    .optional()
-    .or(z.literal("")),
-  name: z.string().min(1, { message: "First name is required!" }),
-  surname: z.string().min(1, { message: "Last name is required!" }),
-  email: z
-    .string()
-    .email({ message: "Invalid email address!" })
-    .optional()
-    .or(z.literal("")),
-  phone: z.string().optional(),
-  address: z.string(),
-  img: z.string().optional(),
-  bloodType: z.string().min(1, { message: "Blood Type is required!" }),
-  birthday: z.coerce.date({ message: "Birthday is required!" }),
-  sex: z.enum(["MALE", "FEMALE"], { message: "Sex is required!" }),
-  subjects: z.array(z.string()).optional(), // subject ids
-});
-
-export type TeacherSchema = z.infer<typeof teacherSchema>;
 
 export const scheduleSchema = z.object({
   id: z.coerce.number().optional(),
@@ -55,40 +27,24 @@ export const scheduleSchema = z.object({
   date: z.string().min(1, { message: "Vui lòng chọn ngày học!" }),
   startTime: z.string().min(1, { message: "Vui lòng chọn thời gian bắt đầu!" }),
   endTime: z.string().min(1, { message: "Vui lòng chọn thời gian kết thúc!" }),
+  // Recurrence options - không dùng optional() để tránh lỗi TypeScript
+  recurrenceType: z.enum(["NONE", "DAILY", "WEEKLY", "MONTHLY_BY_DATE", "CUSTOM"]).default("NONE"),
+  interval: z.coerce.number().min(1).default(1),
+  recurrenceEnd: z.string().nullable().optional(),
+  weekDays: z.array(z.coerce.number()).default([]),
+  maxOccurrences: z.coerce.number().nullable().optional(),
 });
 
 export type ScheduleSchema = z.infer<typeof scheduleSchema>;
 
-export const studentSchema = z.object({
-  id: z.string().optional(),
-  username: z
-    .string()
-    .min(3, { message: "Username must be at least 3 characters long!" })
-    .max(20, { message: "Username must be at most 20 characters long!" }),
-  password: z
-    .string()
-    .min(8, { message: "Password must be at least 8 characters long!" })
-    .optional()
-    .or(z.literal("")),
-  name: z.string().min(1, { message: "First name is required!" }),
-  surname: z.string().min(1, { message: "Last name is required!" }),
-  email: z
-    .string()
-    .email({ message: "Invalid email address!" })
-    .optional()
-    .or(z.literal("")),
-  phone: z.string().optional(),
-  address: z.string(),
-  img: z.string().optional(),
-  bloodType: z.string().min(1, { message: "Blood Type is required!" }),
-  birthday: z.coerce.date({ message: "Birthday is required!" }),
-  sex: z.enum(["MALE", "FEMALE"], { message: "Sex is required!" }),
-  gradeId: z.coerce.number().min(1, { message: "Grade is required!" }),
-  classId: z.coerce.number().min(1, { message: "Class is required!" }),
-  parentId: z.string().min(1, { message: "Parent Id is required!" }),
+// Schema cho Meeting Schedule (kế thừa từ ScheduleSchema và thêm meeting fields)
+export const meetingScheduleSchema = scheduleSchema.extend({
+  isMeeting: z.boolean().default(true),
+  meetingId: z.string().optional(),
+  meetingLink: z.string().optional(),
 });
 
-export type StudentSchema = z.infer<typeof studentSchema>;
+export type MeetingScheduleSchema = z.infer<typeof meetingScheduleSchema>;
 
 export const examSchema = z.object({
   id: z.coerce.number().optional(),
@@ -212,3 +168,14 @@ export const folderSchema = z.object({
 });
 
 export type FolderSchema = z.infer<typeof folderSchema>;
+
+// Change Password Schema
+export const changePasswordSchema = z.object({
+  newPassword: z.string().min(8, { message: "Mật khẩu mới phải có ít nhất 8 ký tự!" }),
+  confirmPassword: z.string().min(1, { message: "Vui lòng xác nhận mật khẩu!" }),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Mật khẩu xác nhận không khớp!",
+  path: ["confirmPassword"],
+});
+
+export type ChangePasswordSchema = z.infer<typeof changePasswordSchema>;

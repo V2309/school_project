@@ -7,29 +7,49 @@ interface ClassLayoutWrapperProps {
   children: React.ReactNode;
   classDetail: any;
   role: string;
+  pendingRequestCount: number;
 }
 
-export default function ClassLayoutWrapper({ children, classDetail, role }: ClassLayoutWrapperProps) {
+export default function ClassLayoutWrapper({ children, classDetail, role, pendingRequestCount }: ClassLayoutWrapperProps) {
   const pathname = usePathname();
   
-  console.log("test pathname", pathname);
+  // Ẩn layout cho các trang đặc biệt
+  const hideLayoutRoutes = [
+    "/homework/add",
+    "/homework/",
+    "/test",
+    "/detail", 
+    "/edit",
+    "/whiteboard",
+    "/homework/essay-test"
+  ];
+  
+  const shouldHideLayout = hideLayoutRoutes.some(route => {
+    if (route === "/homework/") {
+      return pathname.includes("/homework/") && (pathname.endsWith("/test") || pathname.endsWith("/detail") || pathname.endsWith("/essay-test"));
+      
+    }
+    return pathname.includes(route);
+  });
 
-  // Kiểm tra nếu pathname chứa "/homework/add" thì không render layout
-  if (pathname.includes("/homework/add") || pathname.includes("/homework/") && pathname.endsWith("/test") || pathname.includes("/homework/") && pathname.endsWith("/detail") || pathname.includes("/class/") && pathname.endsWith("/edit")) {
+  if (shouldHideLayout) {
     return <>{children}</>;
   }
 
   return (
     <div className="h-screen w-screen flex overflow-hidden">
       {/* Menu bên trái */}
-      <div className="fixed left-0 h-full w-[25%] md:w-[20%] lg:w-[18%] bg-white shadow-md p-4 border-r border-gray-400">
-        <MenuClass classDetail={classDetail} role={role as "teacher" | "student"}/>
+      <div className="w-[25%] md:w-[20%] lg:w-[18%] h-full bg-white shadow-md border-r border-gray-400 flex-shrink-0 ">
+        <MenuClass classDetail={classDetail} role={role as "teacher" | "student"} pendingRequestCount={pendingRequestCount} />
       </div>
 
-      {/* Nội dung bên phải */}
-      <div className="ml-[25%] md:ml-[20%] lg:ml-[18%] flex-grow bg-white overflow-y-auto">
+      {/* Nội dung bên phải - CHỈ scroll area này */}
+      <div 
+        id="class-content-scroll" 
+        className="flex-1 h-full bg-white overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 "
+      >
         {children}
       </div>
     </div>
   );
-} 
+}

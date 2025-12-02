@@ -19,7 +19,7 @@ export default function DocxViewer({ fileUrl }: DocxViewerProps) {
   const encodedUrl = encodeURIComponent(fileUrl);
 
   return (
-    <div className="border rounded p-2 h-[400px] lg:h-[600px] bg-white">
+    <div className=" p-2 h-[400px] lg:h-[600px] bg-white">
       <iframe
         title="Google Docs Viewer"
         src={`https://docs.google.com/gview?url=${encodedUrl}&embedded=true`}

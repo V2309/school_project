@@ -1,44 +1,18 @@
-// import type { Metadata } from "next";
-// import { Inter } from "next/font/google";
-// import "./globals.css";
 
-// import "@stream-io/video-react-sdk/dist/css/styles.css";
-// import "react-datepicker/dist/react-datepicker.css";
-// import { ToastContainer } from "react-toastify";
-// const inter = Inter({ subsets: ["latin"] });
-// import "react-toastify/dist/ReactToastify.css";
-
-// export const metadata: Metadata = {
-//   title: "AP School - Tạo và quản lý bài tập",
-//   description: "Next.js School Management System",
-// };
-
-// export default function RootLayout({
-//   children,
-// }: Readonly<{
-//   children: React.ReactNode;
-// }>) {
-//   return (
-//     <html lang="en">
-//       <body className={inter.className}>{children} <ToastContainer position="bottom-right" theme="dark" /></body>
-//     </html>
-//   );
-// }
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-
-import "@stream-io/video-react-sdk/dist/css/styles.css";
-import "react-datepicker/dist/react-datepicker.css";
 import { ToastContainer } from "react-toastify";
-import { UserProvider } from "@/providers/UserProvider";
-const inter = Inter({ subsets: ["latin"] });
+import "react-datepicker/dist/react-datepicker.css";
 import "react-toastify/dist/ReactToastify.css";
 
+const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
-  title: "AP School - Tạo và quản lý bài tập",
+  title: "Docus School - Quản lý lớp học trực tuyến",
   description: "Next.js School Management System",
 };
+
+
 
 export default function RootLayout({
   children,
@@ -48,11 +22,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <UserProvider>
-          {children}
-        </UserProvider>
-        <ToastContainer 
-          position="bottom-right" 
+     
+
+        {children}
+
+        <ToastContainer
+          position="bottom-right"
           autoClose={3000}
           hideProgressBar={false}
           newestOnTop={false}
@@ -63,6 +38,7 @@ export default function RootLayout({
           pauseOnHover
           theme="light"
         />
+ 
       </body>
     </html>
   );

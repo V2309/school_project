@@ -2,44 +2,51 @@
 
 import { useUser } from "@/hooks/useUser";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import React, { useState, useRef, useEffect } from "react";
+import { usePathname } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
 import { logoutAction } from "@/lib/actions/auth.action";
-import Image from "next/image";
-import Socket from "./Socket";
+import Image from "@/components/Image";
+
 import Notification from "./Notification";
+
 /* =========================
    Config menu gộp chung file
    ========================= */
-export type Role =  "teacher" | "student" ;
+export type Role = "teacher" | "student";
 
-  // - Teacher: class / materials / schedule
-// - Student: overview / class / schedule
 export const topNavItems = [
   // Teacher
-  { label: "Lớp học", href: "/teacher/class", visible: ["teacher"] as Role[] },
-  { label: "Học liệu", href: "/teacher/materials", visible: ["teacher"] as Role[] },
-  { label: "Lịch học", href: "/teacher/schedule", visible: ["teacher"] as Role[] },
+  { label: "Lớp học", href: "/class", visible: ["teacher"] as Role[] },
+  { label: "Lịch học", href: "/schedule", visible: ["teacher"] as Role[] },
   { label: "Phòng họp", href: "/room", visible: ["teacher"] as Role[] },
 
   // Student
-  { label: "Tổng quan", href: "/student/overview", visible: ["student"] as Role[] },
-  { label: "Lớp học", href: "/student/class", visible: ["student"] as Role[] },
-  { label: "Lịch học", href: "/student/schedule", visible: ["student"] as Role[] },
+  { label: "Tổng quan", href: "/overview", visible: ["student"] as Role[] },
+  { label: "Lớp học", href: "/class", visible: ["student"] as Role[] },
+  { label: "Lịch học", href: "/schedule", visible: ["student"] as Role[] },
+  { label: "Chat bot", href: "/chat", visible: ["student"] as Role[] }
 ] as const;
 
-const Navigation: React.FC = () => {
-  const router = useRouter();
+export default function Navigation() {
   const { user } = useUser();
   const role = user?.role as Role | undefined;
 
+
   const handleLogout = async () => {
     try {
-      await logoutAction();
-      router.push("/");
-      router.refresh();
+      const result = await logoutAction();
+      if (result.success) {
+        // Chuyển hướng về trang chủ và reload để clear cache
+        window.location.href = "/";
+      } else {
+        console.error("Logout failed:", result.error);
+        // Fallback: vẫn chuyển về trang chủ
+        window.location.href = "/";
+      }
     } catch (err) {
       console.error("Logout failed:", err);
+      // Fallback: vẫn chuyển về trang chủ
+      window.location.href = "/";
     }
   };
 
@@ -72,7 +79,7 @@ const Navigation: React.FC = () => {
     : [];
 
   return (
-    <nav className="relative flex items-center justify-between p-4 h-[70px] bg-white shadow z-10">
+    <nav className="relative flex items-center justify-between p-4 h-[70px] bg-white  border-b border-gray-400">
       {/* Left side: Logo & Site Name */}
       <div className="flex items-center space-x-2">
         <svg
@@ -105,7 +112,7 @@ const Navigation: React.FC = () => {
         </svg>
         <span className="text-xl font-bold text-dark">DocuS</span>
       </div>
-      <Socket />
+      {/* <Socket /> */}
       {/* Center: Desktop Menu */}
       <div className="hidden md:flex items-center space-x-8 text-sm">
         {itemsForRole.map((item) => (
@@ -148,10 +155,10 @@ const Navigation: React.FC = () => {
             onClick={() => setOpenMenu((prev) => !prev)}
           >
             <Image
-              src="/avatar.png"
+              path={user?.img || "/avatar.png"}
               alt="Avatar"
-              width={40}
-              height={40}
+              w={40}
+              h={40}
               className="rounded-full"
             />
             <span className="text-xs font-medium mt-1">
@@ -161,7 +168,7 @@ const Navigation: React.FC = () => {
           {openMenu && (
             <div className="absolute right-0 mt-2 w-72 bg-white rounded shadow border z-50 transform transition-all duration-300 ease-in-out">
               <Link
-                href={`/${role ?? "student"}/profile`}
+                href="/profile"
                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 onClick={() => setOpenMenu(false)}
               >
@@ -242,10 +249,10 @@ const Navigation: React.FC = () => {
             {/* User Info & Avatar */}
             <div className="flex items-center space-x-4 w-full p-2 bg-gray-50 rounded-lg">
               <Image
-                src="/avatar.png"
+                path={user?.img || "/avatar.png"}
                 alt="Avatar"
-                width={50}
-                height={50}
+                w={50}
+                h={50}
                 className="rounded-full"
               />
               <span className="text-lg font-bold">{user?.username as string}</span>
@@ -254,7 +261,7 @@ const Navigation: React.FC = () => {
             {/* User Dropdown inside mobile menu */}
             <div className="w-full">
               <Link
-                href={`/${role ?? "student"}/profile`}
+                href={`/profile`}
                 className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
                 onClick={() => setOpenMenu(false)}
               >
@@ -316,6 +323,4 @@ const Navigation: React.FC = () => {
     
     </nav>
   );
-};
-
-export default Navigation;
+}

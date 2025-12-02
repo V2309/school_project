@@ -66,7 +66,7 @@ export default function GradeSelection({ grades, currentGradeId, currentGradeLev
           </span>
         </div>
         <p className="text-xs text-gray-500 mt-4">
-          Chọn khối lớp phù hợp hoặc chọn "Khác" để tạo khối mới
+          Chọn khối lớp phù hợp hoặc chọn Khác để tạo khối mới
         </p>
       </div>
     );
@@ -91,7 +91,7 @@ export default function GradeSelection({ grades, currentGradeId, currentGradeLev
         <p className="text-sm text-gray-600 mb-3">
           Khối hiện tại: <span className="font-semibold text-blue-600">{currentGradeLevel}</span>
         </p>
-        <div className="flex flex-wrap gap-3 mb-2" suppressHydrationWarning>
+        <div className="flex flex-wrap gap-5 mb-2" suppressHydrationWarning>
           {grades.map((g) => (
             <label key={g.id} className="cursor-pointer">
               <input
@@ -147,13 +147,13 @@ export default function GradeSelection({ grades, currentGradeId, currentGradeLev
               autoComplete="off"
             />
             <p className="text-xs text-green-600 mt-1">
-              💡 Khối mới sẽ được tạo tự động khi bạn bấm "Lưu lại"
+              💡 Khối mới sẽ được tạo tự động khi bạn bấm Lưu lại
             </p>
           </div>
         )}
         
         <p className="text-xs text-gray-500 mt-2">
-          Chọn khối lớp phù hợp hoặc chọn "Khác" để tạo khối mới
+          Chọn khối lớp phù hợp hoặc chọn Khác để tạo khối mới
         </p>
       </div>
     </>

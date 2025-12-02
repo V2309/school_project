@@ -8,6 +8,7 @@ interface Question {
   content: string;
   options: string[];
   point?: number;
+  answer?: string; // Thêm trường answer từ database
 }
 
 interface ExtractedQuestionsViewProps {
@@ -111,7 +112,9 @@ export function ExtractedQuestionsView({ questions, onAnswerChange, questionRefs
                         }`}>
                           {isSelected ? <CheckCircle2 className="w-5 h-5"/> : optionLetter}
                         </div>
-                        <span className="text-gray-800 leading-relaxed text-base">{option}</span>
+                        <span className="text-gray-800 leading-relaxed text-base">
+                          {option.trim().match(/^[A-D]\./i) ? option : `${optionLetter}. ${option}`}
+                        </span>
                       </div>
                     );
                   })}

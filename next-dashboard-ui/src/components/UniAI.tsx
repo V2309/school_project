@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Upload, FileText, MessageCircle, Send, Loader2, BookOpen, Brain, Mic } from "lucide-react";
 import { useDropzone } from "react-dropzone";
-import { uploadDocuments, sendMessage, generatePodcast } from "@/app/api/chat/route";
+import { uploadDocuments, sendMessage, generatePodcast } from "@/lib/chatService";
 import ChatMessage from "./ChatMessage";
 
 type Role = "user" | "assistant";
@@ -252,7 +252,7 @@ const UniAI: React.FC = () => {
                       <div>
                         <h4 className="text-sm font-medium text-gray-900 mb-2">Audio:</h4>
                         <audio controls className="w-full">
-                          <source src={`http://localhost:8000${podcastData.audio_url}`} type="audio/mpeg" />
+                          <source src={`${process.env.NEXT_PUBLIC_FLASK_API_URL}${podcastData.audio_url}`} type="audio/mpeg" />
                           Trình duyệt không hỗ trợ audio.
                         </audio>
                       </div>

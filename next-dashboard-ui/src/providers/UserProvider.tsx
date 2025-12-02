@@ -24,7 +24,7 @@ export function UserProvider({ children }: UserProviderProps) {
   const fetchUser = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/user");
+      const response = await fetch("/api/user?full=true");
       if (!response.ok) {
         throw new Error("Failed to fetch user");
       }
@@ -56,11 +56,12 @@ export function UserProvider({ children }: UserProviderProps) {
     };
 
     window.addEventListener("user-logged-in", handleLogin);
-
+window.addEventListener("profile-updated", handleLogin);
     return () => {
       window.removeEventListener("user-logged-in", handleLogin);
+window.removeEventListener("profile-updated", handleLogin);
     };
-  }, []);
+  }, [fetchUser]);
 
   const refetchUser = useCallback(() => {
     fetchUser();

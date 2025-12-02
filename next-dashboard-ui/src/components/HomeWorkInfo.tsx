@@ -11,12 +11,12 @@ import {
   Clock,
   AlertCircle,
 } from "lucide-react";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import { useTransition, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { deleteHomework } from "@/lib/actions/actions";
+import { toast } from "react-toastify";
 import ExportHomeworkModal from "@/components/ExportHomeworkModal";
+import FormModal from "@/components/FormModal";
+import { memo } from "react";
 
 /** ================= Types ================= */
 type Role = "teacher" | "student";
@@ -35,19 +35,21 @@ interface Homework {
   subject?: { name: string } | null;
   classCode?: string | null;
   class?: { class_code: string } | null;
+  studentViewPermission?: 'NO_VIEW' | 'SCORE_ONLY' | 'SCORE_AND_RESULT';
+  blockViewAfterSubmit?: boolean;
+  gradingMethod?: 'FIRST_ATTEMPT' | 'LATEST_ATTEMPT' | 'HIGHEST_ATTEMPT';
 }
 
 /** =============== Component =============== */
 export function HomeWorkInfo({
   homework,
   role,
-  
+
 }: {
   homework: Homework;
   role: Role | string;
 }) {
   const router = useRouter();
-  const [isPending, startTransition] = useTransition();
 
   // thời gian hiện tại (đếm mỗi giây)
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -55,11 +57,10 @@ export function HomeWorkInfo({
   // thống kê submission (student)
   const [submissionCount, setSubmissionCount] = useState(0);
   const [bestSubmissionId, setBestSubmissionId] = useState<string | null>(null);
-  const [bestGrade, setBestGrade] = useState<number | null>(null);
+  const [currentGrade, setCurrentGrade] = useState<number | null>(null);
 
-  // modal export & xoá
+  // modal export
   const [showExport, setShowExport] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -78,7 +79,7 @@ export function HomeWorkInfo({
           if (data.success) {
             setSubmissionCount(data.count);
             setBestSubmissionId(data.bestSubmissionId ?? null);
-            setBestGrade(data.bestGrade ?? null);
+            setCurrentGrade(data.bestGrade ?? null);
           }
         } catch (error) {
           console.error("Error fetching submission data:", error);
@@ -95,7 +96,7 @@ export function HomeWorkInfo({
   const handlePractice = () => {
     const classCode = getClassCode();
     if (classCode) {
-      router.push(`/${role}/class/${classCode}/homework/${homework.id}/test`);
+      router.push(`/class/${classCode}/homework/${homework.id}/test`);
     } else {
       toast.error("Không tìm thấy mã lớp!");
     }
@@ -103,35 +104,73 @@ export function HomeWorkInfo({
 
   const handleViewDetail = () => {
     const classCode = getClassCode();
+    console.log("DEBUG handleViewDetail:", { role, classCode, homeworkId: homework.id });
     if (!classCode) return toast.error("Không tìm thấy mã lớp!");
-    if (bestSubmissionId) {
-      router.push(
-        `/student/class/${classCode}/homework/${homework.id}/detail?utid=${bestSubmissionId}`
-      );
+    
+    if (role === "teacher") {
+      // Giáo viên xem danh sách học sinh và chấm bài
+      const url = `/class/${classCode}/homework/${homework.id}/teacher-detail`;
+      console.log("Navigating to:", url);
+      router.push(url);
     } else {
-      router.push(
-        `/student/class/${classCode}/homework/${homework.id}/detail?homeworkId=${homework.id}&getBest=true`
-      );
+      // Học sinh xem kết quả bài làm
+      if (bestSubmissionId) {
+        // utid = submission ID (ID của bài làm cụ thể)
+        router.push(
+          `/class/${classCode}/homework/${homework.id}/detail?utid=${bestSubmissionId}`
+        );
+      } else {
+        // Lấy bài làm có điểm cao nhất của student
+        router.push(
+          `/class/${classCode}/homework/${homework.id}/detail?homeworkId=${homework.id}&getBest=true`
+        );
+      }
+    }
+  };
+  const handleViewEdit = () => {
+    const classCode = getClassCode();
+    if (classCode) {
+      router.push(`/class/${classCode}/homework/${homework.id}/edit`);
+    } else {
+      toast.error("Không tìm thấy mã lớp!");
     }
   };
 
-  // thay window.confirm bằng modal
-  const handleDelete = () => setShowConfirm(true);
-
-  const confirmDelete = async () => {
-    const formData = new FormData();
-    formData.append("id", homework.id.toString());
-    startTransition(async () => {
-      const res = await deleteHomework({ success: false, error: false }, formData);
-      if (res.success) {
-        toast.success("Xóa bài tập thành công!", { autoClose: 1200 });
-        setShowConfirm(false);
-        router.refresh(); // bật nếu cần reload
+  const handleDownload = async () => {
+    try {
+      toast.info("Đang chuẩn bị file để tải...");
+      
+      const response = await fetch(`/api/homework/${homework.id}/download`);
+      const data = await response.json();
+      
+      if (data.success && data.fileUrl) {
+        // Tạo link download
+        const link = document.createElement('a');
+        link.href = data.fileUrl;
+        
+        // Tạo tên file từ title homework nếu không có originalFileName
+        const fileName = data.fileName || `${homework.title.replace(/[^a-zA-Z0-9\s]/g, '')}.pdf`;
+        link.download = fileName;
+        
+        // Mở trong tab mới để đảm bảo download được
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        toast.success(`Đã tải file: ${fileName}`);
       } else {
-        toast.error("Xóa thất bại!");
+        toast.error(data.error || "Không tìm thấy file để tải về");
       }
-    });
+    } catch (error) {
+      console.error("Download error:", error);
+      toast.error("Có lỗi xảy ra khi tải file");
+    }
   };
+
+
 
   // trạng thái bài tập (student)
   const getHomeworkStatus = () => {
@@ -147,9 +186,8 @@ export function HomeWorkInfo({
       const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
       return {
         type: "notStarted" as const,
-        message: `Bài tập chưa bắt đầu còn ${
-          hours > 0 ? `${hours} giờ ` : ""
-        }${minutes} phút nữa mới bắt đầu`,
+        message: `Bài tập chưa bắt đầu còn ${hours > 0 ? `${hours} giờ ` : ""
+          }${minutes} phút nữa mới bắt đầu`,
         canTake: false,
       };
     }
@@ -186,11 +224,10 @@ export function HomeWorkInfo({
       {/* trạng thái (student) */}
       {role === "student" && homeworkStatus && (
         <div
-          className={`p-3 rounded-lg border ${
-            homeworkStatus.type === "available"
+          className={`p-3 rounded-lg border ${homeworkStatus.type === "available"
               ? "bg-green-50 border-green-200 text-green-800"
               : "bg-yellow-50 border-yellow-200 text-yellow-800"
-          }`}
+            }`}
         >
           <div className="flex items-center gap-2">
             {homeworkStatus.type === "available" ? (
@@ -204,7 +241,6 @@ export function HomeWorkInfo({
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <InfoItem label="Môn học" value={homework.subject?.name || "Không"} />
         <InfoItem label="Tổng điểm" value={homework.points ? (Math.round(homework.points * 100) / 100).toString() : "Không"} />
         <InfoItem label="Thời gian bắt đầu" value={formatDateTime(homework.startTime)} />
         <InfoItem label="Hạn chót nộp bài" value={formatDateTime(homework.endTime)} />
@@ -218,20 +254,66 @@ export function HomeWorkInfo({
         />
         <InfoItem label="Ngày tạo" value={formatDateTime(homework.createdAt)} />
 
-        {role === "student" && (
-          <>
-            <InfoItem
-              label="Số lần đã làm"
-              value={`${submissionCount}/${homework.maxAttempts || 1}`}
-            />
-            {bestGrade !== null && (
+
+        <InfoItem
+          label="Điểm"
+          value={
+            homework.gradingMethod === 'FIRST_ATTEMPT' ? 'Lấy điểm lần đầu tiên' :
+              homework.gradingMethod === 'LATEST_ATTEMPT' ? 'Lấy điểm lần mới nhất' :
+                homework.gradingMethod === 'HIGHEST_ATTEMPT' ? 'Lấy điểm cao nhất' :
+                  'Lấy điểm lần đầu tiên'
+          }
+        />
+        <InfoItem
+          label="Cho phép"
+          value={
+            homework.studentViewPermission === 'NO_VIEW' ? 'Không được xem điểm' :
+              homework.studentViewPermission === 'SCORE_ONLY' ? 'Chỉ xem điểm tổng' :
+                homework.studentViewPermission === 'SCORE_AND_RESULT' ? 'Xem điểm và chi tiết' :
+                  'Không xác định'
+          }
+        />
+        <InfoItem
+          label="Chặn xem lại đề"
+          value={homework.blockViewAfterSubmit ? 'Có' : 'Không'}
+        />
+
+
+
+        {role === "student" && (() => {
+          // Kiểm tra xem bài tập đã hết hạn chưa
+          const isExpired = homework.endTime ? new Date() > new Date(homework.endTime) : false;
+          const canViewScore = homework.studentViewPermission !== 'NO_VIEW';
+          const shouldShowScore = canViewScore || isExpired;
+
+          return (
+            <>
               <InfoItem
-                label="Điểm cao nhất"
-                value={`${bestGrade}/${homework.points || 10} điểm`}
+                label="Số lần đã làm"
+                value={`${submissionCount}/${homework.maxAttempts || 1}`}
               />
-            )}
-          </>
-        )}
+              {/* Hiển thị điểm theo phương pháp đã cấu hình khi có quyền xem hoặc đã hết hạn */}
+              {shouldShowScore && currentGrade !== null && (
+                <InfoItem
+                  label={
+                    homework.gradingMethod === 'FIRST_ATTEMPT' ? 'Điểm lần đầu tiên' :
+                      homework.gradingMethod === 'LATEST_ATTEMPT' ? 'Điểm lần mới nhất' :
+                        homework.gradingMethod === 'HIGHEST_ATTEMPT' ? 'Điểm cao nhất' :
+                          'Điểm hiện tại'
+                  }
+                  value={`${Math.round(currentGrade * 100) / 100}/${Math.round((homework.points || 10) * 100) / 100} điểm`}
+                />
+              )}
+              {/* Hiển thị thông báo khi không có quyền xem điểm và chưa hết hạn */}
+              {!shouldShowScore && (
+                <InfoItem
+                  label="Điểm"
+                  value={isExpired ? "Đang được chấm" : "Sẽ có sau hết hạn làm bài"}
+                />
+              )}
+            </>
+          );
+        })()}
       </div>
 
       {/* menu chức năng */}
@@ -240,16 +322,20 @@ export function HomeWorkInfo({
           {role === "teacher" ? (
             <>
               <MenuItem icon={<MonitorPlay size={18} />} onClick={handlePractice} label="Làm thử" />
-              <MenuItem icon={<Info size={18} />} label="Chi tiết" active />
-              <MenuItem icon={<Folder size={18} />} label="Di chuyển" />
-              <MenuItem icon={<Pencil size={18} />} label="Chỉnh sửa" />
+              <MenuItem icon={<Info size={18} />} onClick={handleViewDetail} label="Chi tiết" active />
+
+              <MenuItem icon={<Pencil size={18} />} onClick={handleViewEdit} label="Chỉnh sửa" />
               <MenuItem
                 icon={<Printer size={18} />}
                 label="Xuất dữ liệu"
                 onClick={() => setShowExport(true)}
               />
-              <MenuItem icon={<Download size={18} />} label="Tải về" />
-              <MenuItem icon={<Trash2 size={18} />} label="Xóa" danger onClick={handleDelete} />
+              <MenuItem 
+                icon={<Download size={18} />} 
+                label="Tải về" 
+                onClick={handleDownload}
+              />
+              <DeleteButton homeworkId={homework.id} homeworkData={homework} />
             </>
           ) : role === "student" ? (
             <>
@@ -267,28 +353,12 @@ export function HomeWorkInfo({
         </ul>
       </div>
 
-      {/* modal xác nhận xoá */}
-      <ConfirmModal
-        open={showConfirm}
-        title="Xác nhận xoá bài tập"
-        message={`Bạn có chắc chắn muốn xoá "${homework.title}"? Hành động này không thể hoàn tác.`}
-        confirmText={isPending ? "Đang xoá..." : "Xoá"}
-        cancelText="Huỷ"
-        onClose={() => setShowConfirm(false)}
-        onConfirm={confirmDelete}
-        danger
-        disabled={isPending}
-      />
-
       {/* modal export */}
       <ExportHomeworkModal
         homeworkId={homework.id}
         open={showExport}
         onClose={() => setShowExport(false)}
       />
-
-      {/* toast */}
-      <ToastContainer position="top-right" autoClose={2000} />
     </div>
   );
 }
@@ -327,70 +397,20 @@ function MenuItem({ icon, label, active, danger, onClick, disabled }: MenuItemPr
   );
 }
 
-function ConfirmModal({
-  open,
-  title,
-  message,
-  confirmText = "Xác nhận",
-  cancelText = "Huỷ",
-  onClose,
-  onConfirm,
-  danger,
-  disabled,
-}: {
-  open: boolean;
-  title: string;
-  message: string;
-  confirmText?: string;
-  cancelText?: string;
-  onClose: () => void;
-  onConfirm: () => void;
-  danger?: boolean;
-  disabled?: boolean;
+// Component DeleteButton được memoized để tránh re-render liên tục  
+const DeleteButton = memo(function DeleteButton({ 
+  homeworkId, 
+  homeworkData 
+}: { 
+  homeworkId: number; 
+  homeworkData: Homework; 
 }) {
-  if (!open) return null;
-
-  // đóng bằng phím Esc
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* overlay */}
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      {/* dialog */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        className="relative z-10 w-full max-w-md rounded-lg bg-white p-5 shadow-lg"
-      >
-        <h3 className="text-lg font-semibold mb-2">{title}</h3>
-        <p className="text-gray-600 mb-5">{message}</p>
-        <div className="flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-md border border-gray-300 hover:bg-gray-50"
-            disabled={disabled}
-          >
-            {cancelText}
-          </button>
-          <button
-            onClick={onConfirm}
-            className={`px-4 py-2 rounded-md text-white ${
-              danger ? "bg-red-600 hover:bg-red-700" : "bg-blue-600 hover:bg-blue-700"
-            } disabled:opacity-60`}
-            disabled={disabled}
-          >
-            {confirmText}
-          </button>
-        </div>
-      </div>
+    <div className="flex items-center gap-2 py-1 rounded text-red-600 hover:bg-red-50 cursor-pointer">
+      <FormModal table="homework" type="delete" id={homeworkId} data={homeworkData} />
     </div>
   );
-}
+});
 
 /** =============== Utils =============== */
 function formatDateTime(date: DateInput) {

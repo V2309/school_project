@@ -13,10 +13,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Admin {
-  id       String @id
-  username String @unique
-}
+
 
 model User {
 
@@ -36,7 +33,12 @@ model User {
   updatedAt DateTime @updatedAt @default(now())
   password  String
 
- 
+  isBanned   Boolean  @default(false)
+
+ // --- THÊM CÁC TRƯỜNG NÀY ---
+  isEmailVerified    Boolean @default(false)
+  isPhoneVerified    Boolean @default(false)
+  verificationTokens VerificationToken[] // Quan hệ
 
   // RELATIONS
   student Student?
@@ -52,6 +54,24 @@ model User {
   fileViews FileView[]
   courseViews CourseView[]
   videoViews VideoView[]
+
+  notificationsReceived Notification[]  @relation("recipient")
+  notificationsActed    Notification[]  @relation("actor")
+
+  messages  Message[]
+}
+// --- THÊM MODEL MỚI NÀY ---
+model VerificationToken {
+  id        String   @id @default(cuid())
+  token     String   @unique // Token duy nhất
+  expires   DateTime // Thời gian hết hạn
+
+  // Liên kết với user
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Đảm bảo 1 user chỉ có 1 token 1 lúc
+  @@unique([userId, token])
 }
 
 model Student {
@@ -75,7 +95,11 @@ model Student {
   attendances Attendance[]
   results     Result[]
 
-  homeworkSubmissions HomeworkSubmission[] 
+  homeworkSubmissions HomeworkSubmission[]
+  joinRequests ClassJoinRequest[]
+
+  // Group memberships
+  groupMemberships ClassGroupMember[] 
 }
 
 model Teacher {
@@ -106,6 +130,9 @@ model Teacher {
   courses   Course[]   // Các khóa học do giáo viên tạo
   chapters  Chapter[]  // Các chương do giáo viên tạo
   videos    Video[]    // Các video do giáo viên tạo
+
+  // Groups created by this teacher
+  createdGroups ClassGroup[]
 }
 
 model Grade {
@@ -150,6 +177,15 @@ model Class {
   // Course system relations
   folders   Folder[]   // Các thư mục trong lớp học
   courses   Course[]   // Các khóa học trong lớp học
+  
+  // Join requests relation
+  joinRequests ClassJoinRequest[]
+
+  // Class groups relation
+  groups    ClassGroup[]
+
+  whiteboard Whiteboard?
+  messages  Message[]
 }
 
 model Subject {
@@ -224,15 +260,63 @@ model Attendance {
   lesson    Lesson  @relation(fields: [lessonId], references: [id])
 }
 
+
 model Event {
   id          Int      @id @default(autoincrement())
   title       String
-  description String
+  description String?
   startTime   DateTime
   endTime     DateTime
 
+  // === RECURRING EVENTS FIELDS ===
+  
+  // Loại lặp lại
+  recurrenceType RecurrenceType @default(NONE)
+  
+  // Khoảng cách lặp lại (ví dụ: cứ 2 tuần, cứ 3 ngày)
+  interval       Int            @default(1)
+  
+  // Ngày kết thúc chuỗi lặp lại (null = lặp vô hạn)
+  recurrenceEnd  DateTime?
+  
+  // Số lần lặp tối đa (null = không giới hạn)
+  maxOccurrences Int?
+  
+  // ID của sự kiện gốc (nếu đây là sự kiện được tạo từ recurring)
+  parentEventId  Int?
+  parentEvent    Event?  @relation("EventRecurrence", fields: [parentEventId], references: [id])
+  childEvents    Event[] @relation("EventRecurrence")
+  
+  // Các ngày trong tuần áp dụng (cho weekly recurrence)
+  // Lưu dạng JSON: [1,3,5] = Thứ 2, 4, 6 (0=CN, 1=T2, ..., 6=T7)
+  weekDays       Json?
+  
+  // Ngày trong tháng (cho monthly recurrence)
+  monthDay       Int?
+  
+  // Tuần trong tháng (cho monthly recurrence)  
+  // Ví dụ: 1 = tuần đầu, -1 = tuần cuối
+  weekOfMonth    Int?
+
+  // === MEETING FIELDS ===
+  // Link cuộc họp (nếu sự kiện này là một cuộc họp)
+  meetingLink String?
+  
+  // === RELATIONS ===
   classId Int?
   class   Class? @relation(fields: [classId], references: [id])
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
+}
+
+// Enum cho loại lặp lại
+enum RecurrenceType {
+  NONE              // Không lặp
+  DAILY             // Hàng ngày
+  WEEKLY            // Hàng tuần vào thứ năm  
+  MONTHLY_BY_DATE   // Hàng tháng vào thứ năm cuối cùng
+  CUSTOM            // Tùy chỉnh
 }
 
 model Announcement {
@@ -256,6 +340,7 @@ enum Day {
 enum UserRole {
   teacher
   student
+  admin
 }
 
 
@@ -278,6 +363,22 @@ model Homework {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  // Quyền xem điểm của học sinh
+  studentViewPermission StudentViewPermission @default(NO_VIEW)
+  
+  // thiết lập điểm
+  gradingMethod GradingMethod @default(FIRST_ATTEMPT)
+
+  // có đảo đề không
+  isShuffleQuestions Boolean @default(false)
+
+  // có đảo đáp án không
+
+  isShuffleAnswers   Boolean @default(false)
+
+  // Thêm field mới: Chặn xem lại đề sau khi nộp bài
+  blockViewAfterSubmit Boolean @default(false)
+  
   classCode String? @map("class_code")
   class     Class?  @relation(fields: [classCode], references: [class_code])
 
@@ -292,6 +393,25 @@ model Homework {
   questions   Question[]           
 }
 
+// Enum mới cho quyền xem điểm
+enum StudentViewPermission {
+  NO_VIEW           // Không được xem điểm
+  SCORE_ONLY        // Chỉ xem điểm tổng
+  SCORE_AND_RESULT  // Xem điểm và đúng/sai từng câu
+  
+  @@map("student_view_permissions")
+}
+
+// Enum mới cho thiết lập bảng điểm
+enum GradingMethod {
+  FIRST_ATTEMPT    // Lấy điểm lần làm bài đầu tiên
+  LATEST_ATTEMPT   // Lấy điểm lần làm bài mới nhất
+  HIGHEST_ATTEMPT  // Lấy điểm lần làm bài cao nhất
+  
+  @@map("grading_methods")
+}
+
+
 model HomeworkSubmission {
   id            Int      @id @default(autoincrement())
   content       String
@@ -305,7 +425,7 @@ model HomeworkSubmission {
   homework   Homework @relation(fields: [homeworkId], references: [id], onDelete: Cascade)
   studentId  String
   student    Student  @relation(fields: [studentId], references: [id])
-
+  violationCount Int      @default(0)
   attachments     HomeworkSubmissionAttachment[] 
   questions       Question[]                     
   questionAnswers QuestionAnswer[]               
@@ -590,4 +710,151 @@ model SavedPosts {
 
   user User @relation(fields: [userId], references: [id])
   post Post @relation(fields: [postId], references: [id])
+}
+
+// Model cho yêu cầu tham gia lớp học
+model ClassJoinRequest {
+  id        Int      @id @default(autoincrement())
+  studentId String
+  classCode String?  @map("class_code")
+  status    RequestStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  student   Student @relation(fields: [studentId], references: [id])
+  class     Class?  @relation(fields: [classCode], references: [class_code])
+
+  @@unique([studentId, classCode])
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+
+model Notification {
+  id        Int   @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  // Người nhận thông báo
+  recipientId String
+  recipient   User     @relation("recipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  // Người thực hiện hành động (ví dụ: người like)
+  actorId     String
+  actor       User     @relation("actor", fields: [actorId], references: [id], onDelete: Cascade)
+
+  // Loại thông báo
+  type        NotificationType
+
+  // Nội dung (ví dụ: "đã bình luận về bài đăng của bạn")
+  // Bạn có thể tạo tự động ở frontend dựa trên 'type'
+  content   String?
+
+  // Đường link khi bấm vào thông báo
+  link      String
+
+  // Trạng thái đã đọc/chưa đọc
+  isRead    Boolean  @default(false)
+
+  // Index để query nhanh
+  @@index([recipientId, isRead])
+}
+
+enum NotificationType {
+  POST_LIKE       // Có người like bài viết
+  POST_COMMENT    // Có người bình luận
+  CLASS_APPROVAL  // Yêu cầu tham gia lớp được duyệt
+  NEW_HOMEWORK    // Có bài tập mới
+  NEW_POST        // Có bài đăng mới trong lớp
+  SUBMISSION_GRADED // Bài nộp đã được chấm điểm
+  STUDENT_JOINED_CLASS // Có học sinh mới tham gia lớp
+}
+
+model Message {
+  id        Int   @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  content   String   @db.Text // Nội dung tin nhắn
+
+  // Người gửi
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Phòng chat (lớp học)
+  classCode String   @map("class_code")
+  class     Class    @relation(fields: [classCode], references: [class_code], onDelete: Cascade)
+
+  // Reply functionality
+  replyToId       Int?    @map("reply_to_id")
+  replyToContent  String? @map("reply_to_content") @db.Text
+  replyToUsername String? @map("reply_to_username")
+
+  // Pin functionality
+  isPinned      Boolean @default(false) @map("is_pinned")
+  pinnedAt      DateTime? @map("pinned_at")
+  pinnedByUserId String? @map("pinned_by_user_id")
+
+  @@index([classCode, createdAt])
+  @@index([classCode, isPinned, pinnedAt])
+}
+
+model Whiteboard {
+  id        String   @id @default(cuid())
+  classCode String   @unique // Mỗi lớp chỉ có 1 bảng trắng
+  class     Class    @relation(fields: [classCode], references: [class_code], onDelete: Cascade)
+  
+  content   Json?    // Lưu toàn bộ dữ liệu snapshot của tldraw
+  updatedAt DateTime @updatedAt
+}
+
+// === MODELS CHO CHỨC NĂNG NHÓM LỚP ===
+
+model ClassGroup {
+  id        String   @id @default(cuid())
+  name      String   // Tên nhóm (VD: "Nhóm 1", "Nhóm A")
+  color     String?  // Màu sắc nhóm (hex color)
+  maxSize   Int?     // Số thành viên tối đa (null = không giới hạn)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Thuộc về lớp học nào
+  classCode String   
+  class     Class    @relation(fields: [classCode], references: [class_code], onDelete: Cascade)
+
+  // Nhóm được tạo bởi giáo viên nào
+  createdById String
+  createdBy   Teacher @relation(fields: [createdById], references: [id])
+
+  // Các thành viên trong nhóm
+  members   ClassGroupMember[]
+
+  @@index([classCode])
+}
+
+model ClassGroupMember {
+  id       String   @id @default(cuid())
+  joinedAt DateTime @default(now())
+
+  // Thuộc về nhóm nào
+  groupId String
+  group   ClassGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  // Học sinh nào
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  // Vai trò trong nhóm (có thể mở rộng sau)
+  role ClassGroupRole @default(MEMBER)
+
+  @@unique([groupId, studentId]) // Một học sinh chỉ có thể ở trong một nhóm của cùng một lớp
+  @@index([groupId])
+  @@index([studentId])
+}
+
+enum ClassGroupRole {
+  LEADER  // Trưởng nhóm
+  MEMBER  // Thành viên
 }

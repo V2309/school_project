@@ -1,11 +1,15 @@
 import { ReactNode } from 'react';
-import { Inter } from "next/font/google";
 import StreamVideoProvider from '@/providers/StreamClientProvider';
-const inter = Inter({ subsets: ["latin"] });
+import { UserProvider } from '@/providers/UserProvider';
+import "@stream-io/video-react-sdk/dist/css/styles.css";
 const RootLayout = ({ children }: Readonly<{ children: ReactNode }>) => {
   return (
     <main>
-      <StreamVideoProvider>{children}</StreamVideoProvider>
+      <UserProvider>
+        <StreamVideoProvider>
+          {children}
+        </StreamVideoProvider>
+      </UserProvider>
     </main>
   );
 };

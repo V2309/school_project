@@ -2,7 +2,7 @@ import prisma from "@/lib/prisma";
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { homeworkId, studentId, answers, file, role } = body;
+  const { homeworkId, studentId, answers, file, role, violationCount } = body;
 
   // Kiểm tra xem userId có tồn tại không (có thể là student hoặc teacher)
   let user = null;
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     return new Response(JSON.stringify({ 
       success: true, 
       isTeacher: true,
-      totalPoints,
+      totalPoints: Math.round(totalPoints * 100) / 100, // Làm tròn 2 chữ số thập phân
       questionAnswers,
       message: "Kết quả làm thử của giáo viên (không lưu vào hệ thống)"
     }), {
@@ -84,7 +84,8 @@ export async function POST(req: Request) {
       timeSpent: body.timeSpent, // Thời gian làm bài (tính bằng giây)
       homework: { connect: { id: homeworkId } },
       student: { connect: { id: studentId } },
-      grade: totalPoints,
+      grade: Math.round(totalPoints * 100) / 100, // Làm tròn 2 chữ số thập phân
+      violationCount: violationCount || 0,
       questionAnswers: {
         create: questionAnswers,
       },

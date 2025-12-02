@@ -1,48 +1,47 @@
-
 import { cookies } from "next/headers";
 import { jwtVerify } from "jose";
+import prisma from "@/lib/prisma"; // 1. Import Prisma
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET_KEY || 'jwt-default'
+  process.env.JWT_SECRET_KEY || 'jwt-default'
 );
 
 export async function getCurrentUser() {
-  const session = cookies().get("session")?.value;
-  if (!session) return null;
-  try {
-    const { payload } = await jwtVerify(session, JWT_SECRET);
-    return payload; // { id, username, role, exp }
-  } catch {
-    return null;
-  }
-  console.log("Current user:", session);
+  const session = cookies().get("session")?.value;
+  if (!session) return null;
+  
+  try {
+    // 2. Giải mã token để lấy payload (vẫn như cũ)
+    const { payload } = await jwtVerify(session, JWT_SECRET);
+
+    // 3. Lấy ID từ payload
+    // (JWT chuẩn dùng 'sub', nhưng có thể bạn dùng 'id'. Code này kiểm tra cả hai)
+    const userId = (payload.id || payload.sub) as string | undefined;
+
+    if (!userId) {
+      console.error("JWT payload không chứa 'id' hoặc 'sub'");
+      return null;
+    }
+
+    // 4. DÙNG ID ĐỂ GỌI DATABASE (Đây là bước bị thiếu)
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      // 5. Chọn các trường bạn muốn trả về (quan trọng là 'email' và 'isEmailVerified')
+      select: {
+        id: true,
+        username: true,
+        email: true, // <-- Lấy email
+        isEmailVerified: true, // <-- Lấy trạng thái xác minh
+        role: true,
+        img: true,
+        // (Không lấy 'password')
+      }
+    });
+
+    return user; // 6. Trả về đối tượng USER đầy đủ từ Prisma
+
+  } catch (err) {
+    console.error("Lỗi xác thực (auth.ts):", err);
+    return null;
+  }
 }
-
-// import prisma from "@/lib/prisma";
-// import { cookies } from "next/headers";
-// import { jwtVerify } from "jose";
-
-// const JWT_SECRET = new TextEncoder().encode(
-//   process.env.JWT_SECRET_KEY || '71ae05550c898138fc632e4e6c0fba3f14cc10104e5697f19eb6fde9467b8d0cd19ab1faaa659f982a4c479d7f3d8827f815043d5064bec6b0c1d6e45842b77a'
-// );
-// export async function getCurrentUser() {
-//   const session = cookies().get("session")?.value;
-//   if (!session) return null;
-  
-//   try {
-//     const { payload } = await jwtVerify(session, JWT_SECRET);
-    
-//     // Lấy thông tin user từ database để có id chính xác
-//     const user = await prisma.user.findUnique({
-//       where: { id: payload.id as string },
-//       select: { id: true, role: true, username: true }
-//     });
-    
-//     return user;
-//   } catch (err) {
-//     console.error("JWT verification error:", err);
-//     return null;
-//   }
-// }
-
-

@@ -1,6 +1,8 @@
+//./src/components/ui/SafeImage.tsx
+
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
-import { processImageUrl, getFallbackImageUrl } from '@/lib/utils';
+import { processImageUrl } from '@/lib/utils';
 
 interface SafeImageProps {
   src: string;
@@ -40,17 +42,11 @@ export default function SafeImage({
     setHasError(false);
   }, [src]);
 
-  const handleError = () => {
-    if (!hasError) {
-      setHasError(true);
-      setImgSrc(getFallbackImageUrl());
-    }
-  };
+ 
 
   const commonProps = {
     alt,
     className,
-    onError: handleError,
     priority,
     sizes
   };
@@ -61,6 +57,7 @@ export default function SafeImage({
         {...commonProps}
         src={imgSrc}
         fill
+        alt='safe image'
       />
     );
   }
@@ -71,6 +68,7 @@ export default function SafeImage({
       src={imgSrc}
       width={width}
       height={height}
+      alt='safe image'
     />
   );
 }

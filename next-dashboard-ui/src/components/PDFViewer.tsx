@@ -18,7 +18,7 @@ function isWord(fileUrl: string) {
 export default function FileViewer({ fileUrl }: FileViewerProps) {
   if (isPDF(fileUrl)) {
     return (
-      <div className="border rounded p-2 h-[400px] lg:h-[600px] bg-white">
+      <div className=" p-2 h-[400px] lg:h-[600px] bg-white">
         <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
           <Viewer fileUrl={fileUrl} />
         </Worker>

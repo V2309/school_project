@@ -1,60 +1,13 @@
+// app/api/files/[docId]/view/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { PrismaClient } from "@prisma/client";
 import { getCurrentUser } from "@/hooks/auth";
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { docId: string } }
-) {
-  try {
-    const user = await getCurrentUser();
-    
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { docId } = params;
-
-    // Kiểm tra file có tồn tại không
-    const file = await prisma.file.findUnique({
-      where: { id: docId },
-    });
-
-    if (!file) {
-      return NextResponse.json({ error: "File not found" }, { status: 404 });
-    }
-
-    // Kiểm tra xem user đã xem file này chưa
-    const existingView = await prisma.fileView.findUnique({
-      where: {
-        fileId_userId: {
-          fileId: docId,
-          userId: user.id as string,
-        },
-      },
-    });
-
-    // Chỉ tạo record mới nếu chưa xem bao giờ
-    if (!existingView) {
-      await prisma.fileView.create({
-        data: {
-          fileId: docId,
-          userId: user.id as string,
-          viewedAt: new Date(),
-        },
-      });
-    }
-    // Nếu đã có record thì không làm gì cả (giữ nguyên thời gian xem đầu tiên)
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error recording file view:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
-  }
-}
+// Khởi tạo 1 instance (nếu bạn chưa có file prisma.ts)
+const prisma = new PrismaClient();
+// Nếu bạn đã có file lib/prisma.ts, hãy import từ đó:
+// import prisma from "@/lib/prisma";
 
 export async function GET(
   request: NextRequest,
@@ -62,89 +15,123 @@ export async function GET(
 ) {
   try {
     const user = await getCurrentUser();
-    
+
+    // 1. Chỉ giáo viên mới có quyền xem thống kê
     if (!user || user.role !== "teacher") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { docId } = params;
+    const fileId = params.docId;
 
-    // Kiểm tra file có tồn tại và thuộc về teacher này không
+    // 2. Lấy classCode từ file
     const file = await prisma.file.findUnique({
-      where: { id: docId },
-      include: {
-        class: {
-          select: {
-            supervisorId: true,
-            students: {
-              select: {
-                id: true,
-              },
-            },
-          },
+      where: { id: fileId },
+      select: { classCode: true },
+    });
+
+    if (!file || !file.classCode) {
+      return NextResponse.json(
+        { error: "File not found or not in a class" },
+        { status: 404 }
+      );
+    }
+
+    const classCode = file.classCode;
+
+    // 3. Lấy danh sách ID học sinh HIỆN TẠI trong lớp
+    const classInfo = await prisma.class.findUnique({
+      where: { class_code: classCode },
+      select: {
+        students: {
+          select: { id: true },
         },
       },
     });
 
-    if (!file) {
-      return NextResponse.json({ error: "File not found" }, { status: 404 });
+    if (!classInfo) {
+      return NextResponse.json({ error: "Class not found" }, { status: 404 });
     }
 
-    // Lấy thông tin teacher
-    const teacher = await prisma.teacher.findUnique({
-      where: { userId: user.id as string },
-    });
+    const currentStudentIds = classInfo.students.map((s) => s.id);
 
-    if (!teacher) {
-      return NextResponse.json({ error: "Teacher not found" }, { status: 404 });
-    }
+    // 4. Tính toán số liệu thống kê (Dựa trên học sinh HIỆN TẠI)
+    const [studentViewsCount, totalViewsCount] = await prisma.$transaction([
+      // Đếm lượt xem chỉ từ học sinh HIỆN TẠI
+      prisma.fileView.count({
+        where: {
+          fileId: fileId, // <-- ĐÃ SỬA: từ documentId thành fileId
+          user: {
+            student: {
+              id: { in: currentStudentIds },
+            },
+          },
+        },
+      }),
+      // Đếm TẤT CẢ lượt xem (bao gồm cả giáo viên)
+      prisma.fileView.count({
+        where: {
+          fileId: fileId, // <-- ĐÃ SỬA: từ documentId thành fileId
+        },
+      }),
+    ]);
 
-    // Kiểm tra quyền truy cập
-    if (file.class?.supervisorId !== teacher.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const stats = {
+      totalViews: totalViewsCount,
+      studentViews: studentViewsCount, // Chỉ đếm HS hiện tại
+      totalStudents: currentStudentIds.length, // Chỉ đếm HS hiện tại
+    };
 
-    // Lấy danh sách người đã xem
-    const viewers = await prisma.fileView.findMany({
-      where: { fileId: docId },
+    // 5. Lấy TẤT CẢ người xem (kể cả người đã bị xóa)
+    const allViews = await prisma.fileView.findMany({
+      where: {
+        fileId: fileId, // <-- ĐÃ SỬA: từ documentId thành fileId
+      },
       include: {
         user: {
           select: {
             id: true,
             username: true,
             role: true,
+            student: {
+              // Lấy studentId để so sánh
+              select: { id: true },
+            },
           },
         },
       },
       orderBy: {
-        viewedAt: "desc",
+        viewedAt: "desc", // Mới nhất lên đầu
       },
     });
 
-    // Tính toán thống kê
-    const totalStudents = file.class?.students.length || 0;
-    const studentViews = viewers.filter(v => v.user.role === "student").length;
+    // 6. Xử lý danh sách, thêm cờ 'isStillInClass'
+    const viewers = allViews.map((view) => {
+      const isStudent = view.user.role === "student";
+      const studentId = view.user.student?.id;
 
-    const stats = {
-      totalViews: viewers.length,
-      studentViews,
-      totalStudents,
-    };
+      // Học sinh còn trong lớp = là học sinh VÀ studentId nằm trong danh sách hiện tại
+      const isStillInClass =
+        view.user.role === "teacher" ||
+        (isStudent && studentId && currentStudentIds.includes(studentId));
 
-    const viewersData = viewers.map(view => ({
-      id: view.user.id,
-      username: view.user.username,
-      role: view.user.role,
-      viewedAt: view.viewedAt.toISOString(),
-    }));
+      return {
+        id: view.userId,
+        username: view.user.username,
+        role: view.user.role,
+        viewedAt: view.viewedAt,
+        isStillInClass: isStillInClass,
+      };
+    });
 
+    // 7. Trả về kết quả
     return NextResponse.json({
       success: true,
-      viewers: viewersData,
       stats,
+      viewers,
     });
+    
   } catch (error) {
-    console.error("Error fetching viewers:", error);
+    console.error("Error fetching file viewers:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

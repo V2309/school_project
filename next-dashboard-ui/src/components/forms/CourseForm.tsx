@@ -191,7 +191,7 @@ export default function CourseForm({ classCode, folders, course }: CourseFormPro
 
             if (result.success) {
                 toast.success(isEditMode ? "Cập nhật khóa học thành công" : "Tạo khóa học thành công");
-                router.push(`/teacher/class/${classCode}/video`);
+                router.push(`/class/${classCode}/video`);
             } else {
                 setError(result.error?.toString() || `Có lỗi xảy ra khi ${isEditMode ? 'cập nhật' : 'tạo'} khóa học`);
             }

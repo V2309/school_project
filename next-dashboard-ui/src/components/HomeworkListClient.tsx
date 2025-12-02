@@ -20,6 +20,13 @@ export default function HomeworkListClient({
 }) {
   const [selected, setSelected] = useState<any | null>(homeworks?.[0] || null);
 
+  // Reset selected khi homework hiện tại không còn trong danh sách (bị xóa)
+  useEffect(() => {
+    if (selected && !homeworks.find(hw => hw.id === selected.id)) {
+      setSelected(homeworks?.[0] || null);
+    }
+  }, [homeworks, selected]);
+
   // ---- Sort ----
   const [sortOpen, setSortOpen] = useState(false);
   const [sortOption, setSortOption] = useState<SortValue>("newest");
@@ -87,7 +94,7 @@ export default function HomeworkListClient({
         {/* Cột danh sách */}
         <div className="flex-1 md:w-2/3 overflow-y-auto border-r border-gray-400">
           {/* Thanh công cụ NẰM TRONG danh sách + sticky */}
-          <div className="sticky top-0 z-10 bg-white/90 backdrop-blur px-4 py-3 border-b">
+          <div className="sticky top-0 z-10 bg-white/90 backdrop-blur px-4 py-3 border-b  border-gray-400" >
             <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_auto] gap-2 items-center">
               {/* Search (trung tâm/đầu hàng) */}
               <div className="sm:order-1">
@@ -134,7 +141,7 @@ export default function HomeworkListClient({
               {role === "teacher" && (
                 <div className="sm:order-3 justify-self-end">
                   <Link
-                    href={`/teacher/class/${class_code}/homework/add`}
+                    href={`/class/${class_code}/homework/add`}
                     className="px-4 py-2 rounded-md font-bold text-white bg-blue-500 hover:bg-blue-600"
                   >
                     + Tạo bài tập
@@ -175,7 +182,7 @@ export default function HomeworkListClient({
         </div>
 
         {/* Cột chi tiết nếu không có bài tập thì ẩn */}
-        <div className="w-full md:w-1/3 overflow-y-auto p-4 bg-gray-50 flex-shrink-0">
+        <div className="w-full md:w-1/3 overflow-y-auto p-4  flex-shrink-0">
           {selected ? (
             <HomeWorkInfo homework={selected} role={role} />
           ) : (
