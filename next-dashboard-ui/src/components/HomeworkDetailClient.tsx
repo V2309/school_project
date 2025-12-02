@@ -8,6 +8,7 @@ import DocxViewer from "@/components/DocxViewer";
 
 interface HomeworkDetailClientProps {
   submission: any;
+  parsedAnswers?: Record<string | number, string | { answer?: string; score?: number; feedback?: string }> | null;
 }
 
 // Helper functions để kiểm tra loại file
@@ -25,7 +26,7 @@ function isWord(fileType: string | null, fileName?: string | null) {
          lowerFileName?.endsWith(".docx");
 }
 
-export default function HomeworkDetailClient({ submission }: HomeworkDetailClientProps) {
+export default function HomeworkDetailClient({ submission, parsedAnswers }: HomeworkDetailClientProps) {
   const [showOriginalOrder, setShowOriginalOrder] = useState(false);
 
   const homework = submission.homework;
@@ -127,6 +128,95 @@ export default function HomeworkDetailClient({ submission }: HomeworkDetailClien
               </p>
             </div>
           </div>
+        ) : submission.homework.type === "essay" ? (
+          // Hiển thị câu hỏi tự luận
+          <div className="space-y-6">
+            {submission.homework.questions?.map((question: any, index: number) => {
+              // Lấy câu trả lời từ parsedAnswers với xử lý cả 2 format
+              let studentAnswer = "";
+              let questionScore = null;
+              let feedback = null;
+              
+              // Parse content để lấy thông tin
+              if (parsedAnswers) {
+                const answerData = parsedAnswers[question.id] || parsedAnswers[question.id.toString()];
+                if (typeof answerData === 'string') {
+                  // Format cũ: content[questionId] = "answer text"
+                  studentAnswer = answerData;
+                } else if (typeof answerData === 'object' && answerData) {
+                  // Format mới: content[questionId] = { answer: "text", score: number, feedback: "text" }
+                  studentAnswer = answerData.answer || "";
+                  questionScore = answerData.score;
+                  feedback = answerData.feedback;
+                }
+              }
+              
+              // Fallback: tìm trong questionAnswers nếu cần
+              if (!studentAnswer || questionScore === null) {
+                const questionAnswer = submission.questionAnswers?.find((qa: any) => 
+                  qa.questionId === question.id || qa.questionId === question.id.toString()
+                );
+                
+                if (questionAnswer) {
+                  if (!studentAnswer && questionAnswer.answer) {
+                    studentAnswer = questionAnswer.answer;
+                  }
+                  if (questionScore === null && questionAnswer.score !== null && questionAnswer.score !== undefined) {
+                    questionScore = questionAnswer.score;
+                  }
+                  if (!feedback && questionAnswer.feedback) {
+                    feedback = questionAnswer.feedback;
+                  }
+                }
+              }
+                
+              return (
+                <div key={question.id} className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+                  <div className="flex items-start justify-between mb-4">
+                    <h4 className="text-lg font-medium text-gray-900">
+                      Câu {index + 1} ({question.point || 0} điểm)
+                    </h4>
+                    {questionScore !== null && questionScore !== undefined ? (
+                      <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                        {questionScore}/{question.point} điểm
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600">
+                        Chưa chấm
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <div className="font-medium text-gray-800 mb-2">Câu hỏi:</div>
+                    <div className="text-gray-700 whitespace-pre-line">
+                      {question.content || question.questionText}
+                    </div>
+                  </div>
+                  
+                  <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="font-medium text-blue-800 mb-2">Câu trả lời của bạn:</div>
+                    {studentAnswer ? (
+                      <div className="text-blue-700 whitespace-pre-line leading-relaxed">
+                        {studentAnswer}
+                      </div>
+                    ) : (
+                      <div className="text-gray-500 italic">Bạn chưa trả lời câu hỏi này</div>
+                    )}
+                  </div>
+                  
+                  {feedback && (
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="font-medium text-yellow-800 mb-2">Nhận xét của giáo viên:</div>
+                      <div className="text-yellow-700 whitespace-pre-line leading-relaxed">
+                        {feedback}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         ) : (
           // Hiển thị file đề thi theo type khi được phép xem
           <>
@@ -217,10 +307,24 @@ export default function HomeworkDetailClient({ submission }: HomeworkDetailClien
       {/* Bên phải: Hiển thị thông tin chi tiết bài làm */}
       <div className="w-full lg:w-[350px] bg-white rounded shadow p-6 flex flex-col gap-4 h-full overflow-y-auto">
         <h2 className="text-xl font-bold mb-4">Kết quả bài làm</h2>
-        {/* table thông tin chi tiết */}
+        
+        {/* Thông tin chung */}
         <div className="mb-4">
           {shouldShowScore ? (
-            <p className="text-lg font-semibold">Tổng điểm: {submission.grade ? Math.round(submission.grade * 100) / 100 : 0}</p>
+            <p className="text-lg font-semibold">
+              Tổng điểm: {submission.grade !== null ? (
+                submission.homework.type === 'essay' ? (
+                  // Với bài essay, hiển thị điểm thực tế trực tiếp
+                  (() => {
+                    const totalPoints = submission.homework.questions?.reduce((sum: any, q: any) => sum + (q.point || 0), 0) || 100;
+                    return `${Math.round(submission.grade * 100) / 100}/${totalPoints}`;
+                  })()
+                ) : (
+                  // Với bài trắc nghiệm, giữ nguyên /10
+                  `${Math.round(submission.grade * 100) / 100}/10`
+                )
+              ) : 'Chờ chấm'}
+            </p>
           ) : (
             <p className="text-lg font-semibold text-amber-600">Điểm sẽ có sau hết hạn làm bài</p>
           )}
@@ -230,11 +334,28 @@ export default function HomeworkDetailClient({ submission }: HomeworkDetailClien
               : 'Không có dữ liệu'
           }</p>
           <p><strong>Nộp lúc:</strong> {new Date(submission.submittedAt).toLocaleString()}</p>
+          
+          {/* Thống kê khác nhau cho từng loại bài */}
           {canViewDetails && (
             <>
-              <p><strong>Số câu đúng:</strong> {correctAnswers}</p>
-              <p><strong>Số câu sai:</strong> {incorrectAnswers}</p>
-              <p><strong>Chưa làm:</strong> {unansweredQuestions}</p>
+              {submission.homework.type === "essay" ? (
+                <>
+                  <p><strong>Loại bài:</strong> Tự luận</p>
+                  <p><strong>Số câu hỏi:</strong> {submission.homework.questions?.length || 0}</p>
+                  {submission.feedback && (
+                    <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm font-medium text-yellow-800">Nhận xét của giáo viên:</p>
+                      <p className="text-yellow-700 text-sm mt-1 whitespace-pre-line">{submission.feedback}</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p><strong>Số câu đúng:</strong> {correctAnswers}</p>
+                  <p><strong>Số câu sai:</strong> {incorrectAnswers}</p>
+                  <p><strong>Chưa làm:</strong> {unansweredQuestions}</p>
+                </>
+              )}
             </>
           )}
         </div>
@@ -265,52 +386,126 @@ export default function HomeworkDetailClient({ submission }: HomeworkDetailClien
               </div>
             )}
             
-            <div className="max-h-96 overflow-y-auto border border-gray-300 rounded">
-              <table className="table-auto w-full text-[11px]">
-                <thead className="bg-gray-100 sticky top-0">
-                  <tr>
-                    <th className="px-2 py-2">Câu</th>
-                    <th className="px-2 py-2">Chọn</th>
-                    <th className="px-2 py-2">Đáp án đúng</th>
-                    <th className="px-2 py-2">Điểm</th>
-                  </tr>
-                </thead>
-                <tbody>
-              {Array.isArray(submission.questionAnswers) && submission.questionAnswers.length > 0 ? (
-                submission.questionAnswers.map((qa: any, index: number) => (
-                  <tr key={qa.id} className="text-center">
-                    <td className="px-4 py-2 flex items-center gap-2">
-                      {/* Hiển thị dấu chấm tròn nhỏ trước câu hỏi */}
-                      <span className="w-2 h-2 rounded-full bg-blue-400 "></span>
-                      {/* Hiển thị số thứ tự câu hỏi */}
-                      <span>Câu {index + 1}</span>
-                    </td>
-                  <td
-                    className={`px-4 py-2 ${qa.isCorrect ? "text-green-500 font-bold" : "text-red-500 font-bold"
-                      }`}
-                  >
-                    {/* Hiển thị đáp án học sinh chọn */}
-                    {qa.answer || "Chưa làm"}
-                  </td>
-                  <td className="px-4 py-2">{qa.question?.answer || "N/A"}</td>
-                  <td className="px-4 py-2">{qa.isCorrect ? (qa.question?.point || 0) : 0}</td>
-                </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={4} className="border border-gray-300 px-4 py-2 text-center text-red-500">
-                    <div className="py-4">
-                      <p className="font-medium">Không có dữ liệu câu trả lời!</p>
-                      <p className="text-xs mt-1">
-                        Submission ID: {submission.id} - QuestionAnswers: {submission.questionAnswers?.length || 0}
-                      </p>
+            {submission.homework.type === "essay" ? (
+              // Chi tiết từng câu essay trong sidebar
+              <div className="max-h-96 overflow-y-auto space-y-3">
+                {submission.homework.questions?.map((question: any, index: number) => {
+                  // Lấy câu trả lời từ parsedAnswers với xử lý cả 2 format
+                  let studentAnswer = "";
+                  let questionScore = null;
+                  let feedback = null;
+                  
+                  // Parse content để lấy thông tin
+                  if (parsedAnswers) {
+                    const answerData = parsedAnswers[question.id] || parsedAnswers[question.id.toString()];
+                    if (typeof answerData === 'string') {
+                      // Format cũ: content[questionId] = "answer text"
+                      studentAnswer = answerData;
+                    } else if (typeof answerData === 'object' && answerData) {
+                      // Format mới: content[questionId] = { answer: "text", score: number, feedback: "text" }
+                      studentAnswer = answerData.answer || "";
+                      questionScore = answerData.score;
+                      feedback = answerData.feedback;
+                    }
+                  }
+                  
+                  // Fallback: tìm trong questionAnswers nếu cần
+                  if (!studentAnswer || questionScore === null) {
+                    const questionAnswer = submission.questionAnswers?.find((qa: any) => 
+                      qa.questionId === question.id || qa.questionId === question.id.toString()
+                    );
+                    
+                    if (questionAnswer) {
+                      if (!studentAnswer && questionAnswer.answer) {
+                        studentAnswer = questionAnswer.answer;
+                      }
+                      if (questionScore === null && questionAnswer.score !== null && questionAnswer.score !== undefined) {
+                        questionScore = questionAnswer.score;
+                      }
+                      if (!feedback && questionAnswer.feedback) {
+                        feedback = questionAnswer.feedback;
+                      }
+                    }
+                  }
+                  
+                  return (
+                    <div key={question.id} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-medium text-gray-800">Câu {index + 1}</h4>
+                        {questionScore !== null && questionScore !== undefined ? (
+                          <span className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-800">
+                            {questionScore}/{question.point} điểm
+                          </span>
+                        ) : (
+                          <span className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-600">
+                            Chưa chấm
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="text-xs text-gray-600 mb-2">
+                        <strong>Trả lời:</strong> {studentAnswer ? "Đã trả lời" : "Chưa trả lời"}
+                      </div>
+                      
+                      {feedback && (
+                        <div className="text-xs bg-yellow-50 border border-yellow-200 rounded p-2 mt-2">
+                          <div className="font-medium text-yellow-800">Nhận xét:</div>
+                          <div className="text-yellow-700 mt-1">{feedback}</div>
+                        </div>
+                      )}
                     </div>
-                  </td>
-                </tr>
-              )}
-                </tbody>
-              </table>
-            </div>
+                  );
+                })}
+              </div>
+            ) : (
+              // Bảng chi tiết trắc nghiệm (code cũ)
+              <div className="max-h-96 overflow-y-auto border border-gray-300 rounded">
+                <table className="table-auto w-full text-[11px]">
+                  <thead className="bg-gray-100 sticky top-0">
+                    <tr>
+                      <th className="px-2 py-2">Câu</th>
+                      <th className="px-2 py-2">Chọn</th>
+                      <th className="px-2 py-2">Đáp án đúng</th>
+                      <th className="px-2 py-2">Điểm</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                {Array.isArray(submission.questionAnswers) && submission.questionAnswers.length > 0 ? (
+                  submission.questionAnswers.map((qa: any, index: number) => (
+                    <tr key={qa.id} className="text-center">
+                      <td className="px-4 py-2 flex items-center gap-2">
+                        {/* Hiển thị dấu chấm tròn nhỏ trước câu hỏi */}
+                        <span className="w-2 h-2 rounded-full bg-blue-400 "></span>
+                        {/* Hiển thị số thứ tự câu hỏi */}
+                        <span>Câu {index + 1}</span>
+                      </td>
+                    <td
+                      className={`px-4 py-2 ${qa.isCorrect ? "text-green-500 font-bold" : "text-red-500 font-bold"
+                        }`}
+                    >
+                      {/* Hiển thị đáp án học sinh chọn */}
+                      {qa.answer || "Chưa làm"}
+                    </td>
+                    <td className="px-4 py-2">{qa.question?.answer || "N/A"}</td>
+                    <td className="px-4 py-2">{qa.isCorrect ? (qa.question?.point || 0) : 0}</td>
+                  </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="border border-gray-300 px-4 py-2 text-center text-red-500">
+                      <div className="py-4">
+                        <p className="font-medium">Không có dữ liệu câu trả lời!</p>
+                        <p className="text-xs mt-1">
+                          Submission ID: {submission.id} - QuestionAnswers: {submission.questionAnswers?.length || 0}
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </>
         ) : shouldShowScore ? (
           <div className="text-center p-4 bg-blue-50 border border-blue-200 rounded-lg">

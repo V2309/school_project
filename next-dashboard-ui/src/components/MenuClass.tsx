@@ -25,7 +25,9 @@ import {
   QrCode,
   HeartOff, 
   Group,
+  UserCheck, // Thêm icon cho groups
   LucideProps,
+  Presentation,
 } from "lucide-react";
 import { group } from "console";
 
@@ -65,6 +67,8 @@ const menuIcons = {
   lectures: Clapperboard,
   documents: Files,
   groupchat: Group,
+  groups: UserCheck, // Thêm icon cho groups
+  whiteboard: Presentation, // 
 };
 
 export default function MenuClass({ classDetail, role, pendingRequestCount }: MenuClassProps) {
@@ -82,18 +86,20 @@ export default function MenuClass({ classDetail, role, pendingRequestCount }: Me
 
   const links: MenuLink[] = [
     { href: `/class/${class_code}/newsfeed`, label: "Bảng tin", icon: menuIcons.newsfeed, badge: 0 },
+{ href: `/class/${class_code}/whiteboard`, label: "Bảng trắng", icon: menuIcons.whiteboard, badge: 0 },
     { href: `/class/${class_code}/schedule`, label: "Lịch học", icon: menuIcons.schedule, badge: 0 },
-    { 
+    { 
       href: `/class/${class_code}/member`, 
       label: "Thành viên", 
       icon: menuIcons.members, 
       badge: role === 'teacher' ? pendingRequestCount : 0 
-    }, 
-    { href: `/class/${class_code}/groupchat`, label: "Nhóm chat", icon: menuIcons.groupchat, badge: 0 },
-    { href: `/class/${class_code}/homework/list`, label: "Bài tập", icon: menuIcons.homework, badge: 0 },
-    { href: `/class/${class_code}/scoretable`, label: "Bảng điểm", icon: menuIcons.scoretable, badge: 0 },
-    { href: `/class/${class_code}/video`, label: "Bài giảng", icon: menuIcons.lectures, badge: 0 },
-    { href: `/class/${class_code}/documents`, label: "Tài liệu", icon: menuIcons.documents, badge: 0 },
+    },
+    { href: `/class/${class_code}/groups`, label: "Nhóm lớp", icon: menuIcons.groups, badge: 0 }, 
+    { href: `/class/${class_code}/groupchat`, label: "Nhóm chat", icon: menuIcons.groupchat, badge: 0 },
+    { href: `/class/${class_code}/homework/list`, label: "Bài tập", icon: menuIcons.homework, badge: 0 },
+    { href: `/class/${class_code}/scoretable`, label: "Bảng điểm", icon: menuIcons.scoretable, badge: 0 },
+    { href: `/class/${class_code}/video`, label: "Bài giảng", icon: menuIcons.lectures, badge: 0 },
+    { href: `/class/${class_code}/documents`, label: "Tài liệu", icon: menuIcons.documents, badge: 0 },
   ];
   
   const handleCopy = () => {
@@ -182,8 +188,8 @@ export default function MenuClass({ classDetail, role, pendingRequestCount }: Me
       </div>
 
       {/* Danh mục (co giãn và cuộn) */}
-      {/* SỬA LỖI LAYOUT: Thêm flex-grow và overflow-y-auto */}
-      <nav className="flex flex-col">
+      {/* SỬA LỖI LAYOUT: Thêm flex-grow và custom scroll */}
+      <nav className="flex flex-col scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 hover:scrollbar-thumb-gray-400 overflow-y-auto">
         {links.map((link) => {
           const isActive = pathname.startsWith(link.href);
           const IconComponent = link.icon;

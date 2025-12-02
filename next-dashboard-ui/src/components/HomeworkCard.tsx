@@ -19,6 +19,10 @@ interface HomeworkCardProps {
     subject?: {
       name: string;
     } | null;
+    questions?: {
+      id: number;
+      point: number | null;
+    }[] | null;
     attachments?: {
       type: string; // Loại file (ví dụ: "pdf", "image", ...)
       url: string; // URL của file
@@ -40,7 +44,9 @@ export function HomeworkCard({ homework, role }: HomeworkCardProps) {
   const description = homework.description || "Không có mô tả";
   
   // Xác định loại bài tập
-  const homeworkType = homework.type === "extracted" ? "Trắc nghiệm tách câu" : "Trắc nghiệm";
+  const homeworkType = homework.type === "extracted" ? "Trắc nghiệm tách câu" 
+    : homework.type === "essay" ? "Tự luận" 
+    : "Trắc nghiệm";
   
   // Tính số lượng học sinh đã làm (cho teacher)
   const completedCount = homework.completedStudents || 0;
@@ -72,7 +78,10 @@ export function HomeworkCard({ homework, role }: HomeworkCardProps) {
       setIsLoading(false);
     }
   }, [homework.id, role]);
-  const maxPoints = Math.round((homework.points || 0) * 100) / 100; // Điểm tối đa, làm tròn 2 chữ số thập phân
+  // Tính điểm tối đa: với bài essay thì tính từ tổng điểm các câu hỏi, với bài khác dùng homework.points
+  const maxPoints = homework.type === 'essay' && homework.questions 
+    ? Math.round((homework.questions.reduce((sum, q) => sum + (q.point || 0), 0)) * 100) / 100
+    : Math.round((homework.points || 0) * 100) / 100;
   
   // Kiểm tra quyền xem điểm
   const canViewScore = homework.studentViewPermission !== 'NO_VIEW';
@@ -84,13 +93,13 @@ export function HomeworkCard({ homework, role }: HomeworkCardProps) {
   // Nếu đã hết hạn hoặc có quyền xem -> hiển thị điểm thực tế
   const shouldShowScore = canViewScore || isExpired;
 
-// Kiểm tra loại file
-  const attachmentType = homework.attachments?.[0]?.type || "Not found "; // Lấy loại file từ attachment đầu tiên
-// nếu có ảnh nữa 
-  const attachmentImage =
-    attachmentType === "application/pdf"
-      ? "/pdf_red.png" // Nếu là PDF, hiển thị ảnh PDF
-      : "/doc_blue.png"; // Nếu không phải PDF, hiển thị ảnh mặc định
+// Kiểm tra loại bài tập và file để hiển thị ảnh phù hợp
+  const attachmentType = homework.attachments?.[0]?.type || "Not found";
+  const attachmentImage = homework.type === "essay" 
+    ? "/essay.png" // Bài tự luận hiển thị ảnh essay
+    : attachmentType === "application/pdf"
+      ? "/pdf_red.png" // PDF hiển thị ảnh PDF
+      : "/doc_blue.png"; // Mặc định hiển thị ảnh doc
   return (
     <div 
        className="block bg-white rounded-lg shadow-lg p-4 mb-4 hover:shadow-lg transition-shadow border border-gray-200 hover:border-blue-500"
@@ -122,7 +131,13 @@ export function HomeworkCard({ homework, role }: HomeworkCardProps) {
         {role === "student" && currentGrade !== null && shouldShowScore && (
           <div className="flex-shrink-0 ml-4">
             <div className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-            {Math.round(currentGrade * 100) / 100}/{maxPoints} điểm
+              {homework.type === 'essay' ? (
+                // Với bài essay, hiển thị điểm thực tế trực tiếp
+                `${Math.round(currentGrade * 100) / 100}/${maxPoints}`
+              ) : (
+                // Với bài trắc nghiệm, giữ nguyên
+                `${Math.round(currentGrade * 100) / 100}/${maxPoints}`
+              )} điểm
             </div>
           </div>
         )}

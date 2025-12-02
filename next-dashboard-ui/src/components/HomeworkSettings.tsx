@@ -15,6 +15,7 @@ interface HomeworkFormData {
   blockViewAfterSubmit: boolean;
   isShuffleQuestions?: boolean;
   isShuffleAnswers?: boolean;
+  type?: 'original' | 'extracted' | 'essay';
 }
 
 interface HomeworkSettingsProps {
@@ -264,14 +265,15 @@ export default function HomeworkSettings({
           </div>
         </div>
 
-        {/* Số lần làm bài */}
-        <div className="flex justify-between items-start">
-          <div className="flex items-center space-x-3 pt-2">
-            <HelpIcon />
-            <label className="text-sm font-medium text-gray-800">
-              Số lần làm bài tối đa *
-            </label>
-          </div>
+        {/* Số lần làm bài - Ẩn với bài tự luận */}
+        {type !== 'essay' && (
+          <div className="flex justify-between items-start">
+            <div className="flex items-center space-x-3 pt-2">
+              <HelpIcon />
+              <label className="text-sm font-medium text-gray-800">
+                Số lần làm bài tối đa *
+              </label>
+            </div>
           <div className="flex-shrink-0 w-64">
             <input
               type="number"
@@ -292,6 +294,7 @@ export default function HomeworkSettings({
             )}
           </div>
         </div>
+        )}
 
         {/* Quyền xem điểm của học sinh (Dropdown) - CẬP NHẬT */}
         <div className="flex justify-between items-center py-2">

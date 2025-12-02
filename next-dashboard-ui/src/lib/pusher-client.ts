@@ -23,5 +23,12 @@ export const pusherClient = new PusherClient(
       endpoint: "/api/pusher/auth",
       transport: "ajax",
     },
+    // Connection optimization
+    activityTimeout: 30000, // 30 seconds
+    pongTimeout: 6000, // 6 seconds
+    unavailableTimeout: 16000, // 16 seconds
+    // Reduce connection overhead
+    enabledTransports: ['ws', 'wss'],
+    disableStats: true,
   }
 );

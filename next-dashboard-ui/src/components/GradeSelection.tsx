@@ -91,7 +91,7 @@ export default function GradeSelection({ grades, currentGradeId, currentGradeLev
         <p className="text-sm text-gray-600 mb-3">
           Khối hiện tại: <span className="font-semibold text-blue-600">{currentGradeLevel}</span>
         </p>
-        <div className="flex flex-wrap gap-3 mb-2" suppressHydrationWarning>
+        <div className="flex flex-wrap gap-5 mb-2" suppressHydrationWarning>
           {grades.map((g) => (
             <label key={g.id} className="cursor-pointer">
               <input

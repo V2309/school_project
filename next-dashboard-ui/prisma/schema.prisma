@@ -96,7 +96,10 @@ model Student {
   results     Result[]
 
   homeworkSubmissions HomeworkSubmission[]
-  joinRequests ClassJoinRequest[] 
+  joinRequests ClassJoinRequest[]
+
+  // Group memberships
+  groupMemberships ClassGroupMember[] 
 }
 
 model Teacher {
@@ -127,6 +130,9 @@ model Teacher {
   courses   Course[]   // Các khóa học do giáo viên tạo
   chapters  Chapter[]  // Các chương do giáo viên tạo
   videos    Video[]    // Các video do giáo viên tạo
+
+  // Groups created by this teacher
+  createdGroups ClassGroup[]
 }
 
 model Grade {
@@ -175,6 +181,10 @@ model Class {
   // Join requests relation
   joinRequests ClassJoinRequest[]
 
+  // Class groups relation
+  groups    ClassGroup[]
+
+  whiteboard Whiteboard?
   messages  Message[]
 }
 
@@ -789,4 +799,62 @@ model Message {
 
   @@index([classCode, createdAt])
   @@index([classCode, isPinned, pinnedAt])
+}
+
+model Whiteboard {
+  id        String   @id @default(cuid())
+  classCode String   @unique // Mỗi lớp chỉ có 1 bảng trắng
+  class     Class    @relation(fields: [classCode], references: [class_code], onDelete: Cascade)
+  
+  content   Json?    // Lưu toàn bộ dữ liệu snapshot của tldraw
+  updatedAt DateTime @updatedAt
+}
+
+// === MODELS CHO CHỨC NĂNG NHÓM LỚP ===
+
+model ClassGroup {
+  id        String   @id @default(cuid())
+  name      String   // Tên nhóm (VD: "Nhóm 1", "Nhóm A")
+  color     String?  // Màu sắc nhóm (hex color)
+  maxSize   Int?     // Số thành viên tối đa (null = không giới hạn)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Thuộc về lớp học nào
+  classCode String   
+  class     Class    @relation(fields: [classCode], references: [class_code], onDelete: Cascade)
+
+  // Nhóm được tạo bởi giáo viên nào
+  createdById String
+  createdBy   Teacher @relation(fields: [createdById], references: [id])
+
+  // Các thành viên trong nhóm
+  members   ClassGroupMember[]
+
+  @@index([classCode])
+}
+
+model ClassGroupMember {
+  id       String   @id @default(cuid())
+  joinedAt DateTime @default(now())
+
+  // Thuộc về nhóm nào
+  groupId String
+  group   ClassGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  // Học sinh nào
+  studentId String
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  // Vai trò trong nhóm (có thể mở rộng sau)
+  role ClassGroupRole @default(MEMBER)
+
+  @@unique([groupId, studentId]) // Một học sinh chỉ có thể ở trong một nhóm của cùng một lớp
+  @@index([groupId])
+  @@index([studentId])
+}
+
+enum ClassGroupRole {
+  LEADER  // Trưởng nhóm
+  MEMBER  // Thành viên
 }

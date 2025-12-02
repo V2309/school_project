@@ -1,10 +1,10 @@
 import prisma from "@/lib/prisma";
-import { TestHomeWork } from "@/components/TestHomeWork"; //
+import { EssayTestPage } from "@/components/EssayTestPage";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/hooks/auth";
 
-export default async function HomeworkTestPage({ params }: { params: { id: string; hwId: number } }) {
-  // 1. Lấy thông tin bài tập
+export default async function EssayHomeworkTestPage({ params }: { params: { id: string; hwId: number } }) {
+  // 1. Lấy thông tin bài tập tự luận
   const homework = await prisma.homework.findUnique({
     where: { id: Number(params.hwId) },
     include: {
@@ -17,22 +17,20 @@ export default async function HomeworkTestPage({ params }: { params: { id: strin
     redirect("/404");
   }
 
-  // 2. Redirect cho bài tự luận
-  if (homework.type === "essay") {
-    redirect(`/class/${params.id}/homework/${params.hwId}/essay-test`);
+  // 2. Kiểm tra loại bài tập phải là essay
+  if (homework.type !== "essay") {
+    redirect(`/class/${params.id}/homework/${params.hwId}/test`);
   }
 
-  // 2. Map dữ liệu câu hỏi
+  // 3. Map dữ liệu câu hỏi tự luận
   const questions = homework.questions.map((q: any) => ({
     id: q.id,
     content: q.content,
-    options: q.options || [],
-    point: q.point,
-    answer: q.answer,
+    point: q.point || 10,
   }));
 
   // DEBUG: Kiểm tra dữ liệu
-  console.log("Test Page Debug:", {
+  console.log("Essay Test Page Debug:", {
     homeworkId: homework.id,
     homeworkType: homework.type,
     questionsFromDB: homework.questions.length,
@@ -40,11 +38,11 @@ export default async function HomeworkTestPage({ params }: { params: { id: strin
     firstQuestion: questions[0] || null
   });
 
-  const duration = homework.duration || 30;
+  const duration = homework.duration || 60; // Default 60 minutes for essay
   const user = await getCurrentUser();
   
   if (!user) {
-      redirect("/login"); // Handle case no user
+      redirect("/login");
   }
 
   const userId = user.id;
@@ -53,9 +51,9 @@ export default async function HomeworkTestPage({ params }: { params: { id: strin
   // Biến để xác định đây là lần làm bài thứ mấy
   let currentAttempt = 1;
 
-  // 3. Logic kiểm tra quyền làm bài của học sinh
+  // 4. Logic kiểm tra quyền làm bài của học sinh
   if (role === 'student') {
-    // Đếm số lần đã làm bài (chỉ đếm các bài đã nộp thành công hoặc đang làm)
+    // Đếm số lần đã làm bài
     const submissionCount = await prisma.homeworkSubmission.count({
       where: {
         homeworkId: homework.id,
@@ -63,16 +61,13 @@ export default async function HomeworkTestPage({ params }: { params: { id: strin
       }
     });
 
-    // Cập nhật lần làm bài hiện tại (để truyền xuống client reset bộ đếm)
     currentAttempt = submissionCount + 1;
-
     const maxAttempts = homework.maxAttempts || 1;
 
-    console.log(`CHECK QUYỀN: Đã làm ${submissionCount}/${maxAttempts} lần`);
+    console.log(`CHECK QUYỀN ESSAY: Đã làm ${submissionCount}/${maxAttempts} lần`);
 
     // A. Kiểm tra hết lượt
     if (submissionCount >= maxAttempts) {
-      // QUAN TRỌNG: Hết lượt thì về trang CHI TIẾT để xem kết quả, không về List
       redirect(`/class/${params.id}/homework/${params.hwId}/detail?msg=max_attempts`);
     }
 
@@ -89,31 +84,30 @@ export default async function HomeworkTestPage({ params }: { params: { id: strin
       redirect(`/class/${params.id}/homework/${params.hwId}/detail?msg=expired`);
     }
 
-    // C. Kiểm tra chặn xem lại (Block View)
+    // C. Kiểm tra chặn xem lại
     if (homework.blockViewAfterSubmit) {
       const completedSubmission = await prisma.homeworkSubmission.findFirst({
         where: {
           homeworkId: homework.id,
           studentId: userId as string,
-          grade: { not: null } // Đã có điểm
+          grade: { not: null }
         }
       });
       
       if (completedSubmission) {
-        // Nếu bị chặn xem lại thì mới về trang List
         redirect(`/class/${params.id}/homework/list?msg=blocked`);
       }
     }
   }
   
-  // 4. Xử lý file đề bài
+  // 5. Xử lý file đề bài
   let fileInfo = {
     fileUrl: "",
     fileType: "",
     fileName: "",
   };
 
-  if (homework.type === "extracted") {
+  if (homework.type === "essay") {
     if (homework.originalFileUrl) {
       fileInfo = {
         fileUrl: homework.originalFileUrl,
@@ -133,13 +127,13 @@ export default async function HomeworkTestPage({ params }: { params: { id: strin
   }
 
   return (
-    <TestHomeWork
+    <EssayTestPage
       homework={{
         id: homework.id,
         title: homework.title,
         description: homework.description ?? "",
-        duration: homework.duration ?? 30,
-        type: homework.type ?? "original",
+        duration: homework.duration ?? 60,
+        type: homework.type ?? "essay",
         ...fileInfo,
       }}
       questions={questions}
@@ -147,8 +141,7 @@ export default async function HomeworkTestPage({ params }: { params: { id: strin
       userId={userId as string}
       classCode={params.id}
       role={role as string}
-      // [QUAN TRỌNG] Truyền key này để React biết đây là lần làm mới -> Reset state/cache
-      key={`attempt-${currentAttempt}`} 
+      key={`essay-attempt-${currentAttempt}`}
     />
   );
 }

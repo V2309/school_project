@@ -104,17 +104,27 @@ export function HomeWorkInfo({
 
   const handleViewDetail = () => {
     const classCode = getClassCode();
+    console.log("DEBUG handleViewDetail:", { role, classCode, homeworkId: homework.id });
     if (!classCode) return toast.error("Không tìm thấy mã lớp!");
-    if (bestSubmissionId) {
-      // utid = submission ID (ID của bài làm cụ thể)
-      router.push(
-        `/class/${classCode}/homework/${homework.id}/detail?utid=${bestSubmissionId}`
-      );
+    
+    if (role === "teacher") {
+      // Giáo viên xem danh sách học sinh và chấm bài
+      const url = `/class/${classCode}/homework/${homework.id}/teacher-detail`;
+      console.log("Navigating to:", url);
+      router.push(url);
     } else {
-      // Lấy bài làm có điểm cao nhất của student
-      router.push(
-        `/class/${classCode}/homework/${homework.id}/detail?homeworkId=${homework.id}&getBest=true`
-      );
+      // Học sinh xem kết quả bài làm
+      if (bestSubmissionId) {
+        // utid = submission ID (ID của bài làm cụ thể)
+        router.push(
+          `/class/${classCode}/homework/${homework.id}/detail?utid=${bestSubmissionId}`
+        );
+      } else {
+        // Lấy bài làm có điểm cao nhất của student
+        router.push(
+          `/class/${classCode}/homework/${homework.id}/detail?homeworkId=${homework.id}&getBest=true`
+        );
+      }
     }
   };
   const handleViewEdit = () => {
@@ -312,7 +322,7 @@ export function HomeWorkInfo({
           {role === "teacher" ? (
             <>
               <MenuItem icon={<MonitorPlay size={18} />} onClick={handlePractice} label="Làm thử" />
-              <MenuItem icon={<Info size={18} />} label="Chi tiết" active />
+              <MenuItem icon={<Info size={18} />} onClick={handleViewDetail} label="Chi tiết" active />
 
               <MenuItem icon={<Pencil size={18} />} onClick={handleViewEdit} label="Chỉnh sửa" />
               <MenuItem

@@ -13,8 +13,26 @@ interface ClassLayoutWrapperProps {
 export default function ClassLayoutWrapper({ children, classDetail, role, pendingRequestCount }: ClassLayoutWrapperProps) {
   const pathname = usePathname();
   
-  // (Logic ẩn layout của bạn giữ nguyên)
-  if (pathname.includes("/homework/add") || pathname.includes("/homework/") && pathname.endsWith("/test") || pathname.includes("/homework/") && pathname.endsWith("/detail") || pathname.includes("/class/") && pathname.endsWith("/edit")) {
+  // Ẩn layout cho các trang đặc biệt
+  const hideLayoutRoutes = [
+    "/homework/add",
+    "/homework/",
+    "/test",
+    "/detail", 
+    "/edit",
+    "/whiteboard",
+    "/homework/essay-test"
+  ];
+  
+  const shouldHideLayout = hideLayoutRoutes.some(route => {
+    if (route === "/homework/") {
+      return pathname.includes("/homework/") && (pathname.endsWith("/test") || pathname.endsWith("/detail") || pathname.endsWith("/essay-test"));
+      
+    }
+    return pathname.includes(route);
+  });
+
+  if (shouldHideLayout) {
     return <>{children}</>;
   }
 
