@@ -1,6 +1,6 @@
 // app/api/pusher/auth/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser } from "@/hooks/auth"; 
+import { getCurrentUser } from "@/lib/auth"; 
 import { pusherServer } from "@/lib/pusher-server"; 
 
 export async function POST(request: NextRequest) {

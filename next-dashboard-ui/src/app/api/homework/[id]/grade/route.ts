@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 
 export async function POST(
   request: NextRequest,

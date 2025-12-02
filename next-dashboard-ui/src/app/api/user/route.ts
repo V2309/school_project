@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import { cookies } from "next/headers";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
 const JWT_SECRET = new TextEncoder().encode(

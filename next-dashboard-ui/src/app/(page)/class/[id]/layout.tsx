@@ -1,6 +1,6 @@
 import prisma from "@/lib/prisma";
 import ClassLayoutWrapper from "@/components/ClassLayoutWrapper";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 import QueryProvider from "@/providers/QueryProvider";
 import { Prisma } from "@prisma/client"; // Import Prisma
 import { redirect } from "next/navigation";

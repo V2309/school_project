@@ -2,7 +2,7 @@
 import prisma from "@/lib/prisma";
 
 import { revalidatePath } from "next/cache";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 
 
 import {

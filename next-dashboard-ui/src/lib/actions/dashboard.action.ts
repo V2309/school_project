@@ -1,7 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 
 // Lấy thống kê tổng quan cho admin dashboard
 export async function getDashboardStats() {

@@ -1,7 +1,7 @@
 import prisma from "@/lib/prisma";
 import { TestHomeWork } from "@/components/TestHomeWork"; //
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 
 export default async function HomeworkTestPage({ params }: { params: { id: string; hwId: number } }) {
   // 1. Lấy thông tin bài tập

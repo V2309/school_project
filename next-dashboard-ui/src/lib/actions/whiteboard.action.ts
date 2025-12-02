@@ -2,7 +2,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 
 // Lấy dữ liệu bảng trắng
 export async function getWhiteboardState(classCode: string) {

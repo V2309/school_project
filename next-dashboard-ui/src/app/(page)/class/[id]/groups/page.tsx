@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { Prisma } from "@prisma/client";
 import ClassGroupsPageSimple from "@/components/ClassGroupsPageSimple";
 

@@ -1,5 +1,5 @@
 import prisma from "@/lib/prisma";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { Course, Video, Chapter, Teacher, Student } from "@prisma/client";
 import CourseDetailClient from "@/components/CourseDetailClient";
 

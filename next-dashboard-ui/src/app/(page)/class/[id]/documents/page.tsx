@@ -1,5 +1,5 @@
 // app/(page)/class/[id]/documents/page.tsx
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 import DocumentPageClient from "@/components/DocumentPageClient";
 import prisma from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/setting";

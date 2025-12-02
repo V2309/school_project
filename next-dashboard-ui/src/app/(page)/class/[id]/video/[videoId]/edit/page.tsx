@@ -1,4 +1,4 @@
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import CourseForm from "@/components/forms/CourseForm";
 import prisma from "@/lib/prisma";

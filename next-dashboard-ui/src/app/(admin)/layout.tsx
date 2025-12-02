@@ -1,6 +1,6 @@
 import { Header } from "@/components/admin/header";
 import {Sidebar} from "@/components/admin/sidebar"; // 
-import { getCurrentUser } from "@/hooks/auth"; // Hàm lấy user từ token của bạn (đã có ở các bước trước)
+import { getCurrentUser } from "@/lib/auth"; // Hàm lấy user từ token của bạn (đã có ở các bước trước)
 
 export default async function DashboardLayout({
   children,

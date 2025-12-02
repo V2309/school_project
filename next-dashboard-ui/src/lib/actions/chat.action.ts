@@ -3,7 +3,7 @@
 
 import prisma from "@/lib/prisma";
 import { pusherServer } from "@/lib/pusher-server";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 
 interface SendMessagePayload {
   content: string;

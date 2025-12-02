@@ -1,7 +1,7 @@
 "use server";
 import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 import {  ClassSchema} from "../formValidationSchema";
 import { pusherServer } from "@/lib/pusher-server"; // <-- 1. IMPORT PUSHER SERVER
 import { NotificationType } from "@prisma/client";

@@ -1,7 +1,7 @@
 
 
 import prisma from '@/lib/prisma';
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Download } from 'lucide-react';
 import Link from 'next/link';

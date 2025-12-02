@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma"; // Import instance Prisma chuẩn của bạn
-import { getCurrentUser } from "@/hooks/auth"; // Import hàm xác thực bạn vừa sửa (check đúng đường dẫn nhé)
+import { getCurrentUser } from "@/lib/auth"; // Import hàm xác thực bạn vừa sửa (check đúng đường dẫn nhé)
 
 // ⚠️ Dòng này CỰC KỲ QUAN TRỌNG để tránh lỗi "Failed to collect page data"
 export const dynamic = "force-dynamic";

@@ -1,7 +1,7 @@
 // app/(page)/class/[id]/video/page.tsx
 
 import prisma from "@/lib/prisma";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { Course, Video, Folder as PrismaFolder, Teacher, Prisma } from "@prisma/client";
 import VideoList from "@/components/VideoPageClient";
 import { ITEM_PER_PAGE } from "@/lib/setting";

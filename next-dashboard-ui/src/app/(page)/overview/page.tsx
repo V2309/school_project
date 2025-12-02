@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import prisma from '@/lib/prisma';
-import { getCurrentUser } from '@/hooks/auth';
+import { getCurrentUser } from '@/lib/auth';
 import Table from '@/components/Table'; // Giả định bạn có component Table này
 import dynamic from 'next/dynamic';
 

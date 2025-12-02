@@ -1,7 +1,7 @@
 // next-dashboard-ui/src/app/api/files/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { getCurrentUser } from "@/hooks/auth";
+import { getCurrentUser } from "@/lib/auth";
 
 const prisma = new PrismaClient();
 
