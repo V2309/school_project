@@ -5,6 +5,10 @@ const nextConfig = {
     esmExternals: true,
   },
   transpilePackages: ["nextstepjs"],
+  webpack: (config) => {
+    config.resolve.alias.canvas = false;
+    return config;
+  },
   images: {
     remotePatterns: [
       { hostname: "images.pexels.com" },
