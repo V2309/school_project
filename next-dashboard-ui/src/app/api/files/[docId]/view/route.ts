@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { getCurrentUser } from "@/hooks/auth";
-
+export const dynamic = "force-dynamic";
 // Khởi tạo 1 instance (nếu bạn chưa có file prisma.ts)
 const prisma = new PrismaClient();
 // Nếu bạn đã có file lib/prisma.ts, hãy import từ đó:

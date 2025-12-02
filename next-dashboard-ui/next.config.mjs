@@ -5,6 +5,10 @@ const nextConfig = {
     esmExternals: true,
   },
   transpilePackages: ["nextstepjs"],
+   // Handle build errors for dynamic routes
+  typescript: {
+    ignoreBuildErrors: false,
+  },
   webpack: (config) => {
     config.resolve.alias.canvas = false;
     return config;
