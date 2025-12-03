@@ -1,4 +1,3 @@
-// providers/UserProvider.tsx
 "use client";
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import type { User } from "@prisma/client";
