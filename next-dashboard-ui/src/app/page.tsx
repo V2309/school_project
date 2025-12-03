@@ -273,7 +273,7 @@ export default function Home() {
             <div className="relative group">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl blur-2xl group-hover:blur-3xl transition-all duration-300"></div>
               <div className="relative aspect-video w-full rounded-2xl shadow-2xl border border-border/50 overflow-hidden">
-                <LazyYouTube videoId="4sXMsteYA5k" />
+                <LazyYouTube videoId="dDuw0wr3thI" />
               </div>
             </div>
             <div className="space-y-6">
