@@ -1,6 +1,5 @@
 import prisma from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/setting";
-import { getCurrentUser } from "@/lib/auth";
 import { Prisma, UserRole } from "@prisma/client"; // Import UserRole
 import UserList from "@/components/UserList"; // Import component client mới
 

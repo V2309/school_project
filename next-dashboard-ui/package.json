@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "postinstall": "prisma generate",
-    "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192\" next build",
+    "build": "cross-env NODE_OPTIONS=\"--max-old-space-size=8192\"  NODE_ENV=production next build",
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
