@@ -1,7 +1,7 @@
 # 📚 Online Classroom Management System - Hệ thống quản lý lớp học trực tuyến
 
 ## 🔍 Mô tả
-**UniAI** là một nền tảng học tập trực tuyến toàn diện với AI Agent thông minh, giúp sinh viên: 
+**UniAI** là một nền tảng học tập trực tuyến toàn diện với AI Agent thông minh, giúp người dạy và người học: 
 - Quản lý lớp học, bài tập và điểm số với dashboard trực quan
 - Tương tác với tài liệu học tập thông qua AI chatbot (RAG - Retrieval Augmented Generation)
 - Tự động tạo đề thi trắc nghiệm và tự luận từ PDF/DOCX
