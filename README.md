@@ -6,7 +6,6 @@
 - Tương tác với tài liệu học tập thông qua AI chatbot (RAG - Retrieval Augmented Generation)
 - Tự động tạo đề thi trắc nghiệm và tự luận từ PDF/DOCX
 - Chuyển đổi tài liệu thành podcast học tập
-- 
 **🎯 Dự án phục vụ:** Sinh viên, giảng viên và các tổ chức giáo dục
 
 ---
