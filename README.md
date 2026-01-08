@@ -1,33 +1,33 @@
-# 📚 UniAI - Hệ Thống Hỗ Trợ Học Tập Thông Minh
+# 📚 UniAI - Intelligent Learning Support System
 
-## 🔍 Mô tả
-**UniAI** là một nền tảng học tập trực tuyến toàn diện với AI Agent thông minh, giúp sinh viên: 
-- Tương tác với tài liệu học tập thông qua AI chatbot (RAG - Retrieval Augmented Generation)
-- Tự động tạo đề thi trắc nghiệm và tự luận từ PDF/DOCX
-- Chuyển đổi tài liệu thành podcast học tập
-- Quản lý lớp học, bài tập và điểm số với dashboard trực quan
+## 🔍 Overview
+**UniAI** is a comprehensive AI-powered online learning platform that helps students: 
+- Interact with learning materials through an intelligent AI chatbot (RAG - Retrieval Augmented Generation)
+- Automatically generate multiple-choice and essay questions from PDF/DOCX files
+- Convert documents into educational podcasts
+- Manage classes, assignments, and grades with an intuitive dashboard
 
-**🎯 Dự án phục vụ:** Sinh viên, giảng viên và các tổ chức giáo dục
+**🎯 Target Users:** Students, educators, and educational institutions
 
 ---
 
-## 🧑‍💻 Công nghệ sử dụng
+## 🧑‍💻 Tech Stack
 
 ### **Frontend**
-- **Next.js 14** - React Framework với App Router
-- **TypeScript** - Type-safe development
+- **Next.js 14** - React Framework with App Router
+- **TypeScript** - Type-safe development (92.9% of codebase)
 - **Tailwind CSS** - Utility-first CSS framework
-- **Prisma ORM** - Database ORM với PostgreSQL
+- **Prisma ORM** - Database ORM with PostgreSQL
 - **Clerk** - Authentication & User Management
 - **Radix UI** - Accessible component library
 - **React Hook Form + Zod** - Form validation
 - **TanStack Query** - Server state management
 - **Socket.io Client** - Real-time communication
-- **Stream.io** - Video conferencing
+- **Stream. io** - Video conferencing
 - **Recharts** - Data visualization
 
 ### **Backend**
-- **FastAPI** (Python) - High-performance API framework
+- **FastAPI** (Python 3.10+) - High-performance API framework
 - **LangChain** - AI Agent orchestration
 - **Google Gemini AI** - Large Language Model
 - **OpenAI API** - Text-to-Speech (TTS)
@@ -41,40 +41,40 @@
 - **ImageKit** - Image optimization
 
 ### **DevOps**
-- **Vercel** - Frontend deployment
+- **Vercel** - Frontend & Backend deployment
 - **Jest** - Unit testing
 - **ESLint** - Code linting
 
 ---
 
-## ✨ Tính năng chính
+## ✨ Key Features
 
 ### 🤖 **AI Learning Assistant**
-- Chat với AI về nội dung tài liệu đã upload (PDF/DOCX)
-- Tìm kiếm thông minh với RAG (Retrieval Augmented Generation)
-- Tự động tạo câu hỏi trắc nghiệm và tự luận
+- Chat with AI about uploaded document content (PDF/DOCX)
+- Intelligent search with RAG (Retrieval Augmented Generation)
+- Auto-generate multiple-choice and essay questions
 
 ### 🎙️ **Podcast Generator**
-- Chuyển đổi tài liệu PDF thành cuộc hội thoại podcast
-- Text-to-Speech với giọng đọc tự nhiên
-- Tải xuống file audio MP3
+- Convert PDF documents into conversational podcasts
+- Natural Text-to-Speech conversion
+- Download audio files in MP3 format
 
 ### 📝 **Quiz Management**
-- Trích xuất đề thi từ file PDF/DOCX
-- Xáo trộn câu hỏi và đáp án
-- Export đề thi ra PDF/Excel
+- Extract quizzes from PDF/DOCX files
+- Shuffle questions and answers
+- Export quizzes to PDF/Excel
 
 ### 👨‍🎓 **Learning Management System (LMS)**
-- Quản lý lớp học, học sinh, giảng viên
-- Giao bài tập và chấm điểm
-- Lịch học với React Big Calendar
-- Video conference tích hợp
-- Thảo luận real-time với Socket.io
+- Manage classes, students, and teachers
+- Assign and grade homework
+- Calendar with React Big Calendar
+- Integrated video conferencing
+- Real-time discussions with Socket.io
 
 ### 📊 **Dashboard & Analytics**
-- Thống kê điểm số với biểu đồ
-- Theo dõi tiến độ học tập
-- Responsive design cho mọi thiết bị
+- Grade statistics with charts
+- Track learning progress
+- Responsive design for all devices
 
 ---
 
@@ -82,10 +82,10 @@
 
 🔗 **Live Demo:** [https://vanan-school-online.vercel.app/](https://vanan-school-online.vercel.app/)
 
-> **Lưu ý:** Backend API cần cấu hình API keys để chạy đầy đủ tính năng
+> **Note:** Backend API requires API key configuration for full functionality
 
 ### 📸 Screenshots
-_(Bạn nên thêm 3-4 ảnh chụp màn hình ở đây để tăng tính chuyên nghiệp)_
+_(Consider adding 3-4 screenshots here for professional presentation)_
 - Dashboard overview
 - AI Chat interface
 - Quiz management
@@ -93,7 +93,7 @@ _(Bạn nên thêm 3-4 ảnh chụp màn hình ở đây để tăng tính chuy�
 
 ---
 
-## ⚙️ Cài đặt & Chạy dự án
+## ⚙️ Installation & Setup
 
 ### **Prerequisites**
 - Node.js 18+
@@ -107,39 +107,39 @@ git clone https://github.com/V2309/school_project.git
 cd school_project
 ```
 
-### **2. Cài đặt Frontend (Next.js)**
+### **2. Frontend Setup (Next.js)**
 ```bash
 cd next-dashboard-ui
 npm install
 
-# Tạo file .env.local với các biến: 
+# Create .env. local with required variables: 
 # DATABASE_URL, CLERK_SECRET_KEY, NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, etc. 
 
-# Chạy migration database
+# Run database migration
 npx prisma generate
 npx prisma db push
 
-# Khởi động dev server
+# Start development server
 npm run dev
 ```
-Frontend sẽ chạy tại:  **http://localhost:3000**
+Frontend will run at: **http://localhost:3000**
 
-### **3. Cài đặt Backend (FastAPI)**
+### **3. Backend Setup (FastAPI)**
 ```bash
 cd backend
 pip install -r requirements.txt
 
-# Tạo file .env với: 
+# Create .env file with:
 # GOOGLE_API_KEY, OPENAI_API_KEY, TAVILY_API_KEY
 
-# Chạy server
+# Start server
 uvicorn index:app --reload --port 8000
 ```
-Backend API sẽ chạy tại: **http://localhost:8000**
+Backend API will run at: **http://localhost:8000**
 
 ---
 
-## 📁 Cấu trúc thư mục
+## 📁 Project Structure
 
 ```
 school_project/
@@ -149,7 +149,7 @@ school_project/
 │   │   ├── components/        # React components
 │   │   ├── lib/              # Utilities & configs
 │   ├── prisma/               # Database schema
-│   └── package.json
+│   └── package. json
 │
 ├── backend/                   # Backend FastAPI
 │   ├── index.py              # Main API endpoints
@@ -172,45 +172,44 @@ npm test
 
 # Backend tests
 cd backend
-python test_quiz_api.py
+python test_quiz_api. py
 ```
 
 ---
 
 ## 🚀 Deployment
 
-- **Frontend:** Vercel (auto-deploy từ GitHub)
-- **Backend:** Vercel Serverless Functions (xem `vercel.json`)
+- **Frontend:** Vercel (auto-deploy from GitHub)
+- **Backend:** Vercel Serverless Functions (see `vercel.json`)
 
----
+### Environment Variables Required
 
-## 🤝 Đóng góp
-
-Mọi đóng góp đều được chào đón!  Vui lòng: 
-1. Fork repository
-2. Tạo branch mới (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Mở Pull Request
-
----
-
-## 📄 License
-
-Dự án này được phát triển cho mục đích học tập. 
-
----
-
-## 👤 Tác giả
-
-**V2309** - [GitHub Profile](https://github.com/V2309)
-
-⭐ Nếu bạn thấy project hữu ích, hãy cho một star nhé!
-
----
-
-## 📞 Liên hệ
-
-- Repository: [https://github.com/V2309/school_project](https://github.com/V2309/school_project)
-- Live Demo: [https://vanan-school-online.vercel.app/](https://vanan-school-online.vercel.app/)
+**Frontend (. env.local):**
+```env
+DATABASE_URL=postgresql://...
+CLERK_SECRET_KEY=sk_... 
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
+AWS_ACCESS_KEY_ID=...
+AWS_SECRET_ACCESS_KEY=... 
 ```
+
+**Backend (.env):**
+```env
+GOOGLE_API_KEY=...
+GOOGLE_API_KEY_BACKUP=...
+OPENAI_API_KEY=...
+TAVILY_API_KEY=...
+```
+
+---
+
+## 🏆 Project Highlights
+
+- **Full-stack TypeScript/Python** application with modern architecture
+- **AI/ML Integration** using LangChain and Google Gemini
+- **Real-time Features** with Socket.io and Pusher
+- **Production-ready** deployment on Vercel
+- **Scalable** database design with Prisma ORM
+- **Type-safe** development with TypeScript and Zod
+
+---
