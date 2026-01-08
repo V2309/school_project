@@ -1,169 +1,216 @@
-📚 UniAI - Online Classroom Management System
-🔍 Overview
-UniAI is a comprehensive online learning platform integrated with an intelligent AI Agent. It empowers educators and students with:
+# 📚 UniAI - Hệ Thống Hỗ Trợ Học Tập Thông Minh
 
-Intuitive Dashboard: Effortlessly manage classes, assignments, and grades.
+## 🔍 Mô tả
+**UniAI** là một nền tảng học tập trực tuyến toàn diện với AI Agent thông minh, giúp sinh viên: 
+- Tương tác với tài liệu học tập thông qua AI chatbot (RAG - Retrieval Augmented Generation)
+- Tự động tạo đề thi trắc nghiệm và tự luận từ PDF/DOCX
+- Chuyển đổi tài liệu thành podcast học tập
+- Quản lý lớp học, bài tập và điểm số với dashboard trực quan
 
-AI Chatbot (RAG): Interact directly with study materials using Retrieval-Augmented Generation.
+**🎯 Dự án phục vụ:** Sinh viên, giảng viên và các tổ chức giáo dục
 
-Automated Assessments: Generate multiple-choice and essay questions instantly from PDF/DOCX files.
+---
 
-Study Podcasts: Convert static documents into engaging educational podcasts.
+## 🧑‍💻 Công nghệ sử dụng
 
-🎯 Target Audience: Students, Lecturers, and Educational Institutions.
+### **Frontend**
+- **Next.js 14** - React Framework với App Router
+- **TypeScript** - Type-safe development
+- **Tailwind CSS** - Utility-first CSS framework
+- **Prisma ORM** - Database ORM với PostgreSQL
+- **Clerk** - Authentication & User Management
+- **Radix UI** - Accessible component library
+- **React Hook Form + Zod** - Form validation
+- **TanStack Query** - Server state management
+- **Socket.io Client** - Real-time communication
+- **Stream.io** - Video conferencing
+- **Recharts** - Data visualization
 
-🧑‍💻 Tech Stack
-Frontend
-Next.js 14 – React framework with App Router.
+### **Backend**
+- **FastAPI** (Python) - High-performance API framework
+- **LangChain** - AI Agent orchestration
+- **Google Gemini AI** - Large Language Model
+- **OpenAI API** - Text-to-Speech (TTS)
+- **FAISS + BM25** - Hybrid vector search
+- **PyMuPDF** - PDF processing
+- **Pusher** - Real-time notifications
 
-TypeScript – Type-safe development.
+### **Database & Storage**
+- **PostgreSQL** - Primary database
+- **AWS S3** - File storage
+- **ImageKit** - Image optimization
 
-Tailwind CSS – Utility-first styling.
+### **DevOps**
+- **Vercel** - Frontend deployment
+- **Jest** - Unit testing
+- **ESLint** - Code linting
 
-Prisma ORM – Database management with PostgreSQL.
+---
 
-Clerk – Authentication & User management.
+## ✨ Tính năng chính
 
-TanStack Query – Server state management.
+### 🤖 **AI Learning Assistant**
+- Chat với AI về nội dung tài liệu đã upload (PDF/DOCX)
+- Tìm kiếm thông minh với RAG (Retrieval Augmented Generation)
+- Tự động tạo câu hỏi trắc nghiệm và tự luận
 
-React Hook Form + Zod – Form handling and validation.
+### 🎙️ **Podcast Generator**
+- Chuyển đổi tài liệu PDF thành cuộc hội thoại podcast
+- Text-to-Speech với giọng đọc tự nhiên
+- Tải xuống file audio MP3
 
-Pusher – Real-time communication.
+### 📝 **Quiz Management**
+- Trích xuất đề thi từ file PDF/DOCX
+- Xáo trộn câu hỏi và đáp án
+- Export đề thi ra PDF/Excel
 
-Stream.io – Integrated video conferencing.
+### 👨‍🎓 **Learning Management System (LMS)**
+- Quản lý lớp học, học sinh, giảng viên
+- Giao bài tập và chấm điểm
+- Lịch học với React Big Calendar
+- Video conference tích hợp
+- Thảo luận real-time với Socket.io
 
-Recharts – Data visualization.
+### 📊 **Dashboard & Analytics**
+- Thống kê điểm số với biểu đồ
+- Theo dõi tiến độ học tập
+- Responsive design cho mọi thiết bị
 
-Backend
-FastAPI (Python) – High-performance API framework.
+---
 
-LangChain – AI Agent orchestration.
+## 🖼️ Demo
 
-Google Gemini AI – Core Large Language Model.
+🔗 **Live Demo:** [https://vanan-school-online.vercel.app/](https://vanan-school-online.vercel.app/)
 
-OpenAI API – Text-to-Speech (TTS) for podcasts.
+> **Lưu ý:** Backend API cần cấu hình API keys để chạy đầy đủ tính năng
 
-FAISS + BM25 – Hybrid vector search for RAG.
+### 📸 Screenshots
+_(Bạn nên thêm 3-4 ảnh chụp màn hình ở đây để tăng tính chuyên nghiệp)_
+- Dashboard overview
+- AI Chat interface
+- Quiz management
+- Calendar view
 
-PyMuPDF – Efficient PDF processing.
+---
 
-Database & Storage
-PostgreSQL – Primary relational database.
+## ⚙️ Cài đặt & Chạy dự án
 
-AWS S3 – Secure file storage.
+### **Prerequisites**
+- Node.js 18+
+- Python 3.10+
+- PostgreSQL
+- Git
 
-ImageKit – Real-time image optimization.
-
-DevOps
-Vercel – Frontend & Backend deployment.
-
-✨ Key Features
-🤖 AI Learning Assistant
-Contextual Chat: Ask questions directly about uploaded documents (PDF/DOCX).
-
-Smart Search: Powered by RAG for highly accurate information retrieval.
-
-Automatic Quiz Gen: Instantly create quizzes to test knowledge.
-
-🎙️ Podcast Generator
-PDF to Audio: Converts text-heavy documents into natural conversational podcasts.
-
-Natural TTS: High-quality, lifelike AI voices.
-
-Offline Learning: Downloadable MP3 files for learning on the go.
-
-📝 Quiz Management
-Extraction: Intelligent extraction of test questions from documents.
-
-Customization: Shuffle questions/answers and manage difficulty.
-
-Export: Export exams to PDF or Excel formats.
-
-👨‍🎓 Learning Management System (LMS)
-User Roles: Dedicated workflows for Administrators, Teachers, and Students.
-
-Grading System: Easy assignment submission and grading interface.
-
-Scheduling: Integrated calendar using React Big Calendar.
-
-Virtual Classroom: High-quality video conferencing and real-time discussion boards.
-
-📊 Dashboard & Analytics
-Performance Tracking: Visualize grade trends with interactive charts.
-
-Progress Monitoring: Stay updated on course completion and student engagement.
-
-Fully Responsive: Optimized experience across Desktop, Tablet, and Mobile.
-
-🖼️ Demo
-🔗 Live Demo: https://vanan-school-online.vercel.app/
-
-⚙️ Installation & Setup
-Prerequisites
-Node.js 18+
-
-Python 3.10+
-
-PostgreSQL instance
-
-Git
-
-1. Clone the Repository
-Bash
-
+### **1. Clone Repository**
+```bash
 git clone https://github.com/V2309/school_project.git
 cd school_project
-2. Frontend Setup (Next.js)
-Bash
+```
 
+### **2. Cài đặt Frontend (Next.js)**
+```bash
 cd next-dashboard-ui
 npm install
 
-# Create a .env.local file and configure:
-# DATABASE_URL, CLERK_SECRET_KEY, NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, etc.
+# Tạo file .env.local với các biến: 
+# DATABASE_URL, CLERK_SECRET_KEY, NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY, etc. 
 
-# Run database migrations
+# Chạy migration database
 npx prisma generate
 npx prisma db push
 
-# Start the development server
+# Khởi động dev server
 npm run dev
-The frontend will be available at: http://localhost:3000
+```
+Frontend sẽ chạy tại:  **http://localhost:3000**
 
-3. Backend Setup (FastAPI)
-Bash
-
+### **3. Cài đặt Backend (FastAPI)**
+```bash
 cd backend
 pip install -r requirements.txt
 
-# Create a .env file and configure:
+# Tạo file .env với: 
 # GOOGLE_API_KEY, OPENAI_API_KEY, TAVILY_API_KEY
 
-# Start the API server
+# Chạy server
 uvicorn index:app --reload --port 8000
-The backend API will be available at: http://localhost:8000
+```
+Backend API sẽ chạy tại: **http://localhost:8000**
 
-📁 Project Structure
-Plaintext
+---
 
+## 📁 Cấu trúc thư mục
+
+```
 school_project/
 ├── next-dashboard-ui/          # Frontend Next.js
 │   ├── src/
-│   │   ├── app/                # App Router (Pages & APIs)
-│   │   ├── components/         # Reusable UI components
-│   │   ├── lib/                # Utilities, hooks & configs
-│   ├── prisma/                 # Database schema & migrations
+│   │   ├── app/               # App Router pages
+│   │   ├── components/        # React components
+│   │   ├── lib/              # Utilities & configs
+│   ├── prisma/               # Database schema
 │   └── package.json
 │
-├── backend/                    # Backend FastAPI
-│   ├── index.py                # Main API entry point
-│   ├── agent_core.py           # LangChain AI Agent logic
-│   ├── podcast_generator.py    # Document-to-Audio logic
-│   ├── prompt_template.py      # AI System Prompts
+├── backend/                   # Backend FastAPI
+│   ├── index.py              # Main API endpoints
+│   ├── agent_core.py         # LangChain AI Agent
+│   ├── podcast_generator.py  # TTS conversion
+│   ├── prompt_template.py    # AI prompts
 │   └── requirements.txt
 │
 └── README.md
-🚀 Deployment
-Frontend: Deployed on Vercel with CI/CD integration.
+```
 
-Backend: Deployed using Vercel Serverless Functions (refer to vercel.json).
+---
+
+## 🧪 Testing
+
+```bash
+# Frontend tests
+cd next-dashboard-ui
+npm test
+
+# Backend tests
+cd backend
+python test_quiz_api.py
+```
+
+---
+
+## 🚀 Deployment
+
+- **Frontend:** Vercel (auto-deploy từ GitHub)
+- **Backend:** Vercel Serverless Functions (xem `vercel.json`)
+
+---
+
+## 🤝 Đóng góp
+
+Mọi đóng góp đều được chào đón!  Vui lòng: 
+1. Fork repository
+2. Tạo branch mới (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Mở Pull Request
+
+---
+
+## 📄 License
+
+Dự án này được phát triển cho mục đích học tập. 
+
+---
+
+## 👤 Tác giả
+
+**V2309** - [GitHub Profile](https://github.com/V2309)
+
+⭐ Nếu bạn thấy project hữu ích, hãy cho một star nhé!
+
+---
+
+## 📞 Liên hệ
+
+- Repository: [https://github.com/V2309/school_project](https://github.com/V2309/school_project)
+- Live Demo: [https://vanan-school-online.vercel.app/](https://vanan-school-online.vercel.app/)
+```
