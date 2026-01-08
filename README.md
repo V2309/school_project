@@ -1,4 +1,4 @@
-# 📚 UniAI - Intelligent Learning Support System
+# 📚 UniAI - Online Classroom Management System
 
 ## 🔍 Overview
 **UniAI** is a comprehensive AI-powered online learning platform that helps students: 
