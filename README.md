@@ -26,7 +26,7 @@
 - **Stream. io** - Video conferencing
 - **Recharts** - Data visualization
 
-### **Backend**
+### **Backend AI chatbot RAG**
 - **FastAPI** (Python 3.10+) - High-performance API framework
 - **LangChain** - AI Agent orchestration
 - **Google Gemini AI** - Large Language Model
